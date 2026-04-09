@@ -1,0 +1,17 @@
+{% load static %}
+
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-bottom">
+            <div class="footer-section">
+                  <h4> <img src="{% static 'img/logoAlmacen.png' %}" alt="Logo Sistema" class="footer-logo">Preventa</h4>
+            </div>
+              <p>&copy; {% now "Y" %} Preventa - v1.0.0</p>
+            <div class="footer-legal">
+                <a href="{% url 'configuracion' %}">Configuración</a>
+                <a href="{% url 'ayuda' %}">Ayuda</a>
+            </div>
+        </div>
+    </div>
+</footer>

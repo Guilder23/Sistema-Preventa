@@ -1,0 +1,109 @@
+{% load static %}
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-principal">
+    <div class="navbar-container">
+        <!-- IZQUIERDA: Toggle Sidebar y Logo -->
+        <div class="navbar-left">
+            <button class="sidebar-toggle-btn" id="sidebarToggle" title="Alternar menú">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="navbar-logo">
+                <a href="{% url 'dashboard' %}">
+                    <i class="fas fa-store"></i>
+                    <span class="navbar-brand-text">Preventa</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- DERECHA: Notificaciones y Usuario -->
+        <div class="navbar-right">
+
+            <!-- Tema (modo claro/oscuro) -->
+            {% if theme_allowed %}
+            <div class="navbar-theme">
+                <button class="navbar-icon-btn" id="themeToggleBtn" type="button" title="Modo oscuro" aria-label="Cambiar tema">
+                    <i class="fas fa-moon" id="themeToggleIcon"></i>
+                </button>
+            </div>
+            {% endif %}
+
+            <!-- Usuario -->
+            <div class="navbar-usuario">
+                <button class="navbar-user-btn" id="usuarioBtn" title="Mi cuenta">
+                    <div class="user-avatar">
+                        {% if user.perfil and user.perfil.foto %}
+                            <img src="{{ user.perfil.foto.url }}" alt="Foto" class="user-avatar-img">
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">{{ user.username|title }}</span>
+                        <span class="user-role">
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
+                                    Administrador
+                                {% elif user.perfil.rol == 'preventista' %}
+                                    Preventista
+                                {% else %}
+                                    {{ user.perfil.rol }}
+                                {% endif %}
+                            {% elif user.is_superuser %}
+                                Administrador
+                            {% else %}
+                                Usuario
+                            {% endif %}
+                        </span>
+                    </div>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="navbar-dropdown usuario-dropdown" id="usuarioDropdown">
+                    <div class="dropdown-user-header">
+                        <div class="user-avatar-large">
+                            {% if user.perfil and user.perfil.foto %}
+                                <img src="{{ user.perfil.foto.url }}" alt="Foto" class="user-avatar-img">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <div class="user-header-text">
+                            <strong class="user-header-name">{{ user.username|title }}</strong>
+                            <p class="user-header-email">{{ user.email }}</p>
+                        <span class="user-header-role">
+                            {% if user.perfil %}
+                                {% if user.perfil.rol == 'administrador' %}
+                                    <i class="fas fa-shield-alt"></i> Administrador
+                                {% elif user.perfil.rol == 'preventista' %}
+                                    <i class="fas fa-user"></i> Preventista
+                                {% else %}
+                                    {{ user.perfil.rol }}
+                                {% endif %}
+                            {% elif user.is_superuser %}
+                                <i class="fas fa-shield-alt"></i> Administrador
+                            {% else %}
+                                <i class="fas fa-user"></i> Usuario
+                            {% endif %}
+                        </span>
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'mi_perfil' %}" class="dropdown-item">
+                        <i class="fas fa-user-circle"></i> Mi Perfil
+                    </a>
+                    <a href="{% url 'configuracion' %}" class="dropdown-item">
+                        <i class="fas fa-cog"></i> Configuración
+                    </a>
+                    <a href="{% url 'ayuda' %}" class="dropdown-item">
+                        <i class="fas fa-question-circle"></i> Ayuda
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'logout' %}" class="dropdown-item dropdown-item-logout">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>

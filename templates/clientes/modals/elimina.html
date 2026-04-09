@@ -1,0 +1,22 @@
+{% if user.is_superuser or user.perfil.rol == 'administrador' %}
+<div class="modal fade" id="modalBloquearCliente" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-lock"></i> Bloquear/Activar Cliente</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <form id="formBloquearCliente" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Deseas cambiar el estado del cliente <strong id="bloquearClienteNombre"></strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-check"></i> Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

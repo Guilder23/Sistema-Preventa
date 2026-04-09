@@ -1,0 +1,110 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Clientes{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/clientes/clientes.css' %}">
+<link rel="stylesheet" href="{% static 'css/clientes/modals/crea.css' %}">
+<link rel="stylesheet" href="{% static 'css/clientes/modals/edita.css' %}">
+<link rel="stylesheet" href="{% static 'css/clientes/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-users"></i> Clientes</h1>
+            <p class="page-subtitle">Registro y gestión de clientes</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearCliente">
+            <i class="fas fa-user-plus"></i> Nuevo Cliente
+        </button>
+    </div>
+
+    <div class="card card-filtros">
+        <div class="card-body py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+                        </div>
+                        <input type="text" class="form-control form-control-sm border-left-0" id="buscarCliente" placeholder="Buscar por nombre, CI/NIT o teléfono..." value="{{ q }}">
+                    </div>
+                </div>
+                <div class="col-md-6 text-right">
+                    <small class="text-muted">Mostrando {{ clientes|length }} clientes</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-sm tabla-clientes mb-0" id="tablaClientes">
+                <thead>
+                    <tr>
+                        <th style="width: 28%;">Cliente</th>
+                        <th style="width: 14%;">CI/NIT</th>
+                        <th style="width: 16%;">Teléfono</th>
+                        <th style="width: 28%;">Dirección</th>
+                        <th style="width: 8%;" class="text-center">Estado</th>
+                        <th style="width: 6%;" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clientes %}
+                    <tr>
+                        <td>
+                            <div class="font-weight-bold">{{ c.nombres }}{% if c.apellidos %} {{ c.apellidos }}{% endif %}</div>
+                            {% if c.latitud and c.longitud %}
+                                <small class="text-muted"><i class="fas fa-location-dot"></i> Ubicación registrada</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ c.ci_nit|default:'—' }}</td>
+                        <td>{{ c.telefono|default:'—' }}</td>
+                        <td><small class="text-muted">{{ c.direccion|default:'—'|truncatechars:70 }}</small></td>
+                        <td class="text-center">
+                            {% if c.activo %}
+                            <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Activo</span>
+                            {% else %}
+                            <span class="badge-estado badge-estado-inactivo"><i class="fas fa-times-circle"></i> Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-warning btn-sm btn-editar-cliente" data-cliente-id="{{ c.id }}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                            <button type="button" class="btn btn-danger btn-sm btn-bloquear-cliente" data-cliente-id="{{ c.id }}" data-cliente-nombre="{{ c.nombres }} {{ c.apellidos }}" title="Bloquear/Activar">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                            <p class="text-muted">No hay clientes registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'clientes/modals/crea.html' %}
+    {% include 'clientes/modals/edita.html' %}
+    {% include 'clientes/modals/elimina.html' %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/clientes/modals/crea.js' %}"></script>
+<script src="{% static 'js/clientes/modals/edita.js' %}"></script>
+<script src="{% static 'js/clientes/modals/elimina.js' %}"></script>
+<script src="{% static 'js/clientes/clientes.js' %}"></script>
+{% endblock %}

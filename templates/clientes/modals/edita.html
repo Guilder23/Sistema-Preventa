@@ -1,0 +1,65 @@
+<div class="modal fade" id="modalEditarCliente" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-user-edit"></i> Editar Cliente</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <form id="formEditarCliente" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editClienteId">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nombres <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editNombres" name="nombres" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Apellidos</label>
+                                <input type="text" class="form-control" id="editApellidos" name="apellidos">
+                            </div>
+                            <div class="form-group">
+                                <label>CI/NIT</label>
+                                <input type="text" class="form-control" id="editCiNit" name="ci_nit">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="text" class="form-control" id="editTelefono" name="telefono">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Dirección</label>
+                                <textarea class="form-control" id="editDireccion" name="direccion" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Geolocalización</label>
+                                <div class="d-flex" style="gap:8px;">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnUbicacionEditar">
+                                        <i class="fas fa-location-crosshairs"></i> Obtener ubicación
+                                    </button>
+                                    <small class="text-muted align-self-center" id="ubicacionEditarEstado">Sin ubicación</small>
+                                </div>
+                                <input type="hidden" name="latitud" id="editLatitud">
+                                <input type="hidden" name="longitud" id="editLongitud">
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="editActivoCliente" name="activo">
+                                    <label class="custom-control-label" for="editActivoCliente">Cliente activo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i> Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

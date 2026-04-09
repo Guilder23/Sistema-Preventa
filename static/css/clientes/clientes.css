@@ -1,0 +1,9 @@
+/* Clientes - estilos mínimos */
+
+.tabla-clientes td {
+    vertical-align: middle;
+}
+
+.card-filtros {
+    margin-bottom: 12px;
+}

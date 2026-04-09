@@ -1,0 +1,9 @@
+# Base
+Django==5.1.1
+python-decouple==3.8
+
+# Imágenes
+Pillow==11.0.0
+
+# Reportes PDF
+reportlab==4.0.9

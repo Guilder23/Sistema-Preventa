@@ -1,0 +1,62 @@
+{% if user.is_superuser or user.perfil.rol == 'administrador' %}
+<div class="modal fade" id="modalEditarProducto" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Producto</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <form id="formEditarProducto" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" id="editProductoId">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Código</label>
+                                <input type="text" class="form-control" id="editCodigo" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editNombre" name="nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Descripción</label>
+                                <textarea class="form-control" id="editDescripcion" name="descripcion" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Foto (opcional)</label>
+                                <input type="file" class="form-control" id="editFoto" name="foto" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Precio unidad</label>
+                                <input type="number" step="0.01" class="form-control" id="editPrecioUnidad" name="precio_unidad" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Precio mayor</label>
+                                <input type="number" step="0.01" class="form-control" id="editPrecioMayor" name="precio_mayor" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Precio caja</label>
+                                <input type="number" step="0.01" class="form-control" id="editPrecioCaja" name="precio_caja" value="0">
+                            </div>
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="editActivo" name="activo">
+                                    <label class="custom-control-label" for="editActivo">Producto activo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-warning"><i class="fas fa-save"></i> Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

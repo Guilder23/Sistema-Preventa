@@ -1,0 +1,87 @@
+{% load static %}
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            <i class="fas fa-store"></i>
+            <span class="sidebar-brand-text">Preventa</span>
+        </div>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" title="Colapsar menú">
+            <i class="fas fa-angles-left"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="sidebar-menu">
+            <li class="sidebar-item">
+                <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" title="Dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="sidebar-section">
+                <span class="sidebar-section-title">PREVENTA</span>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'listar_clientes' %}" class="sidebar-link {% if 'cliente' in request.resolver_match.url_name %}active{% endif %}" title="Clientes">
+                    <i class="fas fa-users"></i>
+                    <span>Clientes</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'producto' in request.resolver_match.url_name %}active{% endif %}" title="Productos">
+                    <i class="fas fa-box"></i>
+                    <span>Productos</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'listar_pedidos' %}" class="sidebar-link {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" title="Pedidos">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Pedidos</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'reportes_inicio' %}" class="sidebar-link {% if 'reporte' in request.resolver_match.url_name %}active{% endif %}" title="Reportes">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Reportes</span>
+                </a>
+            </li>
+
+            {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+            <li class="sidebar-item">
+                <a href="{% url 'listar_usuarios' %}" class="sidebar-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}" title="Usuarios">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Usuarios</span>
+                </a>
+            </li>
+            {% endif %}
+
+            <li class="sidebar-section">
+                <span class="sidebar-section-title">SISTEMA</span>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'ayuda' %}" class="sidebar-link {% if request.resolver_match.url_name == 'ayuda' %}active{% endif %}" title="Ayuda">
+                    <i class="fas fa-circle-question"></i>
+                    <span>Ayuda</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'configuracion' %}" class="sidebar-link {% if request.resolver_match.url_name == 'configuracion' %}active{% endif %}" title="Configuración">
+                    <i class="fas fa-gear"></i>
+                    <span>Configuración</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</aside>
+
+<!-- OVERLAY para cuando está abierto el sidebar en mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

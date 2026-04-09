@@ -1,0 +1,59 @@
+<div class="modal fade" id="modalCrearCliente" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus"></i> Crear Cliente</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <form id="formCrearCliente" method="post" action="{% url 'crear_cliente' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nombres <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="nombres" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Apellidos</label>
+                                <input type="text" class="form-control" name="apellidos">
+                            </div>
+                            <div class="form-group">
+                                <label>CI/NIT</label>
+                                <input type="text" class="form-control" name="ci_nit">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono</label>
+                                <input type="text" class="form-control" name="telefono">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Dirección</label>
+                                <textarea class="form-control" name="direccion" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Geolocalización</label>
+                                <div class="d-flex" style="gap:8px;">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnUbicacionCrear">
+                                        <i class="fas fa-location-crosshairs"></i> Obtener ubicación
+                                    </button>
+                                    <small class="text-muted align-self-center" id="ubicacionCrearEstado">Sin ubicación</small>
+                                </div>
+                                <input type="hidden" name="latitud" id="crearLatitud">
+                                <input type="hidden" name="longitud" id="crearLongitud">
+                            </div>
+
+                            <small class="text-muted">Se guarda la ubicación del cliente si el navegador lo permite.</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

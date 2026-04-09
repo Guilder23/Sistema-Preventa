@@ -1,0 +1,21 @@
+/* Productos - estilos mínimos (reutiliza estilos globales del proyecto guía) */
+
+.tabla-productos .codigo-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.06);
+    font-weight: 600;
+}
+
+html[data-theme="dark"] .tabla-productos .codigo-badge {
+    background: rgba(255,255,255,0.10);
+}
+
+.tabla-productos td {
+    vertical-align: middle;
+}
+
+.card-filtros {
+    margin-bottom: 12px;
+}

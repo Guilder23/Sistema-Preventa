@@ -1,0 +1,87 @@
+(function () {
+    'use strict';
+
+    function setEstado(el, text) {
+        if (el) el.textContent = text;
+    }
+
+    function capturarUbicacion(latInput, lonInput, estadoEl) {
+        if (!navigator.geolocation) {
+            setEstado(estadoEl, 'Geolocalización no soportada');
+            return;
+        }
+        setEstado(estadoEl, 'Obteniendo ubicación...');
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                latInput.value = lat;
+                lonInput.value = lon;
+                setEstado(estadoEl, `OK: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+            },
+            () => {
+                setEstado(estadoEl, 'No se pudo obtener ubicación');
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+        );
+    }
+
+    $(document).ready(function () {
+        $(document).on('click', '.btn-editar-cliente', function (e) {
+            e.preventDefault();
+            const id = $(this).data('cliente-id');
+            if (!id) return;
+
+            $.ajax({
+                url: `/clientes/${id}/obtener/`,
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    $('#editClienteId').val(data.id);
+                    $('#editNombres').val(data.nombres);
+                    $('#editApellidos').val(data.apellidos || '');
+                    $('#editCiNit').val(data.ci_nit || '');
+                    $('#editTelefono').val(data.telefono || '');
+                    $('#editDireccion').val(data.direccion || '');
+                    $('#editLatitud').val(data.latitud || '');
+                    $('#editLongitud').val(data.longitud || '');
+                    $('#editActivoCliente').prop('checked', !!data.activo);
+
+                    const st = document.getElementById('ubicacionEditarEstado');
+                    if (data.latitud && data.longitud) {
+                        setEstado(st, `Actual: ${parseFloat(data.latitud).toFixed(5)}, ${parseFloat(data.longitud).toFixed(5)}`);
+                    } else {
+                        setEstado(st, 'Sin ubicación');
+                    }
+
+                    $('#modalEditarCliente').modal('show');
+                },
+                error: function () {
+                    alert('Error al cargar el cliente');
+                }
+            });
+        });
+
+        document.getElementById('btnUbicacionEditar')?.addEventListener('click', function () {
+            capturarUbicacion(
+                document.getElementById('editLatitud'),
+                document.getElementById('editLongitud'),
+                document.getElementById('ubicacionEditarEstado')
+            );
+        });
+
+        $('#formEditarCliente').on('submit', function (e) {
+            const id = $('#editClienteId').val();
+            if (!id) {
+                e.preventDefault();
+                return false;
+            }
+            $(this).attr('action', `/clientes/${id}/editar/`);
+        });
+
+        $('#modalEditarCliente').on('hidden.bs.modal', function () {
+            $('#formEditarCliente')[0].reset();
+            setEstado(document.getElementById('ubicacionEditarEstado'), 'Sin ubicación');
+        });
+    });
+})();

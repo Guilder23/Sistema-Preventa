@@ -1,0 +1,112 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Pedidos{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/pedidos/pedidos.css' %}">
+<link rel="stylesheet" href="{% static 'css/pedidos/modals/crea.css' %}">
+<link rel="stylesheet" href="{% static 'css/pedidos/modals/ver.css' %}">
+<link rel="stylesheet" href="{% static 'css/pedidos/modals/anula.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-clipboard-list"></i> Pedidos</h1>
+            <p class="page-subtitle">Registro e historial de pedidos</p>
+        </div>
+        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearPedido">
+            <i class="fas fa-plus"></i> Nuevo Pedido
+        </button>
+    </div>
+
+    <div class="card card-filtros">
+        <div class="card-body py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+                        </div>
+                        <input type="text" class="form-control form-control-sm border-left-0" id="buscarPedido" placeholder="Buscar por cliente o CI/NIT..." value="{{ q }}">
+                    </div>
+                </div>
+                <div class="col-md-6 text-right">
+                    <small class="text-muted">Mostrando {{ pedidos|length }} pedidos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-sm tabla-pedidos mb-0" id="tablaPedidos">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">#</th>
+                        <th style="width: 28%;">Cliente</th>
+                        <th style="width: 18%;">Preventista</th>
+                        <th style="width: 16%;">Fecha</th>
+                        <th style="width: 12%;">Total</th>
+                        <th style="width: 10%;" class="text-center">Estado</th>
+                        <th style="width: 8%;" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pedidos %}
+                    <tr>
+                        <td class="font-weight-bold">{{ p.id }}</td>
+                        <td>
+                            <div class="font-weight-bold">{{ p.cliente.nombres }}{% if p.cliente.apellidos %} {{ p.cliente.apellidos }}{% endif %}</div>
+                            {% if p.cliente.ci_nit %}<small class="text-muted">CI/NIT: {{ p.cliente.ci_nit }}</small>{% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ p.preventista.get_full_name|default:p.preventista.username }}</small>
+                        </td>
+                        <td><small class="text-muted">{{ p.fecha|date:'d/m/Y H:i' }}</small></td>
+                        <td class="font-weight-bold">{{ p.total }}</td>
+                        <td class="text-center">
+                            {% if p.estado == 'anulado' %}
+                            <span class="badge-estado badge-estado-inactivo"><i class="fas fa-ban"></i> Anulado</span>
+                            {% else %}
+                            <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-info btn-sm btn-ver-pedido" data-pedido-id="{{ p.id }}" title="Ver">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                            <button type="button" class="btn btn-danger btn-sm btn-anular-pedido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Anular">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                            <p class="text-muted">No hay pedidos registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'pedidos/modals/crea.html' %}
+    {% include 'pedidos/modals/ver.html' %}
+    {% include 'pedidos/modals/anula.html' %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/pedidos/modals/crea.js' %}"></script>
+<script src="{% static 'js/pedidos/modals/ver.js' %}"></script>
+<script src="{% static 'js/pedidos/modals/anula.js' %}"></script>
+<script src="{% static 'js/pedidos/pedidos.js' %}"></script>
+{% endblock %}

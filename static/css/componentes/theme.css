@@ -1,0 +1,676 @@
+/* ============================================================================
+   TEMA CLARO / OSCURO (GLOBAL)
+   - Se controla con: html[data-theme="light"|"dark"]
+   - Preferencia guardada en localStorage (ver theme.js)
+   ============================================================================ */
+
+/* Defaults: el proyecto ya define variables en css/estilos.css (modo claro) */
+
+html[data-theme="dark"] {
+    /* Neutrales (oscuro) */
+    --color-fondo: #0b1220;
+    --color-texto: #e5e7eb;
+    --color-texto-secundario: #94a3b8;
+
+    /* Superficie/containers */
+    --color-blanco: #0f172a;
+    --color-gris-claro: #111827;
+    --color-borde: #233044;
+
+    /* Sombras más suaves en oscuro */
+    --sombra: 0 1px 3px rgba(0, 0, 0, 0.35);
+    --sombra-hover: 0 4px 10px rgba(0, 0, 0, 0.45);
+
+    color-scheme: dark;
+}
+
+/* Fondo y texto global */
+html[data-theme="dark"] body {
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+}
+
+/* Contenido principal (base.css usa hardcode) */
+html[data-theme="dark"] .content {
+    background: var(--color-fondo);
+}
+
+/* Cards / tablas / contenedores Bootstrap */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .card-tabla,
+html[data-theme="dark"] .card-filtros {
+    background-color: var(--color-blanco);
+    color: var(--color-texto);
+    border-color: var(--color-borde);
+}
+
+html[data-theme="dark"] .table {
+    color: var(--color-texto);
+}
+
+html[data-theme="dark"] .table td,
+html[data-theme="dark"] .table th {
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .table tbody td {
+    background-color: transparent;
+}
+
+/* Textos utilitarios */
+html[data-theme="dark"] .text-muted {
+    color: var(--color-texto-secundario) !important;
+}
+
+/* Formularios */
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .custom-select,
+html[data-theme="dark"] select.form-control,
+html[data-theme="dark"] textarea.form-control {
+    background-color: var(--color-gris-claro);
+    color: var(--color-texto);
+    border-color: var(--color-borde);
+}
+
+html[data-theme="dark"] .form-control::placeholder {
+    color: rgba(148, 163, 184, 0.75);
+}
+
+html[data-theme="dark"] .form-control:focus,
+html[data-theme="dark"] .custom-select:focus {
+    background-color: var(--color-gris-claro);
+    color: var(--color-texto);
+    border-color: rgba(59, 130, 246, 0.75);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
+}
+
+/* Modales */
+html[data-theme="dark"] .modal-content {
+    background-color: var(--color-blanco) !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-footer {
+    border-color: var(--color-borde);
+}
+
+html[data-theme="dark"] .modal-header,
+html[data-theme="dark"] .modal-body,
+html[data-theme="dark"] .modal-footer {
+    background-color: var(--color-blanco) !important;
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .close {
+    color: var(--color-texto);
+    text-shadow: none;
+    opacity: 0.75;
+}
+
+html[data-theme="dark"] .close:hover {
+    opacity: 1;
+}
+
+/* Modales: superficies internas (muchos módulos pintan en blanco con CSS propio) */
+html[data-theme="dark"] .modal .card,
+html[data-theme="dark"] .modal .info-section,
+html[data-theme="dark"] .modal .com-card,
+html[data-theme="dark"] .modal .resumen-card {
+    background-color: var(--color-blanco) !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .modal .card-body {
+    background-color: transparent !important;
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .modal .card-header,
+html[data-theme="dark"] .modal .card-footer {
+    background-color: transparent !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+/* Patrón común en modales: info-section/section-title/info-item */
+html[data-theme="dark"] .modal .section-title {
+    color: var(--color-texto) !important;
+    border-bottom-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .modal .info-item label {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .modal .info-item p {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .modal .foto-placeholder,
+html[data-theme="dark"] .modal .foto-placeholder-mini {
+    background-color: var(--color-gris-claro) !important;
+    border-color: var(--color-borde) !important;
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .modal .form-control,
+html[data-theme="dark"] .modal .custom-select,
+html[data-theme="dark"] .modal select.form-control,
+html[data-theme="dark"] .modal textarea.form-control,
+html[data-theme="dark"] .modal .form-select {
+    background-color: var(--color-gris-claro) !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .modal .form-label,
+html[data-theme="dark"] .modal label {
+    color: var(--color-texto) !important;
+}
+
+/* Ajustes específicos: Ver Producto */
+html[data-theme="dark"] #modalVerProducto .section-title {
+    color: var(--color-texto) !important;
+    border-bottom-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] #modalVerProducto .info-item label {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] #modalVerProducto .info-item p {
+    color: var(--color-texto) !important;
+}
+
+/* Ajustes específicos: Ver Comunicado */
+html[data-theme="dark"] #modalVerComunicado .com-label {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] #modalVerComunicado .com-value {
+    color: var(--color-texto) !important;
+}
+
+/* Sidebar */
+html[data-theme="dark"] .sidebar {
+    background: var(--color-blanco);
+    border-right-color: var(--color-borde);
+}
+
+html[data-theme="dark"] .sidebar-header {
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom-color: var(--color-borde);
+}
+
+html[data-theme="dark"] .sidebar-collapse-btn {
+    background: var(--color-gris-claro);
+    border-color: var(--color-borde);
+    color: var(--color-texto-secundario);
+}
+
+html[data-theme="dark"] .sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+html[data-theme="dark"] .sidebar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+}
+
+html[data-theme="dark"] .sidebar-footer {
+    background: var(--color-blanco) !important;
+    border-top-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .sidebar-user {
+    background: var(--color-gris-claro) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .sidebar-user-info strong {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .sidebar-user-info small {
+    color: var(--color-texto-secundario) !important;
+}
+
+/* Dropdowns del navbar (son custom, no Bootstrap) */
+html[data-theme="dark"] .navbar-dropdown {
+    background: var(--color-blanco) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .dropdown-header {
+    background: var(--color-blanco) !important;
+    border-bottom-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .dropdown-header small {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .dropdown-header span {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .dropdown-item {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .dropdown-divider {
+    border-top-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .dropdown-footer {
+    border-top-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .dropdown-footer {
+    background: var(--color-blanco) !important;
+}
+
+html[data-theme="dark"] .dropdown-footer a {
+    color: rgba(59, 130, 246, 0.95) !important;
+}
+
+html[data-theme="dark"] .dropdown-user-header {
+    background: var(--color-blanco) !important;
+    border-bottom-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .user-avatar-large {
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .user-header-role {
+    color: var(--color-texto) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid var(--color-borde);
+}
+
+html[data-theme="dark"] .dropdown-item-logout:hover {
+    background: rgba(220, 38, 38, 0.12) !important;
+}
+
+/* Utilidades Bootstrap que suelen forzar blancos en oscuro */
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-light {
+    background-color: var(--color-blanco) !important;
+}
+
+html[data-theme="dark"] .text-dark,
+html[data-theme="dark"] .text-body {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .border,
+html[data-theme="dark"] .border-top,
+html[data-theme="dark"] .border-right,
+html[data-theme="dark"] .border-bottom,
+html[data-theme="dark"] .border-left {
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .card-header,
+html[data-theme="dark"] .card-footer {
+    background-color: var(--color-blanco);
+    border-color: var(--color-borde);
+    color: var(--color-texto);
+}
+
+html[data-theme="dark"] .input-group-text {
+    background-color: var(--color-gris-claro) !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+/* Tablas Bootstrap (striped/hover) */
+html[data-theme="dark"] .table thead th {
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+html[data-theme="dark"] .table-hover tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="dark"] .table-hover tbody tr:hover > td,
+html[data-theme="dark"] .table-hover tbody tr:hover > th {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--color-texto) !important;
+}
+
+/* Hover global de filas (todas las tablas) - evita blancos hardcode por página */
+html[data-theme="dark"] table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="dark"] table tbody tr:hover > td,
+html[data-theme="dark"] table tbody tr:hover > th {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--color-texto) !important;
+}
+
+/* Dashboard (clases custom que a veces hardcodean blanco) */
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .dashboard-card {
+    background-color: var(--color-blanco) !important;
+    border-color: var(--color-borde) !important;
+    color: var(--color-texto);
+}
+
+html[data-theme="dark"] .stat-card-label,
+html[data-theme="dark"] .page-subtitle {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .stat-card-value,
+html[data-theme="dark"] .page-title,
+html[data-theme="dark"] .card-title {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .btn-icon {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .btn-icon:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-theme="dark"] .chart-placeholder {
+    background: linear-gradient(135deg, var(--color-gris-claro) 0%, var(--color-blanco) 100%) !important;
+}
+
+/* Tarjetas resumen (KPIs) usadas en varios módulos (ej. reportes) */
+html[data-theme="dark"] .resumen-card {
+    background-color: var(--color-blanco) !important;
+    border-color: var(--color-borde) !important;
+    box-shadow: var(--sombra) !important;
+}
+
+html[data-theme="dark"] .resumen-label,
+html[data-theme="dark"] .resumen-sublabel {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .resumen-value,
+html[data-theme="dark"] .resumen-value-monto .monto-numero,
+html[data-theme="dark"] .monto-venta {
+    color: var(--color-texto) !important;
+}
+
+/* Tablas de reportes con estilos propios (evitar hover/cabecera claros) */
+html[data-theme="dark"] .tabla-ventas thead th {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom-color: var(--color-borde) !important;
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .tabla-ventas tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="dark"] .tabla-productos thead,
+html[data-theme="dark"] .tabla-productos thead th {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-bottom-color: var(--color-borde) !important;
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .tabla-productos tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Dashboard: hovers y headers que suelen quedar claros */
+html[data-theme="dark"] .card-header {
+    background: var(--color-blanco) !important;
+    border-bottom-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .quick-action-btn:hover,
+html[data-theme="dark"] .top-product-item:hover,
+html[data-theme="dark"] .activity-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Alerts (base.css usa colores claros) */
+html[data-theme="dark"] .alert {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="dark"] .alert-success {
+    background-color: rgba(5, 150, 105, 0.12);
+    color: #a7f3d0;
+    border-left-color: #059669;
+}
+
+html[data-theme="dark"] .alert-danger,
+html[data-theme="dark"] .alert-error {
+    background-color: rgba(220, 38, 38, 0.12);
+    color: #fecaca;
+    border-left-color: #dc2626;
+}
+
+html[data-theme="dark"] .alert-warning {
+    background-color: rgba(217, 119, 6, 0.14);
+    color: #fde68a;
+    border-left-color: #d97706;
+}
+
+html[data-theme="dark"] .alert-info {
+    background-color: rgba(59, 130, 246, 0.14);
+    color: #bfdbfe;
+    border-left-color: #3b82f6;
+}
+
+/* ============================================================================
+   REPORTES / INVENTARIO: VISTA PREVIA DE IMPRESIÓN
+   - Panel de configuración (izquierda): SÍ debe seguir el modo oscuro
+   - Hoja/preview (derecha, .preview-paper): NO debe cambiar (siempre blanco)
+   ============================================================================ */
+
+html[data-theme="dark"] #modalImprimir .col-md-3.border-right {
+    background-color: var(--color-blanco) !important;
+    border-right-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] #modalImprimir .config-panel-header,
+html[data-theme="dark"] #modalImprimir .config-columns-scroll,
+html[data-theme="dark"] #modalImprimir .config-panel-footer {
+    background-color: var(--color-blanco) !important;
+    border-color: var(--color-borde) !important;
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] #modalImprimir .custom-control-label {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] #modalImprimir hr {
+    border-top-color: var(--color-borde) !important;
+}
+
+/* Switches Bootstrap dentro del panel (evita track blanco) */
+html[data-theme="dark"] #modalImprimir .custom-control-label::before {
+    background-color: var(--color-gris-claro) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] #modalImprimir .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: rgba(59, 130, 246, 0.75) !important;
+    border-color: rgba(59, 130, 246, 0.75) !important;
+}
+
+html[data-theme="dark"] #modalImprimir .col-md-9,
+html[data-theme="dark"] #modalImprimir .preview-container {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-color: var(--color-borde) !important;
+}
+
+/* Congelar la hoja (preview) en modo claro, para que sea idéntica */
+html[data-theme="dark"] #modalImprimir .preview-paper {
+    background: #ffffff !important;
+    color: #343a40 !important;
+    color-scheme: light;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper .text-dark {
+    color: #343a40 !important;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper .text-muted {
+    color: #6c757d !important;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper .table {
+    color: #343a40 !important;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper .table td,
+html[data-theme="dark"] #modalImprimir .preview-paper .table th {
+    border-color: #dee2e6 !important;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper .thead-light th,
+html[data-theme="dark"] #modalImprimir .preview-paper thead.thead-light th {
+    background-color: #e9ecef !important;
+    color: #495057 !important;
+}
+
+/* Restaurar utilidades dentro de la hoja (nuestro dark-mode global las pisa) */
+html[data-theme="dark"] #modalImprimir .preview-paper .bg-white {
+    background-color: #ffffff !important;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper .bg-light {
+    background-color: #f8f9fa !important;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper .border,
+html[data-theme="dark"] #modalImprimir .preview-paper .border-top,
+html[data-theme="dark"] #modalImprimir .preview-paper .border-right,
+html[data-theme="dark"] #modalImprimir .preview-paper .border-bottom,
+html[data-theme="dark"] #modalImprimir .preview-paper .border-left {
+    border-color: #dee2e6 !important;
+}
+
+/* Hover de filas en la hoja: mantener estilo claro (no oscuro) */
+html[data-theme="dark"] #modalImprimir .preview-paper table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+html[data-theme="dark"] #modalImprimir .preview-paper table tbody tr:hover > td,
+html[data-theme="dark"] #modalImprimir .preview-paper table tbody tr:hover > th {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    color: inherit !important;
+}
+
+/* ============================================================================
+   INVENTARIO: KARDEX / STOCK (contenedores custom con fondo blanco)
+   ============================================================================ */
+
+html[data-theme="dark"] .kardex-header,
+html[data-theme="dark"] .kardex-filters,
+html[data-theme="dark"] .kardex-table {
+    background-color: var(--color-blanco) !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .kardex-title,
+html[data-theme="dark"] .kardex-header .info-value {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .kardex-header .info-label {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .kardex-filters .date-range input {
+    background-color: var(--color-gris-claro) !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .kardex-table td {
+    border-bottom-color: var(--color-borde) !important;
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .kardex-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="dark"] .stock-title {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .stock-table,
+html[data-theme="dark"] .stock-filters {
+    background-color: var(--color-blanco) !important;
+    border-color: var(--color-borde) !important;
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .stock-table td {
+    border-bottom-color: var(--color-borde) !important;
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .stock-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="dark"] .stock-filters select,
+html[data-theme="dark"] .stock-filters input {
+    background-color: var(--color-gris-claro) !important;
+    color: var(--color-texto) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .stat-label {
+    color: var(--color-texto-secundario) !important;
+}
+
+html[data-theme="dark"] .stat-value {
+    color: var(--color-texto) !important;
+}
+
+/* ============================================================================
+   VENTAS: BUSCADOR / RESULTADOS (fondo blanco hardcode)
+   ============================================================================ */
+
+html[data-theme="dark"] .resultados-busqueda {
+    background-color: var(--color-blanco) !important;
+    border-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .resultado-item {
+    border-bottom-color: var(--color-borde) !important;
+}
+
+html[data-theme="dark"] .resultado-item:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+html[data-theme="dark"] .resultado-item .producto-nombre {
+    color: var(--color-texto) !important;
+}
+
+html[data-theme="dark"] .resultado-item .producto-codigo,
+html[data-theme="dark"] .resultado-item .producto-stock,
+html[data-theme="dark"] .sin-resultados {
+    color: var(--color-texto-secundario) !important;
+}

@@ -1,0 +1,113 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Productos{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/productos/productos.css' %}">
+<link rel="stylesheet" href="{% static 'css/productos/modals/crea.css' %}">
+<link rel="stylesheet" href="{% static 'css/productos/modals/edita.css' %}">
+<link rel="stylesheet" href="{% static 'css/productos/modals/elimina.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-box"></i> Productos</h1>
+            <p class="page-subtitle">Catálogo de productos y precios</p>
+        </div>
+        {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearProducto">
+            <i class="fas fa-plus"></i> Nuevo Producto
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="card card-filtros">
+        <div class="card-body py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+                        </div>
+                        <input type="text" class="form-control form-control-sm border-left-0" id="buscarProducto" placeholder="Buscar por código o nombre..." value="{{ q }}">
+                    </div>
+                </div>
+                <div class="col-md-6 text-right">
+                    <small class="text-muted">Mostrando {{ productos|length }} productos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-sm tabla-productos mb-0" id="tablaProductos">
+                <thead>
+                    <tr>
+                        <th style="width: 12%;">Código</th>
+                        <th style="width: 28%;">Producto</th>
+                        <th style="width: 15%;">P. Unidad</th>
+                        <th style="width: 15%;">P. Mayor</th>
+                        <th style="width: 15%;">P. Caja</th>
+                        <th style="width: 8%;" class="text-center">Estado</th>
+                        <th style="width: 7%;" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                    <tr data-row>
+                        <td><span class="codigo-badge">{{ p.codigo }}</span></td>
+                        <td>
+                            <div class="font-weight-bold">{{ p.nombre }}</div>
+                            {% if p.descripcion %}<small class="text-muted">{{ p.descripcion|truncatechars:60 }}</small>{% endif %}
+                        </td>
+                        <td>{{ p.precio_unidad }}</td>
+                        <td>{{ p.precio_mayor }}</td>
+                        <td>{{ p.precio_caja }}</td>
+                        <td class="text-center">
+                            {% if p.activo %}
+                            <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Activo</span>
+                            {% else %}
+                            <span class="badge-estado badge-estado-inactivo"><i class="fas fa-times-circle"></i> Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                            <button type="button" class="btn btn-warning btn-sm btn-editar-producto" data-producto-id="{{ p.id }}" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm btn-bloquear-producto" data-producto-id="{{ p.id }}" data-producto-nombre="{{ p.nombre }}" title="Bloquear/Activar">
+                                <i class="fas fa-lock"></i>
+                            </button>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
+                            <p class="text-muted">No hay productos registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'productos/modals/crea.html' %}
+    {% include 'productos/modals/edita.html' %}
+    {% include 'productos/modals/elimina.html' %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/productos/modals/edita.js' %}"></script>
+<script src="{% static 'js/productos/modals/elimina.js' %}"></script>
+<script src="{% static 'js/productos/productos.js' %}"></script>
+{% endblock %}

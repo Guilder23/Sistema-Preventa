@@ -1,0 +1,192 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Mi Perfil{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/usuarios/perfil.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid perfil-page">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="h3 mb-0"><i class="fas fa-user-circle text-primary"></i> Mi Perfil</h1>
+            <small class="text-muted">Edita solo los datos permitidos de tu cuenta.</small>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- FOTO / AVATAR -->
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <strong><i class="fas fa-camera"></i> Foto de perfil</strong>
+                    <small class="text-muted d-block">PNG/JPG, máximo 2MB.</small>
+                </div>
+                <div class="card-body">
+                    <div class="perfil-avatar-wrap">
+                        <div class="perfil-avatar" id="perfilAvatar">
+                            {% if perfil and perfil.foto %}
+                                <img id="perfilAvatarImg" src="{{ perfil.foto.url }}" alt="Foto de perfil">
+                            {% else %}
+                                <div class="perfil-avatar-placeholder" id="perfilAvatarPlaceholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <img id="perfilAvatarImg" src="" alt="Foto de perfil" style="display:none;">
+                            {% endif %}
+
+                            {% if perfil %}
+                                <button
+                                    type="button"
+                                    class="perfil-avatar-action"
+                                    id="perfilFotoBtn"
+                                    title="Cambiar foto"
+                                    aria-label="Cambiar foto"
+                                >
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if perfil %}
+                        <input type="file" class="perfil-file-input" id="perfilFoto" name="foto" accept="image/*" form="formMiPerfil">
+                        <div class="text-center">
+                            <small class="text-muted d-block">Haz clic en la cámara para elegir una nueva foto.</small>
+                            <small class="text-muted d-block">La vista previa se muestra al instante; se guarda al presionar “Guardar cambios”.</small>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info small mb-0">
+                            Tu cuenta no tiene perfil extendido, por eso no se puede guardar foto.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- DATOS DEL SISTEMA (solo lectura) -->
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <strong><i class="fas fa-id-badge"></i> Datos del sistema</strong>
+                    <small class="text-muted d-block">Estos datos no se pueden modificar.</small>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Usuario</label>
+                        <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Rol</label>
+                        <input type="text" class="form-control" value="{{ rol_display }}" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Empresa</label>
+                        <input type="text" class="form-control" value="{{ empresa_nombre }}" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Ubicación</label>
+                        <input type="text" class="form-control" value="{{ ubicacion_display }}" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Último acceso</label>
+                        <input type="text" class="form-control" value="{% if user.last_login %}{{ user.last_login|date:'d/m/Y H:i' }}{% else %}Nunca{% endif %}" disabled>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="form-label">Registrado</label>
+                        <input type="text" class="form-control" value="{{ user.date_joined|date:'d/m/Y H:i' }}" disabled>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATOS EDITABLES -->
+        <div class="col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-pen"></i> Datos editables</strong>
+                </div>
+                <div class="card-body">
+                    <form id="formMiPerfil" method="post" action="{% url 'mi_perfil' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="perfilFirstName">Nombre</label>
+                                <input type="text" class="form-control" id="perfilFirstName" name="first_name" value="{{ user.first_name }}">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="perfilLastName">Apellido</label>
+                                <input type="text" class="form-control" id="perfilLastName" name="last_name" value="{{ user.last_name }}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="perfilEmail">Correo electrónico <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="perfilEmail" name="email" value="{{ user.email }}" required>
+                        </div>
+
+                        {% if perfil %}
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label class="form-label" for="perfilTelefono">Teléfono</label>
+                                    <input type="text" class="form-control" id="perfilTelefono" name="telefono" value="{{ perfil.telefono|default_if_none:'' }}">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label class="form-label" for="perfilEncargado">Encargado</label>
+                                    <input type="text" class="form-control" id="perfilEncargado" name="encargado" value="{{ perfil.encargado|default_if_none:'' }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="perfilDireccion">Dirección</label>
+                                <textarea class="form-control" id="perfilDireccion" name="direccion" rows="3">{{ perfil.direccion|default_if_none:'' }}</textarea>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info small mb-4">
+                                Tu cuenta no tiene un perfil extendido. Puedes editar tu nombre y correo.
+                            </div>
+                        {% endif %}
+
+                        <hr>
+
+                        <h6 class="text-muted mb-3"><i class="fas fa-lock"></i> Cambiar contraseña (opcional)</h6>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="perfilPassword">Nueva contraseña</label>
+                                <input type="password" class="form-control" id="perfilPassword" name="password" placeholder="Dejar en blanco para no cambiar">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label class="form-label" for="perfilPassword2">Repetir contraseña</label>
+                                <input type="password" class="form-control" id="perfilPassword2" name="password2" placeholder="Repite la nueva contraseña">
+                            </div>
+                        </div>
+
+                        <small class="text-muted d-block mb-3">Mínimo 8 caracteres.</small>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/usuarios/perfil.js' %}"></script>
+{% endblock %}

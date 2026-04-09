@@ -1,0 +1,99 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Dashboard{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-th-large"></i> Dashboard</h1>
+            <p class="page-subtitle">Resumen general</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted">Productos activos</div>
+                            <div class="h3 mb-0">{{ total_productos }}</div>
+                        </div>
+                        <i class="fas fa-box fa-2x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted">Clientes</div>
+                            <div class="h3 mb-0">{{ total_clientes }}</div>
+                        </div>
+                        <i class="fas fa-users fa-2x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted">Pedidos</div>
+                            <div class="h3 mb-0">{{ total_pedidos }}</div>
+                        </div>
+                        <i class="fas fa-clipboard-list fa-2x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white">
+            <strong><i class="fas fa-clock"></i> Pedidos recientes</strong>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">#</th>
+                        <th style="width: 34%;">Cliente</th>
+                        <th style="width: 20%;">Preventista</th>
+                        <th style="width: 18%;">Fecha</th>
+                        <th style="width: 12%;">Total</th>
+                        <th style="width: 8%;" class="text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pedidos_recientes %}
+                    <tr>
+                        <td class="font-weight-bold">{{ p.id }}</td>
+                        <td>{{ p.cliente.nombres }}{% if p.cliente.apellidos %} {{ p.cliente.apellidos }}{% endif %}</td>
+                        <td><small class="text-muted">{{ p.preventista.get_full_name|default:p.preventista.username }}</small></td>
+                        <td><small class="text-muted">{{ p.fecha|date:'d/m/Y H:i' }}</small></td>
+                        <td class="font-weight-bold">{{ p.total }}</td>
+                        <td class="text-center">
+                            {% if p.estado == 'anulado' %}
+                                <span class="badge badge-danger">Anulado</span>
+                            {% else %}
+                                <span class="badge badge-success">Pendiente</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">Sin pedidos recientes</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
