@@ -1,6 +1,7 @@
 # Base
 Django==5.1.1
 python-decouple==3.8
+psycopg2-binary==2.9.9
 
 # Imágenes
 Pillow==11.0.0
