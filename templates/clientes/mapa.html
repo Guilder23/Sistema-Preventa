@@ -1,0 +1,35 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Mapa de Clientes{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="{% static 'css/clientes/mapa.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-map-location-dot"></i> Mapa de Clientes</h1>
+            <p class="page-subtitle">Clientes con ubicación registrada</p>
+        </div>
+    </div>
+
+    <div class="card card-tabla">
+        <div class="card-body">
+            <div id="mapaClientes" class="mapa-clientes" aria-label="Mapa de clientes"></div>
+            <small class="text-muted d-block mt-2" id="mapaClientesInfo"></small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  window.CLIENTES_MAPA_PUNTOS_URL = "{% url 'clientes_mapa_puntos' %}";
+</script>
+<script src="{% static 'js/clientes/mapa.js' %}"></script>
+{% endblock %}

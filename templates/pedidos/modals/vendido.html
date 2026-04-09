@@ -1,0 +1,22 @@
+{% if not user.is_superuser and user.perfil.rol == 'preventista' %}
+<div class="modal fade" id="modalMarcarVendido" tabindex="-1" role="dialog" aria-labelledby="modalMarcarVendidoTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalMarcarVendidoTitle"><i class="fas fa-check"></i> Marcar como vendido</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <form id="formMarcarVendido" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>¿Deseas marcar como <strong>vendido</strong> el pedido <strong id="vendidoPedidoLabel"></strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

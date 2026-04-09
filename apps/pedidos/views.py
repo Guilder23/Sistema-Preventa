@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
 from apps.clientes.models import Cliente
@@ -158,8 +159,32 @@ def obtener_pedido(request, id: int):
 @require_http_methods(["POST"])
 def anular_pedido(request, id: int):
     pedido = get_object_or_404(Pedido, id=id)
+    if pedido.estado == Pedido.ESTADO_VENDIDO:
+        messages.error(request, "No puedes anular un pedido vendido")
+        return redirect("listar_pedidos")
+
     if pedido.estado != Pedido.ESTADO_ANULADO:
         pedido.estado = Pedido.ESTADO_ANULADO
         pedido.save(update_fields=["estado"])
         messages.success(request, "Pedido anulado")
+    return redirect("listar_pedidos")
+
+
+@role_required("preventista")
+@require_http_methods(["POST"])
+def marcar_vendido(request, id: int):
+    pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
+
+    if pedido.estado == Pedido.ESTADO_ANULADO:
+        messages.error(request, "No puedes marcar vendido un pedido anulado")
+        return redirect("listar_pedidos")
+
+    if pedido.estado == Pedido.ESTADO_VENDIDO:
+        messages.info(request, "Este pedido ya está marcado como vendido")
+        return redirect("listar_pedidos")
+
+    pedido.estado = Pedido.ESTADO_VENDIDO
+    pedido.fecha_vendido = timezone.now()
+    pedido.save(update_fields=["estado", "fecha_vendido"])
+    messages.success(request, "Pedido marcado como vendido")
     return redirect("listar_pedidos")

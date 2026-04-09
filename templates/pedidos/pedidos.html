@@ -70,6 +70,8 @@
                         <td class="text-center">
                             {% if p.estado == 'anulado' %}
                             <span class="badge-estado badge-estado-inactivo"><i class="fas fa-ban"></i> Anulado</span>
+                            {% elif p.estado == 'vendido' %}
+                            <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Vendido</span>
                             {% else %}
                             <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Pendiente</span>
                             {% endif %}
@@ -79,6 +81,12 @@
                                 <button type="button" class="btn btn-info btn-sm btn-ver-pedido" data-pedido-id="{{ p.id }}" title="Ver">
                                     <i class="fas fa-eye"></i>
                                 </button>
+
+                                {% if not user.is_superuser and user.perfil.rol == 'preventista' and p.estado != 'anulado' and p.estado != 'vendido' %}
+                                <button type="button" class="btn btn-success btn-sm btn-marcar-vendido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Marcar como vendido">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
 
                                 <a
                                     class="btn btn-danger btn-sm"
@@ -114,6 +122,7 @@
     {% include 'pedidos/modals/crea.html' %}
     {% include 'pedidos/modals/ver.html' %}
     {% include 'pedidos/modals/anula.html' %}
+    {% include 'pedidos/modals/vendido.html' %}
 </div>
 {% endblock %}
 
@@ -121,5 +130,6 @@
 <script src="{% static 'js/pedidos/modals/crea.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/ver.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/anula.js' %}"></script>
+<script src="{% static 'js/pedidos/modals/vendido.js' %}"></script>
 <script src="{% static 'js/pedidos/pedidos.js' %}"></script>
 {% endblock %}

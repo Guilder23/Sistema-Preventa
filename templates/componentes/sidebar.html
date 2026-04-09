@@ -33,6 +33,13 @@
             </li>
 
             <li class="sidebar-item">
+                <a href="{% url 'clientes_mapa' %}" class="sidebar-link {% if request.resolver_match.url_name == 'clientes_mapa' %}active{% endif %}" title="Mapa de Clientes">
+                    <i class="fas fa-map-location-dot"></i>
+                    <span>Mapa</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
                 <a href="{% url 'listar_productos' %}" class="sidebar-link {% if 'producto' in request.resolver_match.url_name %}active{% endif %}" title="Productos">
                     <i class="fas fa-box"></i>
                     <span>Productos</span>

@@ -37,6 +37,37 @@ def listar_clientes(request):
     return render(request, "clientes/clientes.html", {"clientes": clientes, "q": q})
 
 
+@role_required("administrador", "preventista")
+def clientes_mapa(request):
+    return render(request, "clientes/mapa.html")
+
+
+@role_required("administrador", "preventista")
+def clientes_mapa_puntos(request):
+    qs = (
+        _clientes_qs_para_usuario(request.user)
+        .filter(activo=True, latitud__isnull=False, longitud__isnull=False)
+        .order_by("nombres", "apellidos")
+    )
+
+    puntos = []
+    for c in qs:
+        # JsonResponse no serializa Decimal; convertimos a float.
+        puntos.append(
+            {
+                "id": c.id,
+                "nombre": str(c),
+                "lat": float(c.latitud),
+                "lng": float(c.longitud),
+                "direccion": c.direccion or "",
+                "telefono": c.telefono or "",
+                "ci_nit": c.ci_nit or "",
+            }
+        )
+
+    return JsonResponse({"puntos": puntos})
+
+
 @login_required
 @require_http_methods(["POST"])
 def crear_cliente(request):
