@@ -1,7 +1,7 @@
 # Base
 Django==5.1.1
 python-decouple==3.8
-psycopg[binary]==3.1.19
+psycopg[binary]==3.3.3
 dj-database-url==2.2.0
 gunicorn==22.0.0
 whitenoise==6.7.0
