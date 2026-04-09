@@ -43,7 +43,7 @@ function inicializarBusquedaFrontend() {
  */
 function inicializarFiltrosFrontend() {
     const filtroEstado = document.getElementById('estado');
-    const filtroRol = document.getElementById('rol');
+    const filtroRol = document.getElementById('rolFiltro');
     
     if (filtroEstado) {
         filtroEstado.addEventListener('change', () => aplicarFiltrosFrontend());
@@ -60,7 +60,7 @@ function inicializarFiltrosFrontend() {
 function aplicarFiltrosFrontend() {
     const buscar = (document.getElementById('buscar')?.value || '').toLowerCase().trim();
     const estado = document.getElementById('estado')?.value || '';
-    const rol = document.getElementById('rol')?.value || '';
+    const rol = document.getElementById('rolFiltro')?.value || '';
     
     const filas = document.querySelectorAll('.tabla-usuarios tbody tr');
     let contadorVisible = 0;

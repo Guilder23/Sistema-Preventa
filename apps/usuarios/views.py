@@ -116,7 +116,6 @@ def listar_usuarios(request):
     rol = (request.GET.get("rol") or "").strip()
 
     usuarios = User.objects.select_related("perfil").order_by("-date_joined")
-    usuarios = usuarios.exclude(is_superuser=True)
 
     if buscar:
         usuarios = usuarios.filter(
@@ -196,8 +195,12 @@ def obtener_usuario(request, id: int):
     usuario = get_object_or_404(User.objects.select_related("perfil"), id=id)
     perfil = getattr(usuario, "perfil", None)
 
-    rol = perfil.rol if perfil else ""
-    rol_display = perfil.get_rol_display() if perfil else "Sin rol"
+    if usuario.is_superuser and not perfil:
+        rol = "administrador"
+        rol_display = "Administrador"
+    else:
+        rol = perfil.rol if perfil else ""
+        rol_display = perfil.get_rol_display() if perfil else "Sin rol"
 
     data = {
         "id": usuario.id,
@@ -265,6 +268,11 @@ def editar_usuario(request, id: int):
 @require_http_methods(["POST"])
 def bloquear_usuario(request, id: int):
     usuario = get_object_or_404(User.objects.select_related("perfil"), id=id)
+
+    if usuario.is_superuser:
+        messages.error(request, "No se puede bloquear un superusuario")
+        return redirect("listar_usuarios")
+
     nuevo_estado = not usuario.is_active
     usuario.is_active = nuevo_estado
     usuario.save(update_fields=["is_active"])

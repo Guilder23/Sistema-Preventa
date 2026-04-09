@@ -1,0 +1,99 @@
+/* ============================================================================
+   ESTILOS GLOBALES / TOKENS DE DISEÑO
+   - Este archivo es consumido por templates/base/base.html
+   - Define variables CSS usadas por navbar/sidebar/footer y múltiples módulos
+   ============================================================================ */
+
+:root {
+    /* Paleta principal */
+    --color-primario: #1e3a8a;
+    --color-primario-hover: #1e40af;
+    --color-secundario: #3b82f6;
+
+    /* Estados */
+    --color-exito: #16a34a;
+    --color-advertencia: #f59e0b;
+    --color-peligro: #dc2626;
+    --color-info: #0ea5e9;
+
+    /* Neutrales (modo claro) */
+    --color-fondo: #f8fafc;
+    --color-blanco: #ffffff;
+    --color-gris-claro: #f1f5f9;
+    --color-gris-oscuro: #334155;
+
+    --color-texto: #0f172a;
+    --color-texto-secundario: #64748b;
+    --color-borde: #e2e8f0;
+
+    /* Radios */
+    --radio-sm: 6px;
+    --radio-md: 10px;
+    --radio-lg: 14px;
+
+    /* Sombras */
+    --sombra: 0 1px 3px rgba(15, 23, 42, 0.08);
+    --sombra-hover: 0 6px 18px rgba(15, 23, 42, 0.12);
+
+    color-scheme: light;
+}
+
+/* Ajustes globales mínimos para coherencia */
+body {
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+}
+
+/* Enlaces */
+a {
+    color: var(--color-primario);
+}
+
+a:hover {
+    color: var(--color-primario-hover);
+}
+
+/* Botones Bootstrap alineados a la paleta */
+.btn-primary {
+    background-color: var(--color-secundario) !important;
+    border-color: var(--color-secundario) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--color-primario-hover) !important;
+    border-color: var(--color-primario-hover) !important;
+}
+
+.btn-outline-primary {
+    color: var(--color-secundario) !important;
+    border-color: var(--color-secundario) !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: var(--color-secundario) !important;
+    border-color: var(--color-secundario) !important;
+    color: #ffffff !important;
+}
+
+.btn-info {
+    background-color: var(--color-info) !important;
+    border-color: var(--color-info) !important;
+}
+
+.btn-danger {
+    background-color: var(--color-peligro) !important;
+    border-color: var(--color-peligro) !important;
+}
+
+.btn-warning {
+    background-color: var(--color-advertencia) !important;
+    border-color: var(--color-advertencia) !important;
+    color: #111827 !important;
+}
+
+.btn-success {
+    background-color: var(--color-exito) !important;
+    border-color: var(--color-exito) !important;
+}
