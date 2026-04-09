@@ -3,6 +3,10 @@
 
 {% block titulo %}Dashboard{% endblock %}
 
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/dashboard/dashboard.css' %}">
+{% endblock %}
+
 {% block contenido %}
 <div class="container-fluid">
     <div class="page-header">
@@ -14,52 +18,52 @@
 
     <div class="row">
         <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted">Productos activos</div>
-                            <div class="h3 mb-0">{{ total_productos }}</div>
-                        </div>
-                        <i class="fas fa-box fa-2x text-muted"></i>
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-card-label">Productos activos</div>
+                        <div class="stat-card-value">{{ total_productos }}</div>
+                    </div>
+                    <div class="stat-card-icon" aria-hidden="true">
+                        <i class="fas fa-box"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted">Clientes</div>
-                            <div class="h3 mb-0">{{ total_clientes }}</div>
-                        </div>
-                        <i class="fas fa-users fa-2x text-muted"></i>
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-card-label">Clientes</div>
+                        <div class="stat-card-value">{{ total_clientes }}</div>
+                    </div>
+                    <div class="stat-card-icon" aria-hidden="true">
+                        <i class="fas fa-users"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-muted">Pedidos</div>
-                            <div class="h3 mb-0">{{ total_pedidos }}</div>
-                        </div>
-                        <i class="fas fa-clipboard-list fa-2x text-muted"></i>
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-card-label">Pedidos</div>
+                        <div class="stat-card-value">{{ total_pedidos }}</div>
+                    </div>
+                    <div class="stat-card-icon" aria-hidden="true">
+                        <i class="fas fa-clipboard-list"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header bg-white">
-            <strong><i class="fas fa-clock"></i> Pedidos recientes</strong>
+    <div class="dashboard-card">
+        <div class="dashboard-card-header">
+            <h2 class="dashboard-card-title"><i class="fas fa-clock"></i> Pedidos recientes</h2>
         </div>
         <div class="table-responsive">
-            <table class="table table-sm mb-0">
+            <table class="table table-sm mb-0 activity-table">
                 <thead>
                     <tr>
                         <th style="width: 8%;">#</th>

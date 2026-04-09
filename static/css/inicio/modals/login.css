@@ -2,17 +2,10 @@
    ESTILOS LOGIN - MODERNO Y PROFESIONAL
    ============================================================================ */
 
-:root {
-    --color-primario: #1e3a8a;
-    --color-primario-hover: #1e40af;
-    --color-secundario: #3b82f6;
-    --color-exito: #10b981;
-    --color-error: #ef4444;
-    --color-info: #0ea5e9;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
-}
+/*
+    Nota: no redefinir tokens globales aquí (paleta en css/estilos.css).
+    Solo variables específicas del login, scopiadas al contenedor.
+*/
 
 * {
     margin: 0;
@@ -21,7 +14,11 @@
 }
 
 .login-body {
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+
+    background-color: var(--color-fondo);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -56,7 +53,7 @@
 
 /* ===== HEADER ===== */
 .login-header {
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
+    background-color: var(--color-primario);
     padding: 32px 24px;
     text-align: center;
     color: white;
@@ -235,7 +232,7 @@
 
 /* ===== BOTÓN SUBMIT ===== */
 .btn-login {
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
+    background-color: var(--color-primario);
     color: white;
     border: none;
     padding: 12px 24px;

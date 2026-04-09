@@ -61,7 +61,7 @@
     gap: 0.625rem;
     font-size: 1.05rem;
     font-weight: 600;
-    color: var(--color-primario);
+    color: var(--color-secundario);
     transition: gap 0.2s ease;
 }
 
@@ -155,11 +155,11 @@
 
 .sidebar-link:hover {
     background: #f3f4f6;
-    color: var(--color-primario);
+    color: var(--color-secundario);
 }
 
 .sidebar-link.active {
-    background: var(--color-primario);
+    background: var(--color-secundario);
     color: white;
 }
 
@@ -171,7 +171,7 @@
     transform: translateY(-50%);
     width: 3px;
     height: 60%;
-    background: var(--color-secundario);
+    background: var(--color-acento);
     border-radius: 0 3px 3px 0;
 }
 
@@ -226,12 +226,12 @@
 
 .sidebar-submenu-link:hover {
     background: #f3f4f6;
-    color: var(--color-primario);
+    color: var(--color-secundario);
 }
 
 .sidebar-submenu-link.active {
-    background: rgba(37, 99, 235, 0.1);
-    color: var(--color-primario);
+    background: var(--color-secundario-soft);
+    color: var(--color-secundario);
 }
 
 /* Badge de notificaciones */
@@ -278,7 +278,7 @@
 
 .sidebar-user:hover {
     background: #f3f4f6;
-    border-color: rgba(37, 99, 235, 0.35);
+    border-color: var(--color-borde-acento);
 }
 
 .sidebar-user-avatar {

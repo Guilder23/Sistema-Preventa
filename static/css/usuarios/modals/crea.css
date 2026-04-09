@@ -3,10 +3,10 @@
    ============================================================================ */
 
 #modalCrearUsuario .modal-header {
-    background: #1e3a8a;
+    background-color: var(--color-primario);
     color: white;
     padding: 1rem 1.5rem;
-    border-bottom: 3px solid #065f46;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.18);
 }
 
 #modalCrearUsuario .modal-title {
@@ -20,10 +20,10 @@
 
 /* Cupos: mejor contraste */
 #modalCrearUsuario .quota-alert {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1e3a8a;
-    border-left: 4px solid #1e3a8a;
+    background: var(--color-gris-claro);
+    border: 1px solid var(--color-borde);
+    color: var(--color-texto);
+    border-left: 4px solid var(--color-secundario);
 }
 
 #modalCrearUsuario .form-group {
@@ -40,17 +40,17 @@
 #modalCrearUsuario .form-control {
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-borde);
     border-radius: 0.25rem;
 }
 
 #modalCrearUsuario .form-control:focus {
-    border-color: #1e3a8a;
-    box-shadow: 0 0 0 0.15rem rgba(30, 58, 138, 0.15);
+    border-color: var(--color-secundario);
+    box-shadow: 0 0 0 0.15rem var(--color-secundario-soft);
 }
 
 #modalCrearUsuario .modal-footer {
-    background: #f8f9fa;
+    background: var(--color-gris-claro);
     border: none;
     padding: 0.875rem 1.5rem;
     border-radius: 0 0 12px 12px;
@@ -62,18 +62,6 @@
     font-weight: 500;
     border-radius: 0.25rem;
     transition: all 0.3s;
-}
-
-#modalCrearUsuario .modal-footer .btn-primary {
-    background: #1e3a8a;
-    border-color: #1e3a8a;
-}
-
-#modalCrearUsuario .modal-footer .btn-primary:hover {
-    background: #1e40af;
-    border-color: #1e40af;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(30, 58, 138, 0.3);
 }
 
 #modalCrearUsuario .modal-footer .btn-secondary {

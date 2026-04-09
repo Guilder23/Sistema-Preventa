@@ -23,7 +23,6 @@
                     $('#verPedidoEstado').text(estadoLabel(data.estado));
                     $('#verPedidoTotal').text(data.total || '0.00');
                     $('#verPedidoObs').text(data.observacion || '—');
-                    $('#verPedidoPdf').attr('href', `/reportes/pedidos/${data.id}/pdf/`);
 
                     const body = $('#verPedidoDetalles');
                     body.empty();

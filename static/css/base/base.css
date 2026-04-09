@@ -17,7 +17,100 @@ body.sidebar-collapsed .main-container {
 .content {
     padding: 1.5rem;
     min-height: calc(100vh - 60px);
-    background: #f8f9fa;
+    background: var(--color-fondo);
+}
+
+/* ============================================================================
+   UI GLOBAL (para que todas las secciones compartan el mismo diseño)
+   ============================================================================ */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1.5rem 2rem;
+    background-color: var(--color-primario);
+    border-radius: var(--radio-lg);
+    color: #ffffff;
+    box-shadow: var(--sombra-hover);
+}
+
+.page-header-content h1,
+.page-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    letter-spacing: 0.2px;
+}
+
+.page-subtitle {
+    margin: 0.25rem 0 0;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.9rem;
+}
+
+.page-header .btn {
+    white-space: nowrap;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.card-filtros,
+.card-tabla {
+    background: var(--color-blanco);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra);
+}
+
+.card-filtros {
+    margin-bottom: 1.25rem;
+}
+
+.card-tabla {
+    overflow: hidden;
+}
+
+.card-filtros .form-control-sm,
+.card-filtros .form-control {
+    border-radius: var(--radio-md);
+}
+
+.card-filtros .form-control-sm:focus,
+.card-filtros .form-control:focus {
+    border-color: var(--color-secundario);
+    box-shadow: 0 0 0 0.2rem var(--color-secundario-soft);
+}
+
+/* Tablas dentro de card-tabla */
+.card-tabla .table thead th {
+    background-color: var(--color-primario);
+    color: #ffffff;
+    border: none !important;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.card-tabla .table tbody tr:hover {
+    background-color: var(--color-primario-soft);
+}
+
+/* Acciones en tablas (botones siempre en fila) */
+.acciones-btns {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.acciones-btns .btn {
+    margin: 0;
 }
 
 /* Alertas de Bootstrap personalizadas */

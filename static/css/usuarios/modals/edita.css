@@ -3,10 +3,10 @@
    ============================================================================ */
 
 #modalEditarUsuario .modal-header {
-    background: #1e3a8a;
+    background-color: var(--color-primario);
     color: white;
     padding: 1rem 1.5rem;
-    border-bottom: 3px solid #065f46;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.18);
 }
 
 #modalEditarUsuario .modal-title {
@@ -32,28 +32,28 @@
 #modalEditarUsuario .form-control {
     font-size: 0.875rem;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-borde);
     border-radius: 0.25rem;
 }
 
 #modalEditarUsuario .form-control:focus {
-    border-color: #1e3a8a;
-    box-shadow: 0 0 0 0.15rem rgba(30, 58, 138, 0.15);
+    border-color: var(--color-secundario);
+    box-shadow: 0 0 0 0.15rem var(--color-secundario-soft);
 }
 
 #modalEditarUsuario h6 {
     font-size: 0.938rem;
     font-weight: 600;
-    color: #1e3a8a;
+    color: var(--color-secundario);
     margin-bottom: 0.75rem;
     padding-bottom: 0.375rem;
-    border-bottom: 2px solid #dbeafe;
+    border-bottom: 2px solid var(--color-borde);
 }
 
 #modalEditarUsuario .modal-footer {
     padding: 0.875rem 1.5rem;
-    background-color: #f8f9fa;
-    border-top: 1px solid #d1d5db;
+    background-color: var(--color-gris-claro);
+    border-top: 1px solid var(--color-borde);
 }
 
 #modalEditarUsuario .btn {
@@ -61,18 +61,6 @@
     padding: 0.5rem 1rem;
     border-radius: 0.25rem;
     font-weight: 500;
-}
-
-#modalEditarUsuario .btn-warning {
-    background-color: #1e3a8a;
-    border-color: #1e3a8a;
-    color: white;
-}
-
-#modalEditarUsuario .btn-warning:hover {
-    background-color: #1e40af;
-    border-color: #1e40af;
-    transform: translateY(-1px);
 }
 
 #modalEditarUsuario .btn-secondary {

@@ -76,12 +76,14 @@
                         </td>
                         <td class="text-center">
                             {% if user.is_superuser or user.perfil.rol == 'administrador' %}
-                            <button type="button" class="btn btn-warning btn-sm btn-editar-producto" data-producto-id="{{ p.id }}" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm btn-bloquear-producto" data-producto-id="{{ p.id }}" data-producto-nombre="{{ p.nombre }}" title="Bloquear/Activar">
-                                <i class="fas fa-lock"></i>
-                            </button>
+                            <div class="acciones-btns">
+                                <button type="button" class="btn btn-warning btn-sm btn-editar-producto" data-producto-id="{{ p.id }}" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm btn-bloquear-producto" data-producto-id="{{ p.id }}" data-producto-nombre="{{ p.nombre }}" title="Bloquear/Activar">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                            </div>
                             {% else %}
                             <span class="text-muted">—</span>
                             {% endif %}

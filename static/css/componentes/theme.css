@@ -390,7 +390,7 @@ html[data-theme="dark"] .btn-icon:hover {
 }
 
 html[data-theme="dark"] .chart-placeholder {
-    background: linear-gradient(135deg, var(--color-gris-claro) 0%, var(--color-blanco) 100%) !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
 /* Tarjetas resumen (KPIs) usadas en varios módulos (ej. reportes) */

@@ -5,10 +5,19 @@
    ============================================================================ */
 
 :root {
-    /* Paleta principal */
-    --color-primario: #1e3a8a;
-    --color-primario-hover: #1e40af;
-    --color-secundario: #3b82f6;
+    /* Paleta principal (oscura, sin lila, sin gradientes) */
+    --color-primario: #0b1220;          /* azul muy oscuro */
+    --color-primario-hover: #111b2e;
+    --color-secundario: #1f2a5a;        /* índigo oscuro */
+    --color-secundario-hover: #263472;
+    --color-acento: #a10f55;            /* magenta oscuro */
+    --color-acento-hover: #b0125e;
+
+    /* Derivadas (usadas para bordes/hover suaves) */
+    --color-primario-soft: rgba(11, 18, 32, 0.10);
+    --color-secundario-soft: rgba(31, 42, 90, 0.12);
+    --color-borde-acento: rgba(31, 42, 90, 0.35);
+    --color-acento-soft: rgba(161, 15, 85, 0.10);
 
     /* Estados */
     --color-exito: #16a34a;
@@ -46,34 +55,34 @@ body {
 
 /* Enlaces */
 a {
-    color: var(--color-primario);
+    color: var(--color-secundario);
 }
 
 a:hover {
-    color: var(--color-primario-hover);
+    color: var(--color-secundario-hover);
 }
 
 /* Botones Bootstrap alineados a la paleta */
 .btn-primary {
-    background-color: var(--color-secundario) !important;
-    border-color: var(--color-secundario) !important;
+    background-color: var(--color-acento) !important;
+    border-color: var(--color-acento) !important;
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
-    background-color: var(--color-primario-hover) !important;
-    border-color: var(--color-primario-hover) !important;
+    background-color: var(--color-acento-hover) !important;
+    border-color: var(--color-acento-hover) !important;
 }
 
 .btn-outline-primary {
-    color: var(--color-secundario) !important;
-    border-color: var(--color-secundario) !important;
+    color: var(--color-acento) !important;
+    border-color: var(--color-acento) !important;
 }
 
 .btn-outline-primary:hover,
 .btn-outline-primary:focus {
-    background-color: var(--color-secundario) !important;
-    border-color: var(--color-secundario) !important;
+    background-color: var(--color-acento) !important;
+    border-color: var(--color-acento) !important;
     color: #ffffff !important;
 }
 
