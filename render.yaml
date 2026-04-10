@@ -2,7 +2,7 @@ services:
   - type: web
     name: sistema-preventa-web
     env: python
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: "bash build.sh"
     startCommand: "gunicorn sistemaPreventa.wsgi:application"
     preDeployCommand: "python manage.py migrate"
     postDeployCommand: "python manage.py create_default_admin"
