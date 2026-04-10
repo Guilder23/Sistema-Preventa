@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
-set -e
+set -o errexit
 
+# Instalar dependencias
 pip install -r requirements.txt
-python manage.py collectstatic --noinput
+
+# Ejecutar migraciones
+python manage.py migrate || true
+
+# Recopilar archivos estaticos
+python manage.py collectstatic --no-input || true
+
+# Crear usuarios por defecto
+python create_default_users.py || true
