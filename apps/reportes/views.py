@@ -113,9 +113,9 @@ def pedidos_pdf(request):
 
     def _fmt_money(value) -> str:
         try:
-            return f"S/ {value:.2f}"
+            return f"Bs {value:.2f}"
         except Exception:
-            return f"S/ {value}"
+            return f"Bs {value}"
 
     def _draw_header_footer(canvas, doc):
         canvas.saveState()
@@ -402,9 +402,9 @@ def pedido_pdf(request, id: int):
 
     def _fmt_money(value) -> str:
         try:
-            return f"S/ {value:.2f}"
+            return f"Bs {value:.2f}"
         except Exception:
-            return f"S/ {value}"
+            return f"Bs {value}"
 
     def _draw_header_footer(canvas, doc):
         canvas.saveState()
