@@ -21,13 +21,13 @@
         <div class="navbar-right">
 
             <!-- Tema (modo claro/oscuro) -->
-            {% if theme_allowed %}
+            {% comment %} {% if theme_allowed %}
             <div class="navbar-theme">
                 <button class="navbar-icon-btn" id="themeToggleBtn" type="button" title="Modo oscuro" aria-label="Cambiar tema">
                     <i class="fas fa-moon" id="themeToggleIcon"></i>
                 </button>
             </div>
-            {% endif %}
+            {% endif %} {% endcomment %}
 
             <!-- Usuario -->
             <div class="navbar-usuario">
