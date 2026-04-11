@@ -9,6 +9,7 @@
                 {% csrf_token %}
                 <input type="hidden" id="editarPedidoId" name="pedido_id">
                 <div class="modal-body">
+                    <div class="alert alert-danger d-none" id="pedidoEditarError" role="alert"></div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -36,11 +37,12 @@
                         <table class="table table-sm" id="tablaItemsPedidoEditar">
                             <thead>
                                 <tr>
-                                    <th style="width: 46%;">Producto</th>
+                                    <th style="width: 36%;">Producto</th>
+                                    <th style="width: 12%;">Stock</th>
                                     <th style="width: 14%;">Precio</th>
                                     <th style="width: 14%;">Cantidad</th>
                                     <th style="width: 14%;">Subtotal</th>
-                                    <th style="width: 12%;" class="text-center">Acción</th>
+                                    <th style="width: 10%;" class="text-center">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="itemsPedidoEditarBody"></tbody>
@@ -54,14 +56,18 @@
                     <template id="tplItemPedidoEditar">
                         <tr>
                             <td>
-                                <select class="form-control form-control-sm item-producto" name="producto_id[]" required>
-                                    <option value="">-- Producto --</option>
-                                    {% for p in productos %}
-                                        <option value="{{ p.id }}" data-precio="{{ p.precio_unidad|default_if_none:'0.00' }}">
-                                            {{ p.codigo }} - {{ p.nombre }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
+                                <input type="hidden" class="item-producto-id" name="producto_id[]" required>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm item-producto-buscar"
+                                    placeholder="Buscar producto..."
+                                    list="dlProductosPedidos"
+                                    autocomplete="off"
+                                    required
+                                >
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm item-stock" value="0" readonly>
                             </td>
                             <td>
                                 <input type="text" class="form-control form-control-sm item-precio" value="0.00" readonly>
