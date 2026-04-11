@@ -3,13 +3,13 @@
    ============================================================================ */
 
 .footer {
-    background-color: var(--color-primario);
-    color: rgba(255, 255, 255, 0.9);
+    background-color: var(--color-secundario);
+    color: rgba(255, 255, 255, 0.7);
     padding: 2rem 0 1rem;
     margin-top: 2rem;
     margin-left: 220px;
     transition: margin-left 0.2s ease;
-    border-top: 2px solid rgba(255, 255, 255, 0.18);
+    border-top: 2px solid var(--color-primario);
 }
 
 .footer-container {
@@ -50,8 +50,8 @@
 }
 
 .footer-logo {
-    width: 20px;
-    height: 20px;
+    width: 45px;
+    height: 45px;
     object-fit: contain;
     flex: 0 0 auto;
 }

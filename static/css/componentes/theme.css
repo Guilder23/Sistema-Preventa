@@ -7,15 +7,15 @@
 /* Defaults: el proyecto ya define variables en css/estilos.css (modo claro) */
 
 html[data-theme="dark"] {
-    /* Neutrales (oscuro) */
-    --color-fondo: #0b1220;
-    --color-texto: #e5e7eb;
-    --color-texto-secundario: #94a3b8;
+    /* Neutrales (oscuro moderno basado en el logo) */
+    --color-fondo: #0a0a0a;
+    --color-texto: #f5f5f5;
+    --color-texto-secundario: #a3a3a3;
 
     /* Superficie/containers */
-    --color-blanco: #0f172a;
-    --color-gris-claro: #111827;
-    --color-borde: #233044;
+    --color-blanco: #121212;
+    --color-gris-claro: #1a1a1a;
+    --color-borde: #262626;
 
     /* Sombras más suaves en oscuro */
     --sombra: 0 1px 3px rgba(0, 0, 0, 0.35);

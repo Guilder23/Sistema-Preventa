@@ -5,19 +5,19 @@
    ============================================================================ */
 
 :root {
-    /* Paleta principal (oscura, sin lila, sin gradientes) */
-    --color-primario: #0b1220;          /* azul muy oscuro */
-    --color-primario-hover: #111b2e;
-    --color-secundario: #1f2a5a;        /* índigo oscuro */
-    --color-secundario-hover: #263472;
-    --color-acento: #a10f55;            /* magenta oscuro */
-    --color-acento-hover: #b0125e;
+    /* Paleta basada en el Logo (Distribuidora Jeremy: Rojo, Blanco, Negro/Oscuro) */
+    --color-primario: #d32f2f;          /* Rojo principal un poco más brillante */
+    --color-primario-hover: #b71c1c;
+    --color-secundario: #121212;        /* Negro más profundo para navbar/footer */
+    --color-secundario-hover: #1f1f1f;
+    --color-acento: #ff5252;            /* Rojo acento brillante para botones de acción */
+    --color-acento-hover: #ff1744;
 
     /* Derivadas (usadas para bordes/hover suaves) */
-    --color-primario-soft: rgba(11, 18, 32, 0.10);
-    --color-secundario-soft: rgba(31, 42, 90, 0.12);
-    --color-borde-acento: rgba(31, 42, 90, 0.35);
-    --color-acento-soft: rgba(161, 15, 85, 0.10);
+    --color-primario-soft: rgba(211, 47, 47, 0.08);
+    --color-secundario-soft: rgba(18, 18, 18, 0.12);
+    --color-borde-acento: rgba(211, 47, 47, 0.15);
+    --color-acento-soft: rgba(255, 82, 82, 0.12);
 
     /* Estados */
     --color-exito: #16a34a;

@@ -3,7 +3,7 @@
    ============================================================================ */
 
 .navbar-principal {
-    background-color: var(--color-primario);
+    background-color: var(--color-secundario);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 0;
     position: sticky;
@@ -93,12 +93,25 @@
 }
 
 .navbar-logo a:hover {
-    opacity: 0.95;
+    opacity: 1;
 }
 
-.navbar-logo i {
-    font-size: 1.25rem;
+.navbar-logo-img {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+    background: transparent;
+    border-radius: 4px;
+    padding: 2px;
+    border: 1px solid rgba(0,0,0,0.1);
 }
+
+.navbar-brand-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: white;
+}
+
 
 .navbar-brand-text {
     white-space: nowrap;
