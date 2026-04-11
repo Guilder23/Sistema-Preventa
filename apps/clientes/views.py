@@ -159,6 +159,16 @@ def crear_cliente(request):
 @role_required("administrador", "supervisor", "preventista")
 def obtener_cliente(request, id: int):
     cliente = get_object_or_404(_clientes_qs_para_usuario(request.user), id=id)
+    
+    # Obtener rol del creador
+    rol_creador = ""
+    if cliente.creado_por:
+        perfil = getattr(cliente.creado_por, "perfil", None)
+        if perfil:
+            rol_creador = perfil.get_rol_display()
+        elif cliente.creado_por.is_superuser:
+            rol_creador = "Administrador"
+
     return JsonResponse(
         {
             "id": cliente.id,
@@ -171,6 +181,9 @@ def obtener_cliente(request, id: int):
             "longitud": str(cliente.longitud) if cliente.longitud is not None else "",
             "foto_url": cliente.foto_tienda.url if cliente.foto_tienda else "",
             "activo": cliente.activo,
+            "creado_por": cliente.creado_por.get_full_name() or cliente.creado_por.username if cliente.creado_por else "Sistema",
+            "rol_creador": rol_creador,
+            "fecha_creacion": cliente.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
         }
     )
 
