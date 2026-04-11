@@ -64,12 +64,13 @@
             <table class="table table-sm tabla-clientes mb-0" id="tablaClientes">
                 <thead>
                     <tr>
-                        <th style="width: 28%;">Cliente</th>
-                        <th style="width: 14%;">CI/NIT</th>
-                        <th style="width: 16%;">Teléfono</th>
-                        <th style="width: 28%;">Dirección</th>
+                        <th style="width: 20%;">Cliente</th>
+                        <th style="width: 10%;">CI/NIT</th>
+                        <th style="width: 12%;">Teléfono</th>
+                        <th style="width: 25%;">Dirección</th>
+                        <th style="width: 15%;">Registrado Por</th>
                         <th style="width: 8%;" class="text-center">Estado</th>
-                        <th style="width: 6%;" class="text-center">Acciones</th>
+                        <th style="width: 10%;" class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -84,6 +85,20 @@
                         <td>{{ c.ci_nit|default:'—' }}</td>
                         <td>{{ c.telefono|default:'—' }}</td>
                         <td><small class="text-muted">{{ c.direccion|default:'—'|truncatechars:70 }}</small></td>
+                        <td>
+                            <div class="small">
+                                <strong>{{ c.creado_por.get_full_name|default:c.creado_por.username|default:'Sistema' }}</strong>
+                            </div>
+                            <div class="small text-muted">
+                                {% if c.creado_por.perfil %}
+                                    {{ c.creado_por.perfil.get_rol_display }}
+                                {% elif c.creado_por.is_superuser %}
+                                    Administrador
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
+                        </td>
                         <td class="text-center">
                             {% if c.activo %}
                             <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Activo</span>

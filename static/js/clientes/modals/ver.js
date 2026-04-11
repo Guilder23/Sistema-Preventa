@@ -27,6 +27,11 @@
                         : 'Sin ubicación';
                     $('#verClienteUbicacion').text(ubicacion);
                     $('#verClienteEstado').text(estadoLabel(!!data.activo));
+                    
+                    // Datos del registrador
+                    $('#verClienteRegistrador').text(data.creado_por || 'Sistema');
+                    $('#verClienteRolRegistrador').text(data.rol_creador || 'Asignado');
+                    $('#verClienteFechaRegistro').text(data.fecha_creacion || '—');
 
                     if (data.foto_url) {
                         $('#verClienteFoto').attr('src', data.foto_url).removeClass('d-none');
