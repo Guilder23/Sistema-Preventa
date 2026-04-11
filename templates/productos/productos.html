@@ -19,7 +19,7 @@
             <p class="page-subtitle">Catálogo de productos y precios</p>
         </div>
         {% if user.is_superuser or user.perfil.rol == 'administrador' %}
-        <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearProducto">
+        <button type="button" class="btn btn-nuevo btn-lg" data-toggle="modal" data-target="#modalCrearProducto">
             <i class="fas fa-plus"></i> Nuevo Producto
         </button>
         {% endif %}
