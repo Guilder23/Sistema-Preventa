@@ -5,7 +5,7 @@
                 <h5 class="modal-title"><i class="fas fa-user-plus"></i> Crear Cliente</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
-            <form id="formCrearCliente" method="post" action="{% url 'crear_cliente' %}">
+            <form id="formCrearCliente" method="post" action="{% url 'crear_cliente' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="row">
@@ -26,6 +26,14 @@
                                 <label>Teléfono</label>
                                 <input type="text" class="form-control" name="telefono">
                             </div>
+
+                            <div class="form-group">
+                                <label>Imagen de la tienda</label>
+                                <input type="file" class="form-control" id="crearFotoTienda" name="foto_tienda" accept="image/*">
+                                <div class="mt-2">
+                                    <img id="crearFotoTiendaPreview" class="cliente-foto-preview d-none" alt="Previsualización de tienda">
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
@@ -41,11 +49,18 @@
                                     </button>
                                     <small class="text-muted align-self-center" id="ubicacionCrearEstado">Sin ubicación</small>
                                 </div>
-                                <input type="hidden" name="latitud" id="crearLatitud">
-                                <input type="hidden" name="longitud" id="crearLongitud">
                             </div>
 
-                            <small class="text-muted">Se guarda la ubicación del cliente si el navegador lo permite.</small>
+                            <div class="form-group">
+                                <label>Latitud</label>
+                                <input type="text" class="form-control" name="latitud" id="crearLatitud" placeholder="Ej: -17.78325">
+                            </div>
+                            <div class="form-group">
+                                <label>Longitud</label>
+                                <input type="text" class="form-control" name="longitud" id="crearLongitud" placeholder="Ej: -63.18210">
+                            </div>
+
+                            <small class="text-muted">Puedes capturar o ingresar la ubicación manualmente.</small>
                         </div>
                     </div>
                 </div>

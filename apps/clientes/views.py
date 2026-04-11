@@ -135,6 +135,7 @@ def crear_cliente(request):
     direccion = (request.POST.get("direccion") or "").strip()
     latitud = (request.POST.get("latitud") or "").strip()
     longitud = (request.POST.get("longitud") or "").strip()
+    foto_tienda = request.FILES.get("foto_tienda")
 
     if not nombres:
         messages.error(request, "El nombre es obligatorio")
@@ -148,6 +149,7 @@ def crear_cliente(request):
         direccion=direccion or None,
         latitud=latitud or None,
         longitud=longitud or None,
+        foto_tienda=foto_tienda,
         creado_por=request.user,
     )
     messages.success(request, "Cliente registrado")
@@ -167,6 +169,7 @@ def obtener_cliente(request, id: int):
             "direccion": cliente.direccion or "",
             "latitud": str(cliente.latitud) if cliente.latitud is not None else "",
             "longitud": str(cliente.longitud) if cliente.longitud is not None else "",
+            "foto_url": cliente.foto_tienda.url if cliente.foto_tienda else "",
             "activo": cliente.activo,
         }
     )
@@ -183,6 +186,7 @@ def editar_cliente(request, id: int):
     direccion = (request.POST.get("direccion") or "").strip()
     latitud = (request.POST.get("latitud") or "").strip()
     longitud = (request.POST.get("longitud") or "").strip()
+    foto_tienda = request.FILES.get("foto_tienda")
     activo = request.POST.get("activo") == "on"
 
     if not nombres:
@@ -196,6 +200,8 @@ def editar_cliente(request, id: int):
     cliente.direccion = direccion or None
     cliente.latitud = latitud or None
     cliente.longitud = longitud or None
+    if foto_tienda:
+        cliente.foto_tienda = foto_tienda
     cliente.activo = activo
     cliente.save()
 

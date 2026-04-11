@@ -93,6 +93,9 @@
                         </td>
                         <td class="text-center">
                             <div class="acciones-btns">
+                                <button type="button" class="btn btn-info btn-sm btn-ver-cliente" data-cliente-id="{{ c.id }}" title="Ver">
+                                    <i class="fas fa-eye"></i>
+                                </button>
                                 <button type="button" class="btn btn-warning btn-sm btn-editar-cliente" data-cliente-id="{{ c.id }}" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -119,6 +122,7 @@
 
     {% include 'clientes/modals/crea.html' %}
     {% include 'clientes/modals/edita.html' %}
+    {% include 'clientes/modals/ver.html' %}
     {% include 'clientes/modals/elimina.html' %}
 </div>
 {% endblock %}
@@ -126,6 +130,7 @@
 {% block scripts_extra %}
 <script src="{% static 'js/clientes/modals/crea.js' %}"></script>
 <script src="{% static 'js/clientes/modals/edita.js' %}"></script>
+<script src="{% static 'js/clientes/modals/ver.js' %}"></script>
 <script src="{% static 'js/clientes/modals/elimina.js' %}"></script>
 <script src="{% static 'js/clientes/clientes.js' %}"></script>
 {% endblock %}

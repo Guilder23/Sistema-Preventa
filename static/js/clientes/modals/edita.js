@@ -47,6 +47,17 @@
                     $('#editLongitud').val(data.longitud || '');
                     $('#editActivoCliente').prop('checked', !!data.activo);
 
+                    const fotoPreview = document.getElementById('editFotoTiendaPreview');
+                    if (fotoPreview) {
+                        if (data.foto_url) {
+                            fotoPreview.src = data.foto_url;
+                            fotoPreview.classList.remove('d-none');
+                        } else {
+                            fotoPreview.src = '';
+                            fotoPreview.classList.add('d-none');
+                        }
+                    }
+
                     const st = document.getElementById('ubicacionEditarEstado');
                     if (data.latitud && data.longitud) {
                         setEstado(st, `Actual: ${parseFloat(data.latitud).toFixed(5)}, ${parseFloat(data.longitud).toFixed(5)}`);
@@ -70,6 +81,22 @@
             );
         });
 
+        const fotoInput = document.getElementById('editFotoTienda');
+        const fotoPreview = document.getElementById('editFotoTiendaPreview');
+        if (fotoInput && fotoPreview) {
+            fotoInput.addEventListener('change', function () {
+                const file = fotoInput.files && fotoInput.files[0];
+                if (!file) {
+                    fotoPreview.src = '';
+                    fotoPreview.classList.add('d-none');
+                    return;
+                }
+                const url = URL.createObjectURL(file);
+                fotoPreview.src = url;
+                fotoPreview.classList.remove('d-none');
+            });
+        }
+
         $('#formEditarCliente').on('submit', function (e) {
             const id = $('#editClienteId').val();
             if (!id) {
@@ -82,6 +109,14 @@
         $('#modalEditarCliente').on('hidden.bs.modal', function () {
             $('#formEditarCliente')[0].reset();
             setEstado(document.getElementById('ubicacionEditarEstado'), 'Sin ubicación');
+
+            const fp = document.getElementById('editFotoTiendaPreview');
+            const fi = document.getElementById('editFotoTienda');
+            if (fp) {
+                fp.src = '';
+                fp.classList.add('d-none');
+            }
+            if (fi) fi.value = '';
         });
     });
 })();
