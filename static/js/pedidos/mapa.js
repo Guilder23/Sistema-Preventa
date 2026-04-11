@@ -52,19 +52,25 @@
 
           var popup = '<strong>Pedido #' + (p.pedido_id || '') + '</strong>';
           if (p.cliente) popup += '<br><small><b>Cliente:</b> ' + p.cliente + '</small>';
+          if (p.estado_str) popup += '<br><small><b>Estado:</b> ' + p.estado_str + '</small>';
           if (p.ci_nit) popup += '<br><small>CI/NIT: ' + p.ci_nit + '</small>';
           if (p.telefono) popup += '<br><small>Tel: ' + p.telefono + '</small>';
           if (p.direccion) popup += '<br><small>' + p.direccion + '</small>';
           if (p.fecha) popup += '<br><small><b>Fecha:</b> ' + p.fecha + '</small>';
           if (p.total) popup += '<br><small><b>Total:</b> Bs ' + p.total + '</small>';
 
-          // Marcador amarillo (circleMarker para no depender de iconos externos)
+          // Estilo de círculo según estado
+          var color = '#ffc107'; // Pendiente (Amarillo)
+          if (p.estado === 'vendido') color = '#28a745'; // Vendido (Verde)
+          if (p.estado === 'anulado') color = '#dc3545'; // Anulado (Rojo)
+
           L.circleMarker([p.lat, p.lng], {
-            radius: 8,
-            color: colorAdvertencia,
+            radius: 9,
+            fillColor: color,
+            color: '#fff',
             weight: 2,
-            fillColor: colorAdvertencia,
-            fillOpacity: 0.9,
+            opacity: 1,
+            fillOpacity: 0.9
           }).addTo(map).bindPopup(popup);
 
           bounds.push([p.lat, p.lng]);
