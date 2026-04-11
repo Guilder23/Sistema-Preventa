@@ -1,4 +1,5 @@
-{% if not user.is_superuser and user.perfil.rol == 'preventista' %}
+{% if not user.is_superuser %}
+{% if user.perfil.rol == 'preventista' or user.perfil.rol == 'repartidor' %}
 <div class="modal fade" id="modalMarcarVendido" tabindex="-1" role="dialog" aria-labelledby="modalMarcarVendidoTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -19,4 +20,5 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endif %}
