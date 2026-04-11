@@ -1,0 +1,125 @@
+/* ============================================================================
+   REPORTES - Cards y filtros
+   ============================================================================ */
+
+.report-card {
+    position: relative;
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+    padding: 1rem 1.1rem;
+    background: var(--color-blanco);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.report-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--color-acento);
+}
+
+.report-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-hover);
+}
+
+.report-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-acento-soft);
+    color: var(--color-acento);
+    border: 1px solid var(--color-borde-acento);
+    font-size: 1.1rem;
+}
+
+.report-card-body {
+    flex: 1;
+}
+
+.report-card-label {
+    color: var(--color-texto-secundario);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.report-card-value {
+    color: var(--color-texto);
+    font-weight: 800;
+    font-size: 1.6rem;
+    line-height: 1.1;
+    margin-top: 0.15rem;
+}
+
+.report-card-sub {
+    color: var(--color-texto-secundario);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.report-card--success::before {
+    background: var(--color-exito);
+}
+
+.report-card--success .report-card-icon {
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--color-exito);
+    border-color: rgba(22, 163, 74, 0.35);
+}
+
+.report-card--warning::before {
+    background: var(--color-advertencia);
+}
+
+.report-card--warning .report-card-icon {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--color-advertencia);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.report-card--danger::before {
+    background: var(--color-peligro);
+}
+
+.report-card--danger .report-card-icon {
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--color-peligro);
+    border-color: rgba(220, 38, 38, 0.35);
+}
+
+.report-card--primary::before {
+    background: var(--color-acento);
+}
+
+.report-card--primary .report-card-icon {
+    background: var(--color-acento-soft);
+    color: var(--color-acento);
+    border-color: var(--color-borde-acento);
+}
+
+@media (max-width: 768px) {
+    .report-card {
+        padding: 0.9rem 0.9rem;
+    }
+
+    .report-card-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+    }
+
+    .report-card-value {
+        font-size: 1.45rem;
+    }
+}
