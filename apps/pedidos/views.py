@@ -278,7 +278,6 @@ def pedidos_mapa_puntos(request):
     pedidos = (
         Pedido.objects.select_related("cliente")
         .filter(
-            estado=Pedido.ESTADO_PENDIENTE,
             cliente__activo=True,
             cliente__latitud__isnull=False,
             cliente__longitud__isnull=False,
@@ -300,6 +299,8 @@ def pedidos_mapa_puntos(request):
                 "ci_nit": c.ci_nit or "",
                 "fecha": p.fecha.strftime("%d/%m/%Y %H:%M"),
                 "total": str(p.total),
+                "estado_str": p.get_estado_display(),
+                "estado": p.estado,
             }
         )
 
