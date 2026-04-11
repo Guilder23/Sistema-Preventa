@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -35,7 +36,35 @@ def _clientes_qs_para_usuario(user):
 @role_required("administrador", "supervisor", "preventista")
 def listar_clientes(request):
     q = (request.GET.get("q") or "").strip()
-    clientes = _clientes_qs_para_usuario(request.user).order_by("-fecha_creacion")
+    estado = (request.GET.get("estado") or "").strip().lower()
+    vendedor_raw = (request.GET.get("vendedor") or "").strip()
+
+    clientes_base = _clientes_qs_para_usuario(request.user)
+
+    # Vendedores disponibles dentro del alcance del usuario
+    vendedor_ids = (
+        clientes_base.exclude(creado_por__isnull=True)
+        .values_list("creado_por_id", flat=True)
+        .distinct()
+    )
+    vendedores = User.objects.filter(id__in=vendedor_ids).order_by("username")
+
+    # Normalizar estado
+    if estado not in {"activo", "inactivo"}:
+        estado = ""
+
+    # Validar vendedor
+    vendedor_id = None
+    if vendedor_raw:
+        try:
+            vendedor_id = int(vendedor_raw)
+        except ValueError:
+            vendedor_id = None
+        else:
+            if vendedor_id not in set(vendedor_ids):
+                vendedor_id = None
+
+    clientes = clientes_base.order_by("-fecha_creacion")
     if q:
         clientes = clientes.filter(
             Q(nombres__icontains=q)
@@ -43,7 +72,26 @@ def listar_clientes(request):
             | Q(ci_nit__icontains=q)
             | Q(telefono__icontains=q)
         )
-    return render(request, "clientes/clientes.html", {"clientes": clientes, "q": q})
+
+    if estado == "activo":
+        clientes = clientes.filter(activo=True)
+    elif estado == "inactivo":
+        clientes = clientes.filter(activo=False)
+
+    if vendedor_id is not None:
+        clientes = clientes.filter(creado_por_id=vendedor_id)
+
+    return render(
+        request,
+        "clientes/clientes.html",
+        {
+            "clientes": clientes,
+            "q": q,
+            "estado": estado,
+            "vendedor": str(vendedor_id) if vendedor_id is not None else "",
+            "vendedores": vendedores,
+        },
+    )
 
 
 @role_required("administrador", "supervisor", "preventista")
