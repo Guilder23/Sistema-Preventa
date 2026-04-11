@@ -5,7 +5,7 @@
                 <h5 class="modal-title"><i class="fas fa-user-edit"></i> Editar Cliente</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
-            <form id="formEditarCliente" method="post">
+            <form id="formEditarCliente" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" id="editClienteId">
                 <div class="modal-body">
@@ -27,6 +27,14 @@
                                 <label>Teléfono</label>
                                 <input type="text" class="form-control" id="editTelefono" name="telefono">
                             </div>
+
+                            <div class="form-group">
+                                <label>Imagen de la tienda</label>
+                                <input type="file" class="form-control" id="editFotoTienda" name="foto_tienda" accept="image/*">
+                                <div class="mt-2">
+                                    <img id="editFotoTiendaPreview" class="cliente-foto-preview d-none" alt="Previsualización de tienda">
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
@@ -42,8 +50,15 @@
                                     </button>
                                     <small class="text-muted align-self-center" id="ubicacionEditarEstado">Sin ubicación</small>
                                 </div>
-                                <input type="hidden" name="latitud" id="editLatitud">
-                                <input type="hidden" name="longitud" id="editLongitud">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Latitud</label>
+                                <input type="text" class="form-control" name="latitud" id="editLatitud" placeholder="Ej: -17.78325">
+                            </div>
+                            <div class="form-group">
+                                <label>Longitud</label>
+                                <input type="text" class="form-control" name="longitud" id="editLongitud" placeholder="Ej: -63.18210">
                             </div>
 
                             <div class="form-group">

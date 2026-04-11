@@ -37,6 +37,22 @@
             );
         });
 
+        const fotoInput = document.getElementById('crearFotoTienda');
+        const fotoPreview = document.getElementById('crearFotoTiendaPreview');
+        if (fotoInput && fotoPreview) {
+            fotoInput.addEventListener('change', function () {
+                const file = fotoInput.files && fotoInput.files[0];
+                if (!file) {
+                    fotoPreview.src = '';
+                    fotoPreview.classList.add('d-none');
+                    return;
+                }
+                const url = URL.createObjectURL(file);
+                fotoPreview.src = url;
+                fotoPreview.classList.remove('d-none');
+            });
+        }
+
         $('#modalCrearCliente').on('hidden.bs.modal', function () {
             const lat = document.getElementById('crearLatitud');
             const lon = document.getElementById('crearLongitud');
@@ -44,6 +60,12 @@
             if (lat) lat.value = '';
             if (lon) lon.value = '';
             setEstado(st, 'Sin ubicación');
+
+            if (fotoInput && fotoPreview) {
+                fotoInput.value = '';
+                fotoPreview.src = '';
+                fotoPreview.classList.add('d-none');
+            }
         });
     });
 })();
