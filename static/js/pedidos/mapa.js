@@ -56,7 +56,7 @@
           if (p.telefono) popup += '<br><small>Tel: ' + p.telefono + '</small>';
           if (p.direccion) popup += '<br><small>' + p.direccion + '</small>';
           if (p.fecha) popup += '<br><small><b>Fecha:</b> ' + p.fecha + '</small>';
-          if (p.total) popup += '<br><small><b>Total:</b> ' + p.total + '</small>';
+          if (p.total) popup += '<br><small><b>Total:</b> Bs ' + p.total + '</small>';
 
           // Marcador amarillo (circleMarker para no depender de iconos externos)
           L.circleMarker([p.lat, p.lng], {

@@ -23,7 +23,7 @@
                 <div class="report-card-body">
                     <div class="report-card-label">Pedidos</div>
                     <div class="report-card-value">{{ total_pedidos }}</div>
-                    <div class="report-card-sub">Monto: S/ {{ total_monto|floatformat:2 }}</div>
+                    <div class="report-card-sub">Monto: Bs {{ total_monto|floatformat:2 }}</div>
                 </div>
             </div>
         </div>
@@ -33,7 +33,7 @@
                 <div class="report-card-body">
                     <div class="report-card-label">Vendidos</div>
                     <div class="report-card-value">{{ total_vendidos }}</div>
-                    <div class="report-card-sub">Subtotal: S/ {{ subtotal_vendidos|floatformat:2 }}</div>
+                    <div class="report-card-sub">Subtotal: Bs {{ subtotal_vendidos|floatformat:2 }}</div>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
                 <div class="report-card-body">
                     <div class="report-card-label">Pendientes</div>
                     <div class="report-card-value">{{ total_pendientes }}</div>
-                    <div class="report-card-sub">Subtotal: S/ {{ subtotal_pendientes|floatformat:2 }}</div>
+                    <div class="report-card-sub">Subtotal: Bs {{ subtotal_pendientes|floatformat:2 }}</div>
                 </div>
             </div>
         </div>
@@ -53,7 +53,7 @@
                 <div class="report-card-body">
                     <div class="report-card-label">Anulados</div>
                     <div class="report-card-value">{{ total_anulados }}</div>
-                    <div class="report-card-sub">Subtotal: S/ {{ subtotal_anulados|floatformat:2 }}</div>
+                    <div class="report-card-sub">Subtotal: Bs {{ subtotal_anulados|floatformat:2 }}</div>
                 </div>
             </div>
         </div>
@@ -116,7 +116,7 @@
                             <td>{{ p.preventista.get_full_name|default:p.preventista.username }}</td>
                             <td>{{ p.fecha|date:'d/m/Y H:i' }}</td>
                             <td>{{ p.get_estado_display }}</td>
-                            <td>S/ {{ p.total|floatformat:2 }}</td>
+                            <td>Bs {{ p.total|floatformat:2 }}</td>
                             <td class="text-center">
                                 <a class="btn btn-danger btn-sm" href="{% url 'reporte_pedido_pdf' p.id %}" target="_blank" rel="noopener">
                                     <i class="fas fa-file-pdf"></i>

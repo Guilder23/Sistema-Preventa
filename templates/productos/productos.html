@@ -100,9 +100,9 @@
                                 <span class="badge-stock badge-stock-verde" title="Stock alto">{{ p.stock_unidades }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ p.precio_unidad }}</td>
-                        <td>{{ p.precio_mayor }}</td>
-                        <td>{{ p.precio_caja }}</td>
+                        <td>Bs {{ p.precio_unidad|floatformat:2 }}</td>
+                        <td>Bs {{ p.precio_mayor|floatformat:2 }}</td>
+                        <td>Bs {{ p.precio_caja|floatformat:2 }}</td>
                         <td class="text-center">
                             {% if p.activo %}
                             <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Activo</span>

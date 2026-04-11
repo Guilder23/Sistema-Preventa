@@ -33,9 +33,9 @@
                         body.append(`
                             <tr>
                                 <td>${d.producto__nombre}</td>
-                                <td>${precio}</td>
+                                <td>Bs ${precio}</td>
                                 <td>${d.cantidad}</td>
-                                <td>${subtotal}</td>
+                                <td>Bs ${subtotal}</td>
                             </tr>
                         `);
                     });
