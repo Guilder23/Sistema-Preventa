@@ -27,6 +27,14 @@
                             <div class="form-group">
                                 <label>Foto (opcional)</label>
                                 <input type="file" class="form-control" id="editFoto" name="foto" accept="image/*">
+                                <div class="mt-2">
+                                    <img id="editFotoPreview" class="producto-preview d-none" alt="Previsualización">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Stock (unidades)</label>
+                                <input type="number" min="0" class="form-control" id="editStockUnidades" name="stock_unidades" value="0">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -41,6 +49,14 @@
                             <div class="form-group">
                                 <label>Precio caja</label>
                                 <input type="number" step="0.01" class="form-control" id="editPrecioCaja" name="precio_caja" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Umbral stock (amarillo)</label>
+                                <input type="number" min="0" class="form-control" id="editStockAmarillo" name="stock_umbral_amarillo" value="10">
+                            </div>
+                            <div class="form-group">
+                                <label>Umbral stock (rojo)</label>
+                                <input type="number" min="0" class="form-control" id="editStockRojo" name="stock_umbral_rojo" value="3">
                             </div>
                             <div class="form-group">
                                 <div class="custom-control custom-checkbox">

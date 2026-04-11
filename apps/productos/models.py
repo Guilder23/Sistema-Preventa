@@ -8,6 +8,10 @@ class Producto(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     foto = models.ImageField(upload_to="productos/", blank=True, null=True)
 
+    stock_unidades = models.PositiveIntegerField(default=0)
+    stock_umbral_amarillo = models.PositiveIntegerField(default=10)
+    stock_umbral_rojo = models.PositiveIntegerField(default=3)
+
     precio_unidad = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     precio_mayor = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     precio_caja = models.DecimalField(max_digits=12, decimal_places=2, default=0)
