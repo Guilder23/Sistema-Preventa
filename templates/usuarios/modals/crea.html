@@ -104,8 +104,21 @@
                                 <select class="form-control" id="rol" name="rol" required>
                                     <option value="">Seleccione un rol</option>
                                     <option value="administrador">Administrador</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="repartidor">Repartidor</option>
                                     <option value="preventista" selected>Preventista</option>
                                 </select>
+                            </div>
+
+                            <div class="form-group" id="grupoSupervisor" style="display: none;">
+                                <label for="supervisor_id" class="form-label">Supervisor</label>
+                                <select class="form-control" id="supervisor_id" name="supervisor_id">
+                                    <option value="">-- Sin supervisor --</option>
+                                    {% for s in supervisores %}
+                                        <option value="{{ s.id }}">{{ s.get_full_name|default:s.username }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Asigna un Supervisor para que pueda ver sus clientes/pedidos/mapa.</small>
                             </div>
 
                             {% if usuarios_quota_json %}

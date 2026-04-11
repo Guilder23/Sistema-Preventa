@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from apps.usuarios.decorators import role_required
+from apps.usuarios.models import PerfilUsuario
 
 from .models import Cliente
 
@@ -19,11 +20,19 @@ def _clientes_qs_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "supervisor":
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            supervisor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(Q(creado_por=user) | Q(creado_por_id__in=preventistas_ids))
     # preventista: solo los creados por él
     return qs.filter(creado_por=user)
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 def listar_clientes(request):
     q = (request.GET.get("q") or "").strip()
     clientes = _clientes_qs_para_usuario(request.user).order_by("-fecha_creacion")
@@ -37,12 +46,12 @@ def listar_clientes(request):
     return render(request, "clientes/clientes.html", {"clientes": clientes, "q": q})
 
 
-@role_required("administrador", "preventista")
+@role_required("administrador", "supervisor", "preventista")
 def clientes_mapa(request):
     return render(request, "clientes/mapa.html")
 
 
-@role_required("administrador", "preventista")
+@role_required("administrador", "supervisor", "preventista")
 def clientes_mapa_puntos(request):
     qs = (
         _clientes_qs_para_usuario(request.user)
@@ -68,7 +77,7 @@ def clientes_mapa_puntos(request):
     return JsonResponse({"puntos": puntos})
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 @require_http_methods(["POST"])
 def crear_cliente(request):
     nombres = (request.POST.get("nombres") or "").strip()
@@ -97,7 +106,7 @@ def crear_cliente(request):
     return redirect("listar_clientes")
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 def obtener_cliente(request, id: int):
     cliente = get_object_or_404(_clientes_qs_para_usuario(request.user), id=id)
     return JsonResponse(
@@ -115,7 +124,7 @@ def obtener_cliente(request, id: int):
     )
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 @require_http_methods(["POST"])
 def editar_cliente(request, id: int):
     cliente = get_object_or_404(_clientes_qs_para_usuario(request.user), id=id)

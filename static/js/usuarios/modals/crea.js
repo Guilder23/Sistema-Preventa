@@ -18,6 +18,12 @@
 
         // Pintar cupos al cargar (por si el modal ya tiene rol seleccionado)
         actualizarCuposUI($('#rol').val());
+        mostrarOcultarSelectores($('#rol').val());
+
+        // Asegurar estado correcto al abrir el modal
+        $('#modalCrearUsuario').on('shown.bs.modal', function() {
+            mostrarOcultarSelectores($('#rol').val());
+        });
         
         // Limpiar cuando se cierra el modal
         $('#modalCrearUsuario').on('hidden.bs.modal', function() {
@@ -50,32 +56,19 @@
     function mostrarOcultarSelectores(rol) {
         console.log('→ mostrarOcultarSelectores(' + rol + ')');
         
-        const $grupoAlmacen = $('#grupoAlmacen');
-        const $grupoTienda = $('#grupoTienda');
-        const $selectAlmacen = $('#almacen');
-        const $selectTienda = $('#tienda');
+        const $grupoSupervisor = $('#grupoSupervisor');
+        const $selectSupervisor = $('#supervisor_id');
         
         // Limpiar valores
-        $selectAlmacen.val('');
-        $selectTienda.val('');
+        $selectSupervisor.val('');
         
         // Ocultar todo por defecto
-        $grupoAlmacen.hide();
-        $grupoTienda.hide();
-        $selectAlmacen.removeAttr('required');
-        $selectTienda.removeAttr('required');
+        $grupoSupervisor.hide();
+        $selectSupervisor.removeAttr('required');
         
         // Mostrar según rol
-        if (rol === 'almacen') {
-            console.log('  ✓ Mostrando selector de ALMACÉN');
-            $grupoAlmacen.show();
-            $selectAlmacen.attr('required', 'required');
-        } else if (rol === 'tienda' || rol === 'deposito') {
-            console.log('  ✓ Mostrando selector de TIENDA');
-            $grupoTienda.show();
-            $selectTienda.attr('required', 'required');
-        } else {
-            console.log('  ✓ Ocultando todos los selectores');
+        if (rol === 'preventista') {
+            $grupoSupervisor.show();
         }
     }
 
@@ -203,10 +196,8 @@
     
     function limpiarFormulario() {
         $('#formCrearUsuario')[0].reset();
-        $('#grupoAlmacen').hide();
-        $('#grupoTienda').hide();
-        $('#almacen').removeAttr('required');
-        $('#tienda').removeAttr('required');
+        $('#grupoSupervisor').hide();
+        $('#supervisor_id').removeAttr('required');
         $('.is-invalid').removeClass('is-invalid');
 
         actualizarCuposUI('');
