@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
+from django.db.models import F
+from django.db.models.functions import Greatest
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -80,9 +82,28 @@ def listar_pedidos(request):
     if perfil and perfil.rol == "repartidor":
         clientes = Cliente.objects.none()
         productos = Producto.objects.none()
+        clientes_data = []
+        productos_data = []
     else:
         clientes = _clientes_para_usuario(request.user).order_by("nombres", "apellidos")
         productos = Producto.objects.filter(activo=True).order_by("nombre")
+
+        clientes_data = []
+        for c in clientes:
+            label = f"{c.nombres}{(' ' + c.apellidos) if c.apellidos else ''}{(' - ' + c.ci_nit) if c.ci_nit else ''}"
+            clientes_data.append({"id": c.id, "label": label})
+
+        productos_data = []
+        for p in productos:
+            label = f"{p.codigo} - {p.nombre}" if p.codigo else p.nombre
+            productos_data.append(
+                {
+                    "id": p.id,
+                    "label": label,
+                    "precio": str(p.precio_unidad or Decimal('0.00')),
+                    "stock": int(getattr(p, 'stock_unidades', 0) or 0),
+                }
+            )
 
     return render(
         request,
@@ -93,6 +114,8 @@ def listar_pedidos(request):
             "estado": estado,
             "clientes": clientes,
             "productos": productos,
+            "clientes_data": clientes_data,
+            "productos_data": productos_data,
         },
     )
 
@@ -311,8 +334,25 @@ def marcar_vendido(request, id: int):
         messages.info(request, "Este pedido ya está marcado como vendido")
         return redirect("listar_pedidos")
 
-    pedido.estado = Pedido.ESTADO_VENDIDO
-    pedido.fecha_vendido = timezone.now()
-    pedido.save(update_fields=["estado", "fecha_vendido"])
+    with transaction.atomic():
+        # Lock del pedido para evitar doble marcado concurrente.
+        pedido = Pedido.objects.select_for_update().get(id=pedido.id)
+        if pedido.estado == Pedido.ESTADO_VENDIDO:
+            messages.info(request, "Este pedido ya está marcado como vendido")
+            return redirect("listar_pedidos")
+        if pedido.estado == Pedido.ESTADO_ANULADO:
+            messages.error(request, "No puedes marcar vendido un pedido anulado")
+            return redirect("listar_pedidos")
+
+        # Descontar stock por cada detalle (no deja stock en negativo)
+        detalles = pedido.detalles.select_related("producto").all()
+        for det in detalles:
+            Producto.objects.filter(id=det.producto_id).update(
+                stock_unidades=Greatest(F("stock_unidades") - det.cantidad, 0)
+            )
+
+        pedido.estado = Pedido.ESTADO_VENDIDO
+        pedido.fecha_vendido = timezone.now()
+        pedido.save(update_fields=["estado", "fecha_vendido"])
     messages.success(request, "Pedido marcado como vendido")
     return redirect("listar_pedidos")

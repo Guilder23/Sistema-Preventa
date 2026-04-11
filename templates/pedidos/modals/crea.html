@@ -8,16 +8,22 @@
             <form id="formCrearPedido" method="post" action="{% url 'crear_pedido' %}">
                 {% csrf_token %}
                 <div class="modal-body">
+                    <div class="alert alert-danger d-none" id="pedidoCrearError" role="alert"></div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Cliente <span class="text-danger">*</span></label>
-                                <select class="form-control" name="cliente_id" id="pedidoCliente" required>
-                                    <option value="">-- Selecciona --</option>
-                                    {% for c in clientes %}
-                                        <option value="{{ c.id }}">{{ c.nombres }}{% if c.apellidos %} {{ c.apellidos }}{% endif %}{% if c.ci_nit %} - {{ c.ci_nit }}{% endif %}</option>
-                                    {% endfor %}
-                                </select>
+                                <input type="hidden" name="cliente_id" id="pedidoClienteId" required>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="pedidoClienteBuscar"
+                                    placeholder="Busca cliente por nombre o CI/NIT..."
+                                    list="dlClientesPedidos"
+                                    autocomplete="off"
+                                    required
+                                >
+                                <datalist id="dlClientesPedidos"></datalist>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -39,11 +45,12 @@
                         <table class="table table-sm" id="tablaItemsPedido">
                             <thead>
                                 <tr>
-                                    <th style="width: 46%;">Producto</th>
+                                    <th style="width: 36%;">Producto</th>
+                                    <th style="width: 12%;">Stock</th>
                                     <th style="width: 14%;">Precio</th>
                                     <th style="width: 14%;">Cantidad</th>
                                     <th style="width: 14%;">Subtotal</th>
-                                    <th style="width: 12%;" class="text-center">Acción</th>
+                                    <th style="width: 10%;" class="text-center">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="itemsPedidoBody">
@@ -58,14 +65,18 @@
                     <template id="tplItemPedido">
                         <tr>
                             <td>
-                                <select class="form-control form-control-sm item-producto" name="producto_id[]" required>
-                                    <option value="">-- Producto --</option>
-                                    {% for p in productos %}
-                                        <option value="{{ p.id }}" data-precio="{{ p.precio_unidad|default_if_none:'0.00' }}">
-                                            {{ p.codigo }} - {{ p.nombre }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
+                                <input type="hidden" class="item-producto-id" name="producto_id[]" required>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm item-producto-buscar"
+                                    placeholder="Buscar producto..."
+                                    list="dlProductosPedidos"
+                                    autocomplete="off"
+                                    required
+                                >
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm item-stock" value="0" readonly>
                             </td>
                             <td>
                                 <input type="text" class="form-control form-control-sm item-precio" value="0.00" readonly>
@@ -94,3 +105,8 @@
         </div>
     </div>
 </div>
+
+{{ clientes_data|json_script:"clientes-data-pedidos" }}
+{{ productos_data|json_script:"productos-data-pedidos" }}
+
+<datalist id="dlProductosPedidos"></datalist>
