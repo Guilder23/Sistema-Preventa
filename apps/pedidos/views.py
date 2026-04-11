@@ -44,6 +44,8 @@ def _pedidos_qs_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "repartidor":
+        return qs.filter(estado=Pedido.ESTADO_PENDIENTE)
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",
@@ -55,10 +57,14 @@ def _pedidos_qs_para_usuario(user):
     return qs.filter(preventista=user)
 
 
-@role_required("administrador", "supervisor", "preventista")
+@role_required("administrador", "supervisor", "preventista", "repartidor")
 def listar_pedidos(request):
     q = (request.GET.get("q") or "").strip()
+    estado = (request.GET.get("estado") or "").strip().lower()
     pedidos = _pedidos_qs_para_usuario(request.user)
+
+    if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
+        estado = ""
 
     if q:
         pedidos = pedidos.filter(
@@ -67,8 +73,16 @@ def listar_pedidos(request):
             | Q(cliente__ci_nit__icontains=q)
         )
 
-    clientes = _clientes_para_usuario(request.user).order_by("nombres", "apellidos")
-    productos = Producto.objects.filter(activo=True).order_by("nombre")
+    if estado:
+        pedidos = pedidos.filter(estado=estado)
+
+    perfil = getattr(request.user, "perfil", None)
+    if perfil and perfil.rol == "repartidor":
+        clientes = Cliente.objects.none()
+        productos = Producto.objects.none()
+    else:
+        clientes = _clientes_para_usuario(request.user).order_by("nombres", "apellidos")
+        productos = Producto.objects.filter(activo=True).order_by("nombre")
 
     return render(
         request,
@@ -76,6 +90,7 @@ def listar_pedidos(request):
         {
             "pedidos": pedidos,
             "q": q,
+            "estado": estado,
             "clientes": clientes,
             "productos": productos,
         },
@@ -144,7 +159,7 @@ def crear_pedido(request):
     return redirect("listar_pedidos")
 
 
-@role_required("administrador", "supervisor", "preventista")
+@role_required("administrador", "supervisor", "preventista", "repartidor")
 def obtener_pedido(request, id: int):
     pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
 
@@ -230,6 +245,44 @@ def editar_pedido(request, id: int):
     return redirect("listar_pedidos")
 
 
+@role_required("repartidor")
+def pedidos_mapa(request):
+    return render(request, "pedidos/mapa.html")
+
+
+@role_required("repartidor")
+def pedidos_mapa_puntos(request):
+    pedidos = (
+        Pedido.objects.select_related("cliente")
+        .filter(
+            estado=Pedido.ESTADO_PENDIENTE,
+            cliente__activo=True,
+            cliente__latitud__isnull=False,
+            cliente__longitud__isnull=False,
+        )
+        .order_by("-fecha")
+    )
+
+    puntos = []
+    for p in pedidos:
+        c = p.cliente
+        puntos.append(
+            {
+                "pedido_id": p.id,
+                "cliente": str(c),
+                "lat": float(c.latitud),
+                "lng": float(c.longitud),
+                "direccion": c.direccion or "",
+                "telefono": c.telefono or "",
+                "ci_nit": c.ci_nit or "",
+                "fecha": p.fecha.strftime("%d/%m/%Y %H:%M"),
+                "total": str(p.total),
+            }
+        )
+
+    return JsonResponse({"puntos": puntos})
+
+
 @role_required("administrador")
 @require_http_methods(["POST"])
 def anular_pedido(request, id: int):
@@ -245,7 +298,7 @@ def anular_pedido(request, id: int):
     return redirect("listar_pedidos")
 
 
-@role_required("preventista")
+@role_required("preventista", "repartidor")
 @require_http_methods(["POST"])
 def marcar_vendido(request, id: int):
     pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
