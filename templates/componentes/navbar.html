@@ -45,6 +45,10 @@
                             {% if user.perfil %}
                                 {% if user.perfil.rol == 'administrador' %}
                                     Administrador
+                                {% elif user.perfil.rol == 'supervisor' %}
+                                    Supervisor
+                                {% elif user.perfil.rol == 'repartidor' %}
+                                    Repartidor
                                 {% elif user.perfil.rol == 'preventista' %}
                                     Preventista
                                 {% else %}
@@ -75,6 +79,10 @@
                             {% if user.perfil %}
                                 {% if user.perfil.rol == 'administrador' %}
                                     <i class="fas fa-shield-alt"></i> Administrador
+                                {% elif user.perfil.rol == 'supervisor' %}
+                                    <i class="fas fa-user-tie"></i> Supervisor
+                                {% elif user.perfil.rol == 'repartidor' %}
+                                    <i class="fas fa-truck"></i> Repartidor
                                 {% elif user.perfil.rol == 'preventista' %}
                                     <i class="fas fa-user"></i> Preventista
                                 {% else %}

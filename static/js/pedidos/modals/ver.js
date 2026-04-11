@@ -3,6 +3,7 @@
 
     function estadoLabel(estado) {
         if (estado === 'anulado') return 'Anulado';
+        if (estado === 'vendido') return 'Vendido';
         return 'Pendiente';
     }
 

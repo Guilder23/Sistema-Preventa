@@ -3,6 +3,7 @@ from __future__ import annotations
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 
@@ -19,6 +20,7 @@ def reportes_inicio(request):
 
 def _pedido_qs_para_usuario(user):
     from apps.pedidos.models import Pedido
+    from apps.usuarios.models import PerfilUsuario
 
     perfil = getattr(user, "perfil", None)
     qs = Pedido.objects.select_related("cliente", "preventista")
@@ -26,6 +28,14 @@ def _pedido_qs_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "supervisor":
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            supervisor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(Q(preventista=user) | Q(preventista_id__in=preventistas_ids))
     return qs.filter(preventista=user)
 
 

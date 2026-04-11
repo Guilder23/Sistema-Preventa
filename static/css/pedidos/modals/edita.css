@@ -1,0 +1,8 @@
+/* Reusa el estilo base de modales del módulo pedidos. */
+#modalEditarPedido .modal-header {
+    border-bottom: 1px solid var(--color-borde);
+}
+
+#modalEditarPedido .table thead th {
+    white-space: nowrap;
+}

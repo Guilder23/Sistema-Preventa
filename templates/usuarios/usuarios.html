@@ -73,6 +73,8 @@
                                 <select class="form-control form-control-sm" id="rolFiltro" name="rol">
                                     <option value="">Todos los roles</option>
                                     <option value="administrador" {% if rol == 'administrador' %}selected{% endif %}>Administrador</option>
+                                    <option value="supervisor" {% if rol == 'supervisor' %}selected{% endif %}>Supervisor</option>
+                                    <option value="repartidor" {% if rol == 'repartidor' %}selected{% endif %}>Repartidor</option>
                                     <option value="preventista" {% if rol == 'preventista' %}selected{% endif %}>Preventista</option>
                                 </select>
                             </div>
@@ -121,10 +123,20 @@
                                                 <span class="badge-rol badge-rol-admin" data-rol="administrador">
                                                     <i class="fas fa-shield-alt"></i> Administrador
                                                 </span>
+                                            {% elif usuario.perfil.rol == 'supervisor' %}
+                                                <span class="badge-rol badge-rol-admin" data-rol="supervisor">
+                                                    <i class="fas fa-user-tie"></i> Supervisor
+                                                </span>
+                                            {% elif usuario.perfil.rol == 'repartidor' %}
+                                                <span class="badge-rol badge-rol-tienda" data-rol="repartidor">
+                                                    <i class="fas fa-truck"></i> Repartidor
+                                                </span>
                                             {% elif usuario.perfil.rol == 'preventista' %}
                                                 <span class="badge-rol badge-rol-tienda" data-rol="preventista">
                                                     <i class="fas fa-route"></i> Preventista
                                                 </span>
+                                            {% else %}
+                                                <span class="badge-rol badge-rol-sinrol" data-rol="{{ usuario.perfil.rol }}">{{ usuario.perfil.rol }}</span>
                                             {% endif %}
                                         {% else %}
                                             <span class="badge-rol badge-rol-sinrol" data-rol="">Sin rol</span>

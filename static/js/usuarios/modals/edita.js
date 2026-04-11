@@ -41,8 +41,7 @@
         // Limpiar cuando se cierra el modal
         $('#modalEditarUsuario').on('hidden.bs.modal', function() {
             $('#formEditarUsuario')[0].reset();
-            $('#editGrupoAlmacen').hide();
-            $('#editGrupoTienda').hide();
+            $('#editGrupoSupervisor').hide();
         });
     });
     
@@ -61,6 +60,7 @@
                 $('#editFirstName').val(data.first_name || '');
                 $('#editLastName').val(data.last_name || '');
                 $('#editRol').val(data.rol);
+                $('#editSupervisorId').val(data.supervisor_id || '');
                 $('#editIsActive').prop('checked', data.is_active);
                 
                 // Mostrar los selectores según el rol
@@ -85,32 +85,17 @@
     
     function mostrarOcultarSelectoresEditar(rol) {
         console.log('→ mostrarOcultarSelectoresEditar(' + rol + ')');
-        
-        const $grupoAlmacen = $('#editGrupoAlmacen');
-        const $grupoTienda = $('#editGrupoTienda');
-        const $selectAlmacen = $('#editAlmacen');
-        const $selectTienda = $('#editTienda');
-        
-        // Ocultar todo por defecto
-        $grupoAlmacen.hide();
-        $grupoTienda.hide();
-        $selectAlmacen.removeAttr('required');
-        $selectTienda.removeAttr('required');
-        
-        // Mostrar según rol
-        if (rol === 'almacen') {
-            console.log('  ✓ Mostrando selector de ALMACÉN');
-            $grupoAlmacen.show();
-            $selectAlmacen.attr('required', 'required');
-        } else if (rol === 'tienda' || rol === 'deposito') {
-            console.log('  ✓ Mostrando selector de TIENDA');
-            $grupoTienda.show();
-            $selectTienda.attr('required', 'required');
+
+        const $grupoSupervisor = $('#editGrupoSupervisor');
+        const $selectSupervisor = $('#editSupervisorId');
+
+        $grupoSupervisor.hide();
+        $selectSupervisor.removeAttr('required');
+
+        if (rol === 'preventista') {
+            $grupoSupervisor.show();
         } else {
-            console.log('  ✓ Ocultando todos los selectores');
-            // Limpiar valores si no aplican
-            $selectAlmacen.val('');
-            $selectTienda.val('');
+            $selectSupervisor.val('');
         }
     }
     
@@ -128,25 +113,7 @@
             return false;
         }
         
-        // Validar almacén si el rol lo requiere
-        if (rol === 'almacen') {
-            const almacen = $('#editAlmacen').val();
-            if (!almacen) {
-                alert('Debe seleccionar un almacén para este rol');
-                console.log('✗ Almacén no seleccionado');
-                return false;
-            }
-        }
-        
-        // Validar tienda si el rol lo requiere
-        if (rol === 'tienda' || rol === 'deposito') {
-            const tienda = $('#editTienda').val();
-            if (!tienda) {
-                alert('Debe seleccionar una tienda para este rol');
-                console.log('✗ Tienda no seleccionada');
-                return false;
-            }
-        }
+        // El supervisor es opcional para Preventista.
         
         console.log('✓ Formulario editar válido - enviando...');
         return true;
