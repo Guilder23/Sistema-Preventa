@@ -25,7 +25,7 @@
     <div class="card card-filtros">
         <div class="card-body py-3">
             <div class="row align-items-center">
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
@@ -33,10 +33,29 @@
                         <input type="text" class="form-control form-control-sm border-left-0" id="buscarCliente" placeholder="Buscar por nombre, CI/NIT o teléfono..." value="{{ q }}">
                     </div>
                 </div>
-                <div class="col-md-6 text-right">
-                    <small class="text-muted">Mostrando {{ clientes|length }} clientes</small>
+                <div class="col-md-3">
+                    <select class="form-control form-control-sm" id="estadoCliente" name="estado">
+                        <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
+                        <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                        <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-control form-control-sm" id="vendedorCliente" name="vendedor">
+                        <option value="" {% if not vendedor %}selected{% endif %}>Todos los preventistas</option>
+                        {% for u in vendedores %}
+                            <option value="{{ u.id }}" {% if vendedor == u.id|stringformat:'s' %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
+            {% comment %} <div class="row align-items-center mt-2">
+                <div class="col-md-12 text-right">
+                    <small class="text-muted">Mostrando {{ clientes|length }} clientes</small>
+                </div>
+            </div> {% endcomment %}
         </div>
     </div>
 
