@@ -24,6 +24,25 @@
     .sidebar {
         transform: translateX(-100%);
     }
+
+    /* Cuando se abre desde el botón, debe mostrarse */
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+    }
+}
+
+/* Overlay para cuando el sidebar está abierto en mobile */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1019;
+}
+
+.sidebar-overlay.active {
+    display: block;
 }
 
 /* Scrollbar personalizada */

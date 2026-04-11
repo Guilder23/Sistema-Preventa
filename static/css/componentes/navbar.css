@@ -75,6 +75,13 @@
     justify-content: center;
 }
 
+/* En móvil se debe ver el botón hamburguesa */
+@media (max-width: 992px) {
+    .sidebar-toggle-btn {
+        display: flex;
+    }
+}
+
 .sidebar-toggle-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.3);

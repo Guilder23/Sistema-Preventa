@@ -19,7 +19,7 @@
             <p class="page-subtitle">Registro e historial de pedidos</p>
         </div>
         {% if user.is_superuser or user.perfil.rol == 'administrador' or user.perfil.rol == 'supervisor' or user.perfil.rol == 'preventista' %}
-            <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#modalCrearPedido">
+            <button type="button" class="btn btn-nuevo btn-lg" data-toggle="modal" data-target="#modalCrearPedido">
                 <i class="fas fa-plus"></i> Nuevo Pedido
             </button>
         {% endif %}
