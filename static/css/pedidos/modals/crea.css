@@ -1,1 +1,75 @@
 /* Modal crear pedido */
+
+#modalCrearPedido .table thead th {
+	white-space: nowrap;
+}
+
+#modalCrearPedido .table thead {
+	background: var(--color-primario);
+	color: #fff;
+}
+
+#modalCrearPedido .table thead th {
+	border-top: 0;
+	border-bottom: 0;
+}
+
+#modalCrearPedido .table td,
+#modalCrearPedido .table th {
+	vertical-align: middle;
+}
+
+#modalCrearPedido .item-precio,
+#modalCrearPedido .item-subtotal {
+	background: #f8f9fa;
+}
+
+#modalCrearPedido #pedidoTotal {
+	font-variant-numeric: tabular-nums;
+}
+
+#modalCrearPedido .item-producto-buscar {
+	min-width: 220px;
+}
+
+#modalCrearPedido .item-cantidad {
+	min-width: 90px;
+}
+
+/* Autocomplete dropdown */
+#modalCrearPedido .ac-wrap {
+	position: relative;
+}
+
+#modalCrearPedido .ac-dropdown {
+	position: absolute;
+	z-index: 1052; /* encima del modal */
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	max-height: 260px;
+	overflow: auto;
+	background: #fff;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: 6px;
+	box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+
+#modalCrearPedido .ac-item {
+	width: 100%;
+	text-align: left;
+	padding: 8px 10px;
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+#modalCrearPedido .ac-item:hover,
+#modalCrearPedido .ac-item.active {
+	background: rgba(0, 0, 0, 0.04);
+}
+
+#modalCrearPedido .ac-empty {
+	padding: 8px 10px;
+	color: #6c757d;
+}

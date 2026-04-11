@@ -1,20 +1,141 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
 {% block titulo %}Reportes{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/reportes.css' %}">
+{% endblock %}
 
 {% block contenido %}
 <div class="container-fluid">
     <div class="page-header">
         <div class="page-header-content">
             <h1 class="page-title"><i class="fas fa-file-pdf"></i> Reportes</h1>
-            <p class="page-subtitle">Impresión y reportes (pendiente)</p>
+            <p class="page-subtitle">Impresión y reportes de pedidos</p>
         </div>
     </div>
 
-    <div class="card">
+    <div class="row">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--primary">
+                <div class="report-card-icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Pedidos</div>
+                    <div class="report-card-value">{{ total_pedidos }}</div>
+                    <div class="report-card-sub">Monto: Bs {{ total_monto|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--success">
+                <div class="report-card-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Vendidos</div>
+                    <div class="report-card-value">{{ total_vendidos }}</div>
+                    <div class="report-card-sub">Subtotal: Bs {{ subtotal_vendidos|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--warning">
+                <div class="report-card-icon"><i class="fas fa-clock"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Pendientes</div>
+                    <div class="report-card-value">{{ total_pendientes }}</div>
+                    <div class="report-card-sub">Subtotal: Bs {{ subtotal_pendientes|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--danger">
+                <div class="report-card-icon"><i class="fas fa-ban"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Anulados</div>
+                    <div class="report-card-value">{{ total_anulados }}</div>
+                    <div class="report-card-sub">Subtotal: Bs {{ subtotal_anulados|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <p class="text-muted mb-0">Este módulo se completará con PDFs de pedidos y ventas.</p>
+            <form method="get" class="form-row align-items-end" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
+                <div class="col-md-4 mb-2">
+                    <label class="small text-muted">Buscar</label>
+                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, usuario" autocomplete="off">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="small text-muted">Estado</label>
+                    <select name="estado" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="vendido" {% if estado == 'vendido' %}selected{% endif %}>Vendido</option>
+                        <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="small text-muted">Desde</label>
+                    <input type="date" name="desde" value="{{ desde }}" class="form-control">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="small text-muted">Hasta</label>
+                    <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="small text-muted d-block">PDF</label>
+                    <a class="btn btn-danger btn-block" id="btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Cliente</th>
+                            <th>Preventista</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Total</th>
+                            <th class="text-center">PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pedidos %}
+                        <tr>
+                            <td>{{ p.id }}</td>
+                            <td>{{ p.cliente.nombres }} {{ p.cliente.apellidos }}</td>
+                            <td>{{ p.preventista.get_full_name|default:p.preventista.username }}</td>
+                            <td>{{ p.fecha|date:'d/m/Y H:i' }}</td>
+                            <td>{{ p.get_estado_display }}</td>
+                            <td>Bs {{ p.total|floatformat:2 }}</td>
+                            <td class="text-center">
+                                <a class="btn btn-danger btn-sm" href="{% url 'reporte_pedido_pdf' p.id %}" target="_blank" rel="noopener">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No hay pedidos para mostrar.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/reportes/reportes.js' %}"></script>
 {% endblock %}

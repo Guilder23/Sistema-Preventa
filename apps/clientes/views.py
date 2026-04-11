@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from apps.usuarios.decorators import role_required
+from apps.usuarios.models import PerfilUsuario
 
 from .models import Cliente
 
@@ -19,14 +21,50 @@ def _clientes_qs_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "supervisor":
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            supervisor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(Q(creado_por=user) | Q(creado_por_id__in=preventistas_ids))
     # preventista: solo los creados por él
     return qs.filter(creado_por=user)
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 def listar_clientes(request):
     q = (request.GET.get("q") or "").strip()
-    clientes = _clientes_qs_para_usuario(request.user).order_by("-fecha_creacion")
+    estado = (request.GET.get("estado") or "").strip().lower()
+    vendedor_raw = (request.GET.get("vendedor") or "").strip()
+
+    clientes_base = _clientes_qs_para_usuario(request.user)
+
+    # Vendedores disponibles dentro del alcance del usuario
+    vendedor_ids = (
+        clientes_base.exclude(creado_por__isnull=True)
+        .values_list("creado_por_id", flat=True)
+        .distinct()
+    )
+    vendedores = User.objects.filter(id__in=vendedor_ids).order_by("username")
+
+    # Normalizar estado
+    if estado not in {"activo", "inactivo"}:
+        estado = ""
+
+    # Validar vendedor
+    vendedor_id = None
+    if vendedor_raw:
+        try:
+            vendedor_id = int(vendedor_raw)
+        except ValueError:
+            vendedor_id = None
+        else:
+            if vendedor_id not in set(vendedor_ids):
+                vendedor_id = None
+
+    clientes = clientes_base.order_by("-fecha_creacion")
     if q:
         clientes = clientes.filter(
             Q(nombres__icontains=q)
@@ -34,15 +72,34 @@ def listar_clientes(request):
             | Q(ci_nit__icontains=q)
             | Q(telefono__icontains=q)
         )
-    return render(request, "clientes/clientes.html", {"clientes": clientes, "q": q})
+
+    if estado == "activo":
+        clientes = clientes.filter(activo=True)
+    elif estado == "inactivo":
+        clientes = clientes.filter(activo=False)
+
+    if vendedor_id is not None:
+        clientes = clientes.filter(creado_por_id=vendedor_id)
+
+    return render(
+        request,
+        "clientes/clientes.html",
+        {
+            "clientes": clientes,
+            "q": q,
+            "estado": estado,
+            "vendedor": str(vendedor_id) if vendedor_id is not None else "",
+            "vendedores": vendedores,
+        },
+    )
 
 
-@role_required("administrador", "preventista")
+@role_required("administrador", "supervisor", "preventista")
 def clientes_mapa(request):
     return render(request, "clientes/mapa.html")
 
 
-@role_required("administrador", "preventista")
+@role_required("administrador", "supervisor", "preventista")
 def clientes_mapa_puntos(request):
     qs = (
         _clientes_qs_para_usuario(request.user)
@@ -68,7 +125,7 @@ def clientes_mapa_puntos(request):
     return JsonResponse({"puntos": puntos})
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 @require_http_methods(["POST"])
 def crear_cliente(request):
     nombres = (request.POST.get("nombres") or "").strip()
@@ -78,6 +135,7 @@ def crear_cliente(request):
     direccion = (request.POST.get("direccion") or "").strip()
     latitud = (request.POST.get("latitud") or "").strip()
     longitud = (request.POST.get("longitud") or "").strip()
+    foto_tienda = request.FILES.get("foto_tienda")
 
     if not nombres:
         messages.error(request, "El nombre es obligatorio")
@@ -91,15 +149,26 @@ def crear_cliente(request):
         direccion=direccion or None,
         latitud=latitud or None,
         longitud=longitud or None,
+        foto_tienda=foto_tienda,
         creado_por=request.user,
     )
     messages.success(request, "Cliente registrado")
     return redirect("listar_clientes")
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 def obtener_cliente(request, id: int):
     cliente = get_object_or_404(_clientes_qs_para_usuario(request.user), id=id)
+    
+    # Obtener rol del creador
+    rol_creador = ""
+    if cliente.creado_por:
+        perfil = getattr(cliente.creado_por, "perfil", None)
+        if perfil:
+            rol_creador = perfil.get_rol_display()
+        elif cliente.creado_por.is_superuser:
+            rol_creador = "Administrador"
+
     return JsonResponse(
         {
             "id": cliente.id,
@@ -110,12 +179,16 @@ def obtener_cliente(request, id: int):
             "direccion": cliente.direccion or "",
             "latitud": str(cliente.latitud) if cliente.latitud is not None else "",
             "longitud": str(cliente.longitud) if cliente.longitud is not None else "",
+            "foto_url": cliente.foto_tienda.url if cliente.foto_tienda else "",
             "activo": cliente.activo,
+            "creado_por": cliente.creado_por.get_full_name() or cliente.creado_por.username if cliente.creado_por else "Sistema",
+            "rol_creador": rol_creador,
+            "fecha_creacion": cliente.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
         }
     )
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 @require_http_methods(["POST"])
 def editar_cliente(request, id: int):
     cliente = get_object_or_404(_clientes_qs_para_usuario(request.user), id=id)
@@ -126,6 +199,7 @@ def editar_cliente(request, id: int):
     direccion = (request.POST.get("direccion") or "").strip()
     latitud = (request.POST.get("latitud") or "").strip()
     longitud = (request.POST.get("longitud") or "").strip()
+    foto_tienda = request.FILES.get("foto_tienda")
     activo = request.POST.get("activo") == "on"
 
     if not nombres:
@@ -139,6 +213,8 @@ def editar_cliente(request, id: int):
     cliente.direccion = direccion or None
     cliente.latitud = latitud or None
     cliente.longitud = longitud or None
+    if foto_tienda:
+        cliente.foto_tienda = foto_tienda
     cliente.activo = activo
     cliente.save()
 

@@ -11,8 +11,8 @@
             
             <div class="navbar-logo">
                 <a href="{% url 'dashboard' %}">
-                    <i class="fas fa-store"></i>
-                    <span class="navbar-brand-text">Preventa</span>
+                    <img src="{% static 'img/logoAlmacen.png' %}" alt="Logo" class="navbar-logo-img">
+                    <span class="navbar-brand-text">D. Jeremy</span>
                 </a>
             </div>
         </div>
@@ -45,6 +45,10 @@
                             {% if user.perfil %}
                                 {% if user.perfil.rol == 'administrador' %}
                                     Administrador
+                                {% elif user.perfil.rol == 'supervisor' %}
+                                    Supervisor
+                                {% elif user.perfil.rol == 'repartidor' %}
+                                    Repartidor
                                 {% elif user.perfil.rol == 'preventista' %}
                                     Preventista
                                 {% else %}
@@ -75,6 +79,10 @@
                             {% if user.perfil %}
                                 {% if user.perfil.rol == 'administrador' %}
                                     <i class="fas fa-shield-alt"></i> Administrador
+                                {% elif user.perfil.rol == 'supervisor' %}
+                                    <i class="fas fa-user-tie"></i> Supervisor
+                                {% elif user.perfil.rol == 'repartidor' %}
+                                    <i class="fas fa-truck"></i> Repartidor
                                 {% elif user.perfil.rol == 'preventista' %}
                                     <i class="fas fa-user"></i> Preventista
                                 {% else %}

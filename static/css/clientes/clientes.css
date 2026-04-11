@@ -7,3 +7,62 @@
 .card-filtros {
     margin-bottom: 12px;
 }
+
+.cliente-foto-preview {
+    width: 100%;
+    max-width: 160px;
+    height: 110px;
+    object-fit: cover;
+    border-radius: var(--radio-md);
+    border: 1px solid var(--color-borde);
+}
+
+.cliente-foto-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-gris-claro);
+    border: 1px dashed var(--color-borde);
+    border-radius: var(--radio-md);
+    height: 130px;
+    padding: 8px;
+}
+
+.cliente-foto-empty {
+    text-align: center;
+    color: var(--color-texto-secundario);
+}
+
+/* Badges de estado (activo/inactivo) */
+.badge-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border-radius: 0.45rem;
+    border: 1px solid;
+}
+
+.badge-estado i {
+    font-size: 0.68rem;
+}
+
+.badge-estado-activo {
+    color: var(--color-exito);
+    border-color: currentColor;
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--color-exito), transparent 55%);
+    background-color: color-mix(in srgb, var(--color-exito), transparent 90%);
+}
+
+.badge-estado-inactivo {
+    color: var(--color-peligro);
+    border-color: currentColor;
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--color-peligro), transparent 55%);
+    background-color: color-mix(in srgb, var(--color-peligro), transparent 90%);
+}

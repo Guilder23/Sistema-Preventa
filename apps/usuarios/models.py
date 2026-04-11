@@ -5,11 +5,22 @@ from django.db import models
 class PerfilUsuario(models.Model):
     ROLES = (
         ("administrador", "Administrador"),
+        ("supervisor", "Supervisor"),
+        ("repartidor", "Repartidor"),
         ("preventista", "Preventista"),
     )
 
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name="perfil")
     rol = models.CharField(max_length=20, choices=ROLES, default="preventista")
+
+    # Relación jerárquica: un Supervisor puede tener varios Preventistas.
+    supervisor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="preventistas_asignados",
+    )
 
     telefono = models.CharField(max_length=30, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)

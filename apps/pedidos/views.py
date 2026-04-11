@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
+from django.db.models import F
+from django.db.models.functions import Greatest
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -14,6 +16,7 @@ from django.views.decorators.http import require_http_methods
 from apps.clientes.models import Cliente
 from apps.productos.models import Producto
 from apps.usuarios.decorators import role_required
+from apps.usuarios.models import PerfilUsuario
 
 from .models import DetallePedido, Pedido
 
@@ -25,6 +28,14 @@ def _clientes_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "supervisor":
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            supervisor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(Q(creado_por=user) | Q(creado_por_id__in=preventistas_ids))
     return qs.filter(creado_por=user)
 
 
@@ -35,13 +46,27 @@ def _pedidos_qs_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "repartidor":
+        return qs.filter(estado=Pedido.ESTADO_PENDIENTE)
+    if perfil and perfil.rol == "supervisor":
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            supervisor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(Q(preventista=user) | Q(preventista_id__in=preventistas_ids))
     return qs.filter(preventista=user)
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista", "repartidor")
 def listar_pedidos(request):
     q = (request.GET.get("q") or "").strip()
+    estado = (request.GET.get("estado") or "").strip().lower()
     pedidos = _pedidos_qs_para_usuario(request.user)
+
+    if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
+        estado = ""
 
     if q:
         pedidos = pedidos.filter(
@@ -50,8 +75,35 @@ def listar_pedidos(request):
             | Q(cliente__ci_nit__icontains=q)
         )
 
-    clientes = _clientes_para_usuario(request.user).order_by("nombres", "apellidos")
-    productos = Producto.objects.filter(activo=True).order_by("nombre")
+    if estado:
+        pedidos = pedidos.filter(estado=estado)
+
+    perfil = getattr(request.user, "perfil", None)
+    if perfil and perfil.rol == "repartidor":
+        clientes = Cliente.objects.none()
+        productos = Producto.objects.none()
+        clientes_data = []
+        productos_data = []
+    else:
+        clientes = _clientes_para_usuario(request.user).order_by("nombres", "apellidos")
+        productos = Producto.objects.filter(activo=True).order_by("nombre")
+
+        clientes_data = []
+        for c in clientes:
+            label = f"{c.nombres}{(' ' + c.apellidos) if c.apellidos else ''}{(' - ' + c.ci_nit) if c.ci_nit else ''}"
+            clientes_data.append({"id": c.id, "label": label})
+
+        productos_data = []
+        for p in productos:
+            label = f"{p.codigo} - {p.nombre}" if p.codigo else p.nombre
+            productos_data.append(
+                {
+                    "id": p.id,
+                    "label": label,
+                    "precio": str(p.precio_unidad or Decimal('0.00')),
+                    "stock": int(getattr(p, 'stock_unidades', 0) or 0),
+                }
+            )
 
     return render(
         request,
@@ -59,13 +111,16 @@ def listar_pedidos(request):
         {
             "pedidos": pedidos,
             "q": q,
+            "estado": estado,
             "clientes": clientes,
             "productos": productos,
+            "clientes_data": clientes_data,
+            "productos_data": productos_data,
         },
     )
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista")
 @require_http_methods(["POST"])
 def crear_pedido(request):
     cliente_id = (request.POST.get("cliente_id") or "").strip()
@@ -99,9 +154,10 @@ def crear_pedido(request):
         return redirect("listar_pedidos")
 
     with transaction.atomic():
+        preventista_asignado = cliente.creado_por or request.user
         pedido = Pedido.objects.create(
             cliente=cliente,
-            preventista=request.user,
+            preventista=preventista_asignado,
             observacion=observacion or None,
         )
 
@@ -126,7 +182,7 @@ def crear_pedido(request):
     return redirect("listar_pedidos")
 
 
-@login_required
+@role_required("administrador", "supervisor", "preventista", "repartidor")
 def obtener_pedido(request, id: int):
     pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
 
@@ -134,6 +190,7 @@ def obtener_pedido(request, id: int):
         pedido.detalles.select_related("producto")
         .all()
         .values(
+            "producto_id",
             "producto__nombre",
             "cantidad",
             "precio_unitario",
@@ -155,6 +212,101 @@ def obtener_pedido(request, id: int):
     )
 
 
+@role_required("administrador", "supervisor", "preventista")
+@require_http_methods(["POST"])
+def editar_pedido(request, id: int):
+    pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
+
+    if pedido.estado != Pedido.ESTADO_PENDIENTE:
+        messages.error(request, "Solo puedes editar pedidos pendientes")
+        return redirect("listar_pedidos")
+
+    observacion = (request.POST.get("observacion") or "").strip()
+    producto_ids = request.POST.getlist("producto_id[]")
+    cantidades = request.POST.getlist("cantidad[]")
+
+    items = []
+    for pid, cant in zip(producto_ids, cantidades):
+        pid = (pid or "").strip()
+        cant = (cant or "").strip()
+        if not pid or not cant:
+            continue
+        try:
+            cantidad_int = int(cant)
+        except ValueError:
+            continue
+        if cantidad_int <= 0:
+            continue
+        items.append((pid, cantidad_int))
+
+    if not items:
+        messages.error(request, "Agrega al menos un producto con cantidad")
+        return redirect("listar_pedidos")
+
+    with transaction.atomic():
+        pedido.observacion = observacion or None
+        pedido.detalles.all().delete()
+
+        total = Decimal("0.00")
+        for pid, cantidad_int in items:
+            producto = get_object_or_404(Producto, id=pid, activo=True)
+            precio = producto.precio_unidad or Decimal("0.00")
+            subtotal = (precio * Decimal(cantidad_int)).quantize(Decimal("0.01"))
+            DetallePedido.objects.create(
+                pedido=pedido,
+                producto=producto,
+                cantidad=cantidad_int,
+                precio_unitario=precio,
+                subtotal=subtotal,
+            )
+            total += subtotal
+
+        pedido.total = total.quantize(Decimal("0.01"))
+        pedido.save(update_fields=["observacion", "total"])
+
+    messages.success(request, "Pedido actualizado")
+    return redirect("listar_pedidos")
+
+
+@role_required("repartidor")
+def pedidos_mapa(request):
+    return render(request, "pedidos/mapa.html")
+
+
+@role_required("repartidor")
+def pedidos_mapa_puntos(request):
+    pedidos = (
+        Pedido.objects.select_related("cliente")
+        .filter(
+            cliente__activo=True,
+            cliente__latitud__isnull=False,
+            cliente__longitud__isnull=False,
+        )
+        .order_by("-fecha")
+    )
+
+    puntos = []
+    for p in pedidos:
+        c = p.cliente
+        puntos.append(
+            {
+                "pedido_id": p.id,
+                "cliente": str(c),
+                "lat": float(c.latitud),
+                "lng": float(c.longitud),
+                "direccion": c.direccion or "",
+                "telefono": c.telefono or "",
+                "ci_nit": c.ci_nit or "",
+                "fecha": p.fecha.strftime("%d/%m/%Y %H:%M"),
+                "total": str(p.total),
+                "estado_str": p.get_estado_display(),
+                "estado": p.estado,
+            }
+        )
+
+    return JsonResponse({"puntos": puntos})
+
+
 @role_required("administrador")
 @require_http_methods(["POST"])
 def anular_pedido(request, id: int):
@@ -170,7 +322,7 @@ def anular_pedido(request, id: int):
     return redirect("listar_pedidos")
 
 
-@role_required("preventista")
+@role_required("preventista", "repartidor")
 @require_http_methods(["POST"])
 def marcar_vendido(request, id: int):
     pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
@@ -183,8 +335,25 @@ def marcar_vendido(request, id: int):
         messages.info(request, "Este pedido ya está marcado como vendido")
         return redirect("listar_pedidos")
 
-    pedido.estado = Pedido.ESTADO_VENDIDO
-    pedido.fecha_vendido = timezone.now()
-    pedido.save(update_fields=["estado", "fecha_vendido"])
+    with transaction.atomic():
+        # Lock del pedido para evitar doble marcado concurrente.
+        pedido = Pedido.objects.select_for_update().get(id=pedido.id)
+        if pedido.estado == Pedido.ESTADO_VENDIDO:
+            messages.info(request, "Este pedido ya está marcado como vendido")
+            return redirect("listar_pedidos")
+        if pedido.estado == Pedido.ESTADO_ANULADO:
+            messages.error(request, "No puedes marcar vendido un pedido anulado")
+            return redirect("listar_pedidos")
+
+        # Descontar stock por cada detalle (no deja stock en negativo)
+        detalles = pedido.detalles.select_related("producto").all()
+        for det in detalles:
+            Producto.objects.filter(id=det.producto_id).update(
+                stock_unidades=Greatest(F("stock_unidades") - det.cantidad, 0)
+            )
+
+        pedido.estado = Pedido.ESTADO_VENDIDO
+        pedido.fecha_vendido = timezone.now()
+        pedido.save(update_fields=["estado", "fecha_vendido"])
     messages.success(request, "Pedido marcado como vendido")
     return redirect("listar_pedidos")

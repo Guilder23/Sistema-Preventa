@@ -139,6 +139,8 @@ function mostrarMensajeSinResultados(cantidad, buscar, estado, rol) {
     if (rol) {
         const rolesMap = {
             'administrador': 'Administrador',
+                'supervisor': 'Supervisor',
+                'repartidor': 'Repartidor',
                 'preventista': 'Preventista'
         };
         filtros.push(`con rol "${rolesMap[rol] || rol}"`);

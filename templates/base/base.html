@@ -22,9 +22,8 @@
 
                 var theme = localStorage.getItem('theme');
                 if (theme !== 'light' && theme !== 'dark') {
-                    theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-                        ? 'dark'
-                        : 'light';
+                    // Por defecto usar 'light' en lugar de detectar el sistema
+                    theme = 'light';
                 }
                 document.documentElement.setAttribute('data-theme', theme);
             } catch (e) {
@@ -51,7 +50,7 @@
     <link rel="stylesheet" href="{% static 'css/componentes/footer.css' %}">
     
     <!-- Estilos de Notificaciones -->
-    <link rel="stylesheet" href="{% static 'css/notificaciones/badge.css' %}">
+    {% comment %} <link rel="stylesheet" href="{% static 'css/notificaciones/badge.css' %}"> {% endcomment %}
     
     <!-- Estilos Extra por página -->
      <!-- logo de la pagina-->
@@ -117,7 +116,7 @@
     <script src="{% static 'js/componentes/footer.js' %}"></script>
     
     <!-- Scripts de Notificaciones -->
-    <script src="{% static 'js/notificaciones/badge.js' %}"></script>
+    {% comment %} <script src="{% static 'js/notificaciones/badge.js' %}"></script> {% endcomment %}
     
     <!-- Scripts Extra por página -->
     {% block scripts_extra %}{% endblock %}

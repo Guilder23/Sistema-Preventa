@@ -1,0 +1,78 @@
+/* Reusa el estilo base de modales del módulo pedidos. */
+#modalEditarPedido .modal-header {
+    border-bottom: 1px solid var(--color-borde);
+}
+
+#modalEditarPedido .table thead th {
+    white-space: nowrap;
+}
+
+#modalEditarPedido .table thead {
+    background: var(--color-primario);
+    color: #fff;
+}
+
+#modalEditarPedido .table thead th {
+    border-top: 0;
+    border-bottom: 0;
+}
+
+#modalEditarPedido .table td,
+#modalEditarPedido .table th {
+    vertical-align: middle;
+}
+
+#modalEditarPedido .item-precio,
+#modalEditarPedido .item-subtotal {
+    background: #f8f9fa;
+}
+
+#modalEditarPedido #pedidoEditarTotal {
+    font-variant-numeric: tabular-nums;
+}
+
+#modalEditarPedido .item-producto-buscar {
+    min-width: 220px;
+}
+
+#modalEditarPedido .item-cantidad {
+    min-width: 90px;
+}
+
+/* Autocomplete dropdown */
+#modalEditarPedido .ac-wrap {
+    position: relative;
+}
+
+#modalEditarPedido .ac-dropdown {
+    position: absolute;
+    z-index: 1052;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 260px;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+
+#modalEditarPedido .ac-item {
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+#modalEditarPedido .ac-item:hover,
+#modalEditarPedido .ac-item.active {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+#modalEditarPedido .ac-empty {
+    padding: 8px 10px;
+    color: #6c757d;
+}

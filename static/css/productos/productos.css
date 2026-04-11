@@ -8,6 +8,23 @@
     font-weight: 600;
 }
 
+.producto-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid var(--color-borde);
+    background: var(--color-gris-claro);
+}
+
+.producto-thumb--empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-texto-secundario);
+    font-size: 0.95rem;
+}
+
 html[data-theme="dark"] .tabla-productos .codigo-badge {
     background: rgba(255,255,255,0.10);
 }
@@ -18,4 +35,75 @@ html[data-theme="dark"] .tabla-productos .codigo-badge {
 
 .card-filtros {
     margin-bottom: 12px;
+}
+
+/* Badges estado */
+.badge-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    border-radius: 0.45rem;
+    border: 1px solid;
+}
+
+.badge-estado i {
+    font-size: 0.68rem;
+}
+
+.badge-estado-activo {
+    color: var(--color-exito);
+    border-color: currentColor;
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--color-exito), transparent 55%);
+    background-color: color-mix(in srgb, var(--color-exito), transparent 90%);
+}
+
+.badge-estado-inactivo {
+    color: var(--color-peligro);
+    border-color: currentColor;
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--color-peligro), transparent 55%);
+    background-color: color-mix(in srgb, var(--color-peligro), transparent 90%);
+}
+
+/* Badge stock */
+.badge-stock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 46px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 999px;
+    border: 1px solid;
+}
+
+.badge-stock-verde {
+    color: var(--color-exito);
+    border-color: currentColor;
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--color-exito), transparent 55%);
+    background-color: color-mix(in srgb, var(--color-exito), transparent 90%);
+}
+
+.badge-stock-amarillo {
+    color: var(--color-advertencia);
+    border-color: currentColor;
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--color-advertencia), transparent 55%);
+    background-color: color-mix(in srgb, var(--color-advertencia), transparent 90%);
+}
+
+.badge-stock-rojo {
+    color: var(--color-peligro);
+    border-color: currentColor;
+    background-color: transparent;
+    border-color: color-mix(in srgb, var(--color-peligro), transparent 55%);
+    background-color: color-mix(in srgb, var(--color-peligro), transparent 90%);
 }

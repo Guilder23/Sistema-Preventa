@@ -145,7 +145,7 @@
     gap: 0.75rem;
     padding: 0.625rem 0.875rem;
     color: var(--color-texto);
-    text-decoration: none;
+    text-decoration: none !important;
     transition: all 0.15s ease;
     border-radius: var(--radio-md);
     font-size: 0.875rem;
@@ -159,7 +159,7 @@
 }
 
 .sidebar-link.active {
-    background: var(--color-secundario);
+    background: var(--color-primario);
     color: white;
 }
 
@@ -171,7 +171,7 @@
     transform: translateY(-50%);
     width: 3px;
     height: 60%;
-    background: var(--color-acento);
+    background: white;
     border-radius: 0 3px 3px 0;
 }
 

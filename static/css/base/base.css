@@ -30,10 +30,41 @@ body.sidebar-collapsed .main-container {
     align-items: center;
     margin-bottom: 1.5rem;
     padding: 1.5rem 2rem;
-    background-color: var(--color-primario);
+    background-color: var(--color-secundario);
     border-radius: var(--radio-lg);
     color: #ffffff;
     box-shadow: var(--sombra-hover);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    color: var(--color-secundario);
+    border-bottom: 2px solid var(--color-primario) !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 0.75rem 0.5rem;
+}
+
+html[data-theme="dark"] .table thead th {
+    background-color: #1a1a1a;
+    color: var(--color-texto);
+    border-bottom: 2px solid var(--color-primario) !important;
+}
+
+.btn-nuevo {
+    background-color: var(--color-primario) !important;
+    color: white !important;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(211, 47, 47, 0.2);
+}
+
+.btn-nuevo:hover {
+    background-color: var(--color-primario-hover) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(211, 47, 47, 0.3);
 }
 
 .page-header-content h1,

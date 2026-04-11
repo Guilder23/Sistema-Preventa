@@ -19,7 +19,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background-color: var(--color-acento);
+    background-color: var(--color-primario);
 }
 
 .stat-card-label {
@@ -36,6 +36,12 @@
     margin-top: 0.25rem;
 }
 
+.stat-card-sub {
+    color: var(--color-texto-secundario);
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+}
+
 .stat-card-icon {
     width: 44px;
     height: 44px;
@@ -46,6 +52,86 @@
     background: var(--color-secundario-soft);
     color: var(--color-secundario);
     border: 1px solid var(--color-borde-acento);
+}
+
+.stat-card--primary::before {
+    background-color: var(--color-primario);
+}
+
+.stat-card--primary .stat-card-icon {
+    background: var(--color-primario-soft);
+    color: var(--color-primario);
+    border-color: rgba(204, 0, 0, 0.25);
+}
+
+.stat-card--secondary::before {
+    background-color: var(--color-secundario);
+}
+
+.stat-card--secondary .stat-card-icon {
+    background: var(--color-secundario-soft);
+    color: var(--color-secundario);
+    border-color: var(--color-borde-acento);
+}
+
+.stat-card--accent::before {
+    background-color: var(--color-acento);
+}
+
+.stat-card--accent .stat-card-icon {
+    background: var(--color-acento-soft);
+    color: var(--color-acento);
+    border-color: rgba(161, 15, 85, 0.35);
+}
+
+.stat-card--success::before {
+    background-color: var(--color-exito);
+}
+
+.stat-card--success .stat-card-icon {
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--color-exito);
+    border-color: rgba(22, 163, 74, 0.35);
+}
+
+.stat-card--warning::before {
+    background-color: var(--color-advertencia);
+}
+
+.stat-card--warning .stat-card-icon {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--color-advertencia);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.stat-card--danger::before {
+    background-color: var(--color-peligro);
+}
+
+.stat-card--danger .stat-card-icon {
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--color-peligro);
+    border-color: rgba(220, 38, 38, 0.35);
+}
+
+.stat-card--info::before {
+    background-color: var(--color-info);
+}
+
+.stat-card--info .stat-card-icon {
+    background: rgba(14, 165, 233, 0.12);
+    color: var(--color-info);
+    border-color: rgba(14, 165, 233, 0.35);
+}
+
+.stat-card--neutral::before {
+    background-color: var(--color-gris-oscuro);
+}
+
+.stat-card--neutral .stat-card-icon {
+    background: rgba(51, 65, 85, 0.12);
+    color: var(--color-gris-oscuro);
+    border-color: rgba(51, 65, 85, 0.35);
 }
 
 .dashboard-card {
@@ -77,4 +163,50 @@
 
 .activity-table td {
     vertical-align: middle;
+}
+
+.recent-table thead th {
+    background: var(--color-primario);
+    color: #ffffff;
+    border-bottom: 0;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.recent-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.recent-table tbody tr:hover {
+    background: var(--color-primario-soft);
+}
+
+.badge-estado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+}
+
+.badge-estado-vendido {
+    color: var(--color-exito);
+    background: rgba(22, 163, 74, 0.12);
+    border-color: rgba(22, 163, 74, 0.35);
+}
+
+.badge-estado-pendiente {
+    color: var(--color-advertencia);
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.badge-estado-anulado {
+    color: var(--color-peligro);
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(220, 38, 38, 0.35);
 }

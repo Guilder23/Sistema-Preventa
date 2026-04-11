@@ -129,6 +129,12 @@ def listar_usuarios(request):
     if rol:
         usuarios = usuarios.filter(perfil__rol=rol)
 
+    supervisores = (
+        User.objects.select_related("perfil")
+        .filter(perfil__rol="supervisor", is_active=True, perfil__activo=True)
+        .order_by("username")
+    )
+
     return render(
         request,
         "usuarios/usuarios.html",
@@ -137,6 +143,7 @@ def listar_usuarios(request):
             "buscar": buscar,
             "estado": estado,
             "rol": rol,
+            "supervisores": supervisores,
             # compat con UI del proyecto guía
             "almacenes": [],
             "tiendas": [],
@@ -159,6 +166,7 @@ def crear_usuario(request):
     password = request.POST.get("password") or ""
     password2 = request.POST.get("password2") or ""
     rol = (request.POST.get("rol") or "").strip() or "preventista"
+    supervisor_id = (request.POST.get("supervisor_id") or "").strip()
     is_active = request.POST.get("is_active") == "on"
 
     if not username or not email or not password or not password2 or not rol:
@@ -185,7 +193,19 @@ def crear_usuario(request):
         last_name=last_name,
         is_active=is_active,
     )
-    PerfilUsuario.objects.update_or_create(usuario=user, defaults={"rol": rol, "activo": is_active})
+
+    supervisor = None
+    if rol == "preventista" and supervisor_id:
+        supervisor = get_object_or_404(User.objects.select_related("perfil"), id=supervisor_id)
+        if not getattr(supervisor, "perfil", None) or supervisor.perfil.rol != "supervisor":
+            messages.error(request, "El usuario seleccionado no es Supervisor")
+            user.delete()
+            return redirect("listar_usuarios")
+
+    PerfilUsuario.objects.update_or_create(
+        usuario=user,
+        defaults={"rol": rol, "activo": is_active, "supervisor": supervisor},
+    )
     messages.success(request, "Usuario creado correctamente")
     return redirect("listar_usuarios")
 
@@ -211,6 +231,12 @@ def obtener_usuario(request, id: int):
         "nombre_completo": (usuario.get_full_name() or "").strip(),
         "rol": rol,
         "rol_display": rol_display,
+        "supervisor_id": perfil.supervisor_id if perfil else None,
+        "supervisor_nombre": (
+            (perfil.supervisor.get_full_name() or perfil.supervisor.username)
+            if (perfil and perfil.supervisor)
+            else None
+        ),
         "is_active": usuario.is_active,
         "last_login": usuario.last_login.strftime("%d/%m/%y %H:%M") if usuario.last_login else None,
         "date_joined": usuario.date_joined.strftime("%d/%m/%y %H:%M") if usuario.date_joined else None,
@@ -233,6 +259,7 @@ def editar_usuario(request, id: int):
     first_name = (request.POST.get("first_name") or "").strip()
     last_name = (request.POST.get("last_name") or "").strip()
     rol = (request.POST.get("rol") or "").strip() or "preventista"
+    supervisor_id = (request.POST.get("supervisor_id") or "").strip()
     is_active = request.POST.get("is_active") == "on"
     password = request.POST.get("password") or ""
 
@@ -255,6 +282,14 @@ def editar_usuario(request, id: int):
     perfil, _ = PerfilUsuario.objects.get_or_create(usuario=usuario)
     perfil.rol = rol
     perfil.activo = is_active
+
+    supervisor = None
+    if rol == "preventista" and supervisor_id:
+        supervisor = get_object_or_404(User.objects.select_related("perfil"), id=supervisor_id)
+        if not getattr(supervisor, "perfil", None) or supervisor.perfil.rol != "supervisor":
+            messages.error(request, "El usuario seleccionado no es Supervisor")
+            return redirect("listar_usuarios")
+    perfil.supervisor = supervisor
     perfil.save()
 
     if password and usuario.id == request.user.id:

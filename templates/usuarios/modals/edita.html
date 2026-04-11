@@ -87,7 +87,19 @@
                                 <label for="editRol" class="form-label">Rol del Usuario</label>
                                 <select class="form-control" id="editRol" name="rol">
                                     <option value="administrador">Administrador</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="repartidor">Repartidor</option>
                                     <option value="preventista">Preventista</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="editGrupoSupervisor" style="display: none;">
+                                <label for="editSupervisorId" class="form-label">Supervisor</label>
+                                <select class="form-control" id="editSupervisorId" name="supervisor_id">
+                                    <option value="">-- Sin supervisor --</option>
+                                    {% for s in supervisores %}
+                                        <option value="{{ s.id }}">{{ s.get_full_name|default:s.username }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
 
