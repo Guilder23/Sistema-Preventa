@@ -19,7 +19,7 @@
     left: 0;
     right: 0;
     height: 4px;
-    background-color: var(--color-acento);
+    background-color: var(--color-primario);
 }
 
 .stat-card-label {
@@ -61,7 +61,7 @@
 .stat-card--primary .stat-card-icon {
     background: var(--color-primario-soft);
     color: var(--color-primario);
-    border-color: rgba(11, 18, 32, 0.35);
+    border-color: rgba(204, 0, 0, 0.25);
 }
 
 .stat-card--secondary::before {
