@@ -77,19 +77,35 @@
                 {% for d in detalles %}
                 <article class="ticket-item">
                     <div class="ticket-item-main">
-                        <div class="ticket-item-name">{{ d.producto.nombre }}</div>
+                        <div class="ticket-item-name">{{ d.producto_nombre }}</div>
                         <div class="ticket-item-meta">{{ d.cantidad }} x Bs {{ d.precio_unitario|floatformat:2 }}</div>
+                        {% if d.cantidad_devuelta > 0 %}
+                        <div class="ticket-item-meta ticket-item-meta--danger">Devueltos: {{ d.cantidad_devuelta }}</div>
+                        {% endif %}
                     </div>
-                    <div class="ticket-item-total">Bs {{ d.subtotal|floatformat:2 }}</div>
+                    <div class="ticket-item-total-wrap">
+                        <div class="ticket-item-total-label">Bruto</div>
+                        <div class="ticket-item-total">Bs {{ d.subtotal_bruto|floatformat:2 }}</div>
+                        <div class="ticket-item-total-label">Real</div>
+                        <div class="ticket-item-total ticket-item-total--real">Bs {{ d.subtotal_neto|floatformat:2 }}</div>
+                    </div>
                 </article>
                 {% endfor %}
             </div>
         </section>
 
         <section class="ticket-block ticket-total-box">
+            <div class="ticket-row">
+                <span>Total bruto</span>
+                <strong>Bs {{ total_bruto|floatformat:2 }}</strong>
+            </div>
+            <div class="ticket-row">
+                <span>Devueltos</span>
+                <strong>{{ total_devuelto_unidades }} und. / Bs {{ total_devuelto_monto|floatformat:2 }}</strong>
+            </div>
             <div class="ticket-row ticket-row--total">
-                <span>Total</span>
-                <strong>Bs {{ pedido.total|floatformat:2 }}</strong>
+                <span>Total real</span>
+                <strong>Bs {{ total_real|floatformat:2 }}</strong>
             </div>
             {% if pedido.observacion %}
             <div class="ticket-note">
