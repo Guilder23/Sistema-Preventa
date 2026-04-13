@@ -1,0 +1,95 @@
+<div class="modal fade" id="modalReponerDevolucion" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form method="post" id="formReponerDevolucion" action="">
+                {% csrf_token %}
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-box-open"></i> Reponer devolucion</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Se repondra al stock todos los items pendientes de esta devolucion.</p>
+                    <div class="alert alert-light border mb-0">
+                        <strong>Pedido:</strong> <span id="repPedidoId">-</span>
+                    </div>
+
+                    <div class="resumen-box mt-3">
+                        <div class="resumen-meta">
+                            <span><strong>Productos afectados:</strong> <span id="repTotalItems">0</span></span>
+                            <span><strong>Total que aumenta:</strong> <span id="repTotalAumenta">0</span></span>
+                        </div>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-sm resumen-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-center">Stock actual</th>
+                                        <th class="text-center">Aumenta</th>
+                                        <th class="text-center">Stock final</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="repResumenBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar reposicion</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalReponerTodo" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form method="post" id="formReponerTodo" action="{% url 'reponer_todo_devoluciones' %}">
+                {% csrf_token %}
+                <input type="hidden" name="q" id="todo_q" value="">
+                <input type="hidden" name="estado_reposicion" id="todo_estado_reposicion" value="">
+                <input type="hidden" name="tipo" id="todo_tipo" value="">
+                <input type="hidden" name="repartidor" id="todo_repartidor" value="">
+                <input type="hidden" name="fecha_desde" id="todo_fecha_desde" value="">
+                <input type="hidden" name="fecha_hasta" id="todo_fecha_hasta" value="">
+
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-boxes-stacked"></i> Reponer todo al stock</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Resumen del impacto usando los filtros actuales:</p>
+
+                    <div class="resumen-box">
+                        <div class="resumen-meta">
+                            <span><strong>Productos afectados:</strong> <span id="repTodoTotalItems">0</span></span>
+                            <span><strong>Total que aumenta:</strong> <span id="repTodoTotalAumenta">0</span></span>
+                        </div>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-sm resumen-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-center">Stock actual</th>
+                                        <th class="text-center">Aumenta</th>
+                                        <th class="text-center">Stock final</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="repTodoResumenBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar reposicion masiva</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

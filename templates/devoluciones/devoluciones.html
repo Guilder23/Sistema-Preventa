@@ -1,0 +1,169 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Devoluciones{% endblock %}
+
+{% block estilos_extra %}
+    <link rel="stylesheet" href="{% static 'css/devoluciones/devoluciones.css' %}">
+    <link rel="stylesheet" href="{% static 'css/devoluciones/modals/ver.css' %}">
+    <link rel="stylesheet" href="{% static 'css/devoluciones/modals/reponer.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-rotate-left"></i> Devoluciones</h1>
+            <p class="page-subtitle">Control de devoluciones y reposicion de stock</p>
+        </div>
+    </div>
+
+    <div class="card card-filtros mb-3">
+        <div class="card-body py-3">
+            <form method="get" action="{% url 'listar_devoluciones' %}" id="filtrosDevolucionesForm">
+                <div class="row align-items-end">
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <label for="q" class="form-label-sm">Buscar</label>
+                        <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            id="q"
+                            name="q"
+                            placeholder="Pedido, cliente o repartidor..."
+                            value="{{ q }}"
+                        >
+                    </div>
+                    <div class="col-md-2 mb-2 mb-md-0 filtro-compacto">
+                        <label for="estado_reposicion" class="form-label-sm">Estado reposicion</label>
+                        <select class="form-control form-control-sm" id="estado_reposicion" name="estado_reposicion">
+                            <option value="" {% if not estado_reposicion %}selected{% endif %}>Todos</option>
+                            <option value="pendiente" {% if estado_reposicion == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="parcial" {% if estado_reposicion == 'parcial' %}selected{% endif %}>Parcial</option>
+                            <option value="repuesto" {% if estado_reposicion == 'repuesto' %}selected{% endif %}>Repuesto</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2 mb-md-0 filtro-compacto">
+                        <label for="tipo" class="form-label-sm">Tipo</label>
+                        <select class="form-control form-control-sm" id="tipo" name="tipo">
+                            <option value="" {% if not tipo %}selected{% endif %}>Todos</option>
+                            <option value="parcial" {% if tipo == 'parcial' %}selected{% endif %}>Parcial</option>
+                            <option value="no_entregado" {% if tipo == 'no_entregado' %}selected{% endif %}>No entregado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2 mb-md-0 filtro-compacto">
+                        <label for="repartidor" class="form-label-sm">Repartidor</label>
+                        <select class="form-control form-control-sm" id="repartidor" name="repartidor">
+                            <option value="" {% if not repartidor %}selected{% endif %}>Todos</option>
+                            {% for r in repartidores %}
+                                <option value="{{ r.id }}" {% if repartidor == r.id|stringformat:'s' %}selected{% endif %}>
+                                    {{ r.get_full_name|default:r.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-1 mb-2 mb-md-0">
+                        <label for="fecha_desde" class="form-label-sm">Desde</label>
+                        <input type="date" class="form-control form-control-sm" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde }}">
+                    </div>
+                    <div class="col-md-1 mb-2 mb-md-0">
+                        <label for="fecha_hasta" class="form-label-sm">Hasta</label>
+                        <input type="date" class="form-control form-control-sm" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta }}">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end justify-content-end">
+                        {% if is_admin %}
+                        <button type="button" class="btn btn-outline-success btn-sm w-100" id="btnAbrirReponerTodo" title="Reponer todo al stock">
+                            <i class="fas fa-boxes-stacked"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card card-tabla">
+        <div class="table-responsive">
+            <table class="table table-sm tabla-devoluciones mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Pedido</th>
+                        <th>Cliente</th>
+                        <th>Repartidor</th>
+                        <th>Tipo</th>
+                        <th>Reposicion</th>
+                        <th>Fecha</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in devoluciones %}
+                    <tr>
+                        <td><strong>{{ d.id }}</strong></td>
+                        <td>#{{ d.pedido_id }}</td>
+                        <td>{{ d.pedido.cliente.nombres }} {{ d.pedido.cliente.apellidos|default:'' }}</td>
+                        <td>{{ d.repartidor.get_full_name|default:d.repartidor.username }}</td>
+                        <td>
+                            {% if d.tipo == 'no_entregado' %}
+                                <span class="badge-soft badge-soft-danger">No entregado</span>
+                            {% else %}
+                                <span class="badge-soft badge-soft-warning">Parcial</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if d.estado_reposicion == 'repuesto' %}
+                                <span class="badge-soft badge-soft-success">Repuesto</span>
+                            {% elif d.estado_reposicion == 'parcial' %}
+                                <span class="badge-soft badge-soft-info">Parcial</span>
+                            {% else %}
+                                <span class="badge-soft badge-soft-secondary">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ d.fecha_creacion|date:'d/m/Y H:i' }}</td>
+                        <td class="text-center">
+                            <div class="acciones-btns d-inline-flex">
+                                <button
+                                    type="button"
+                                    class="btn btn-info btn-sm btn-ver-devolucion"
+                                    data-devolucion-id="{{ d.id }}"
+                                    title="Ver detalle"
+                                >
+                                    <i class="fas fa-eye"></i>
+                                </button>
+
+                                {% if is_admin %}
+                                    {% if d.estado_reposicion != 'repuesto' %}
+                                    <button
+                                        type="button"
+                                        class="btn btn-success btn-sm btn-reponer-devolucion"
+                                        data-devolucion-id="{{ d.id }}"
+                                        data-pedido-id="{{ d.pedido_id }}"
+                                        title="Reponer devolucion"
+                                    >
+                                        <i class="fas fa-box-open"></i>
+                                    </button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No hay devoluciones registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'devoluciones/modals/ver.html' %}
+    {% include 'devoluciones/modals/reponer.html' %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+    <script src="{% static 'js/devoluciones/modals/ver.js' %}"></script>
+    <script src="{% static 'js/devoluciones/modals/reponer.js' %}"></script>
+    <script src="{% static 'js/devoluciones/devoluciones.js' %}"></script>
+{% endblock %}

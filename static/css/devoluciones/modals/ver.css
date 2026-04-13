@@ -1,0 +1,8 @@
+#tablaDevItems th,
+#tablaDevItems td {
+    vertical-align: middle;
+}
+
+#tablaDevItems tbody tr:last-child td {
+    border-bottom: none;
+}

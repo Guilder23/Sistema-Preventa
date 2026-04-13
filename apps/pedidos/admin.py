@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import DetallePedido, Pedido
+from .models import DevolucionItem, DevolucionPedido, DetallePedido, Pedido
 
 
 class DetallePedidoInline(admin.TabularInline):
@@ -19,3 +19,22 @@ class PedidoAdmin(admin.ModelAdmin):
 @admin.register(DetallePedido)
 class DetallePedidoAdmin(admin.ModelAdmin):
     list_display = ("pedido", "producto", "cantidad", "precio_unitario", "subtotal")
+
+
+class DevolucionItemInline(admin.TabularInline):
+    model = DevolucionItem
+    extra = 0
+
+
+@admin.register(DevolucionPedido)
+class DevolucionPedidoAdmin(admin.ModelAdmin):
+    list_display = ("id", "pedido", "repartidor", "tipo", "estado_reposicion", "fecha_creacion")
+    list_filter = ("tipo", "estado_reposicion", "fecha_creacion")
+    search_fields = ("pedido__id", "pedido__cliente__nombres", "pedido__cliente__apellidos")
+    inlines = [DevolucionItemInline]
+
+
+@admin.register(DevolucionItem)
+class DevolucionItemAdmin(admin.ModelAdmin):
+    list_display = ("devolucion", "producto", "cantidad_devuelta", "repuesto", "fecha_reposicion")
+    list_filter = ("repuesto",)

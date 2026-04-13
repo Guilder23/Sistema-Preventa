@@ -28,6 +28,13 @@
                         <span>Mapa</span>
                     </a>
                 </li>
+
+                <li class="sidebar-item">
+                    <a href="{% url 'listar_devoluciones' %}" class="sidebar-link {% if 'devolucion' in request.resolver_match.url_name %}active{% endif %}" title="Devoluciones">
+                        <i class="fas fa-rotate-left"></i>
+                        <span>Devoluciones</span>
+                    </a>
+                </li>
             {% else %}
             <li class="sidebar-item">
                 <a href="{% url 'dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" title="Dashboard">
@@ -80,6 +87,13 @@
                 <a href="{% url 'listar_usuarios' %}" class="sidebar-link {% if 'usuario' in request.resolver_match.url_name %}active{% endif %}" title="Usuarios">
                     <i class="fas fa-user-shield"></i>
                     <span>Usuarios</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item">
+                <a href="{% url 'listar_devoluciones' %}" class="sidebar-link {% if 'devolucion' in request.resolver_match.url_name %}active{% endif %}" title="Devoluciones">
+                    <i class="fas fa-rotate-left"></i>
+                    <span>Devoluciones</span>
                 </a>
             </li>
             {% endif %}

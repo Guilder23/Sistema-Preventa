@@ -1,0 +1,44 @@
+<div class="modal fade" id="modalVerDevolucion" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-eye"></i> Detalle de devolucion</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-2">
+                    <div class="col-md-6"><strong>Pedido:</strong> <span id="devPedido">-</span></div>
+                    <div class="col-md-6"><strong>Cliente:</strong> <span id="devCliente">-</span></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6"><strong>Repartidor:</strong> <span id="devRepartidor">-</span></div>
+                    <div class="col-md-6"><strong>Tipo:</strong> <span id="devTipo">-</span></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-6"><strong>Estado reposicion:</strong> <span id="devEstadoReposicion">-</span></div>
+                    <div class="col-md-6"><strong>Fecha:</strong> <span id="devFecha">-</span></div>
+                </div>
+                <div class="mb-2"><strong>Motivo general:</strong> <span id="devMotivoGeneral">-</span></div>
+
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm mb-0" id="tablaDevItems">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cant. devuelta</th>
+                                <th>Motivo</th>
+                                <th>Reposicion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devItemsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
