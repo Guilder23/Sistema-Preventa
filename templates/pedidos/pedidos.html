@@ -28,7 +28,7 @@
     <div class="card card-filtros">
         <div class="card-body py-3">
             <div class="row align-items-center">
-                <div class="col-md-5">
+                <div class="col-md-3">
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
@@ -36,15 +36,31 @@
                         <input type="text" class="form-control form-control-sm border-left-0" id="buscarPedido" placeholder="Buscar por cliente o CI/NIT..." value="{{ q }}">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select class="form-control form-control-sm" id="estadoPedido" name="estado">
                         <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
                         <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
                         <option value="vendido" {% if estado == 'vendido' %}selected{% endif %}>Vendido</option>
+                        <option value="no_entregado" {% if estado == 'no_entregado' %}selected{% endif %}>No entregado</option>
                         <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
                     </select>
                 </div>
-                <div class="col-md-4 text-right">
+                <div class="col-md-2">
+                    <select class="form-control form-control-sm" id="rolPedido" name="rol">
+                        <option value="" {% if not rol_usuario %}selected{% endif %}>Todos los roles</option>
+                        <option value="administrador" {% if rol_usuario == 'administrador' %}selected{% endif %}>Administrador</option>
+                        <option value="supervisor" {% if rol_usuario == 'supervisor' %}selected{% endif %}>Supervisor</option>
+                        <option value="preventista" {% if rol_usuario == 'preventista' %}selected{% endif %}>Preventista</option>
+                        <option value="repartidor" {% if rol_usuario == 'repartidor' %}selected{% endif %}>Repartidor</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control form-control-sm" id="fechaDesdePedido" name="fecha_desde" value="{{ fecha_desde }}" title="Fecha desde">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control form-control-sm" id="fechaHastaPedido" name="fecha_hasta" value="{{ fecha_hasta }}" title="Fecha hasta">
+                </div>
+                <div class="col-md-1 text-right">
                     <small class="text-muted">Mostrando {{ pedidos|length }} pedidos</small>
                 </div>
             </div>
@@ -81,6 +97,8 @@
                         <td class="text-center">
                             {% if p.estado == 'anulado' %}
                             <span class="badge-estado badge-estado-anulado"><i class="fas fa-ban"></i> Anulado</span>
+                            {% elif p.estado == 'no_entregado' %}
+                            <span class="badge-estado badge-estado-anulado"><i class="fas fa-store-slash"></i> No entregado</span>
                             {% elif p.estado == 'vendido' %}
                             <span class="badge-estado badge-estado-vendido"><i class="fas fa-check-circle"></i> Vendido</span>
                             {% else %}
@@ -101,13 +119,15 @@
                                     {% endif %}
                                 {% endif %}
 
-                                {% if not user.is_superuser %}
-                                    {% if user.perfil.rol == 'preventista' or user.perfil.rol == 'repartidor' %}
-                                        {% if p.estado != 'anulado' and p.estado != 'vendido' %}
-                                            <button type="button" class="btn btn-success btn-sm btn-marcar-vendido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Marcar como vendido">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                        {% endif %}
+                                {% if not user.is_superuser and p.estado == 'pendiente' %}
+                                    {% if user.perfil.rol == 'preventista' %}
+                                        <button type="button" class="btn btn-success btn-sm btn-marcar-vendido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Marcar como vendido">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    {% elif user.perfil.rol == 'repartidor' %}
+                                        <button type="button" class="btn btn-success btn-sm btn-registrar-entrega" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Registrar entrega/devolución">
+                                            <i class="fas fa-truck"></i>
+                                        </button>
                                     {% endif %}
                                 {% endif %}
 
@@ -151,6 +171,7 @@
     {% include 'pedidos/modals/ver.html' %}
     {% include 'pedidos/modals/anula.html' %}
     {% include 'pedidos/modals/vendido.html' %}
+    {% include 'pedidos/modals/entrega.html' %}
 </div>
 {% endblock %}
 
@@ -162,5 +183,6 @@
 <script src="{% static 'js/pedidos/modals/ver.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/anula.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/vendido.js' %}"></script>
+<script src="{% static 'js/pedidos/modals/entrega.js' %}"></script>
 <script src="{% static 'js/pedidos/pedidos.js' %}"></script>
 {% endblock %}

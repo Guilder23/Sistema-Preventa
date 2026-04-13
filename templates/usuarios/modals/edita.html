@@ -103,6 +103,17 @@
                                 </select>
                             </div>
 
+                            <div class="form-group" id="editGrupoRepartidor" style="display: none;">
+                                <label for="editRepartidorId" class="form-label">Repartidor</label>
+                                <select class="form-control" id="editRepartidorId" name="repartidor_id">
+                                    <option value="">-- Sin repartidor --</option>
+                                    {% for r in repartidores %}
+                                        <option value="{{ r.id }}">{{ r.get_full_name|default:r.username }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Asigna un Repartidor para el seguimiento de pedidos del preventista.</small>
+                            </div>
+
                             <div class="form-group">
                                 <div class="custom-control custom-checkbox">
                                     <input type="checkbox" class="custom-control-input" id="editIsActive" name="is_active">

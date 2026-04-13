@@ -135,6 +135,12 @@ def listar_usuarios(request):
         .order_by("username")
     )
 
+    repartidores = (
+        User.objects.select_related("perfil")
+        .filter(perfil__rol="repartidor", is_active=True, perfil__activo=True)
+        .order_by("username")
+    )
+
     return render(
         request,
         "usuarios/usuarios.html",
@@ -144,6 +150,7 @@ def listar_usuarios(request):
             "estado": estado,
             "rol": rol,
             "supervisores": supervisores,
+            "repartidores": repartidores,
             # compat con UI del proyecto guía
             "almacenes": [],
             "tiendas": [],
@@ -167,6 +174,7 @@ def crear_usuario(request):
     password2 = request.POST.get("password2") or ""
     rol = (request.POST.get("rol") or "").strip() or "preventista"
     supervisor_id = (request.POST.get("supervisor_id") or "").strip()
+    repartidor_id = (request.POST.get("repartidor_id") or "").strip()
     is_active = request.POST.get("is_active") == "on"
 
     if not username or not email or not password or not password2 or not rol:
@@ -202,9 +210,28 @@ def crear_usuario(request):
             user.delete()
             return redirect("listar_usuarios")
 
+    repartidor = None
+    if rol == "preventista" and repartidor_id:
+        repartidor = get_object_or_404(User.objects.select_related("perfil"), id=repartidor_id)
+        if not getattr(repartidor, "perfil", None) or repartidor.perfil.rol != "repartidor":
+            messages.error(request, "El usuario seleccionado no es Repartidor")
+            user.delete()
+            return redirect("listar_usuarios")
+
+    if rol == "preventista" and (not supervisor or not repartidor):
+        messages.error(request, "Para un Preventista debes asignar un Supervisor y un Repartidor")
+        user.delete()
+        return redirect("listar_usuarios")
+
     PerfilUsuario.objects.update_or_create(
         usuario=user,
-        defaults={"rol": rol, "activo": is_active, "supervisor": supervisor},
+        defaults={
+            "rol": rol,
+            "activo": is_active,
+            "supervisor": supervisor,
+            "repartidor": repartidor,
+            "creado_por": request.user,
+        },
     )
     messages.success(request, "Usuario creado correctamente")
     return redirect("listar_usuarios")
@@ -232,9 +259,15 @@ def obtener_usuario(request, id: int):
         "rol": rol,
         "rol_display": rol_display,
         "supervisor_id": perfil.supervisor_id if perfil else None,
+        "repartidor_id": perfil.repartidor_id if perfil else None,
         "supervisor_nombre": (
             (perfil.supervisor.get_full_name() or perfil.supervisor.username)
             if (perfil and perfil.supervisor)
+            else None
+        ),
+        "repartidor_nombre": (
+            (perfil.repartidor.get_full_name() or perfil.repartidor.username)
+            if (perfil and perfil.repartidor)
             else None
         ),
         "is_active": usuario.is_active,
@@ -245,7 +278,11 @@ def obtener_usuario(request, id: int):
         "almacen_nombre": None,
         "tienda_id": None,
         "tienda_nombre": None,
-        "creado_por": None,
+        "creado_por": (
+            (perfil.creado_por.get_full_name() or perfil.creado_por.username)
+            if (perfil and perfil.creado_por)
+            else "Sistema"
+        ),
     }
     return JsonResponse(data)
 
@@ -260,6 +297,7 @@ def editar_usuario(request, id: int):
     last_name = (request.POST.get("last_name") or "").strip()
     rol = (request.POST.get("rol") or "").strip() or "preventista"
     supervisor_id = (request.POST.get("supervisor_id") or "").strip()
+    repartidor_id = (request.POST.get("repartidor_id") or "").strip()
     is_active = request.POST.get("is_active") == "on"
     password = request.POST.get("password") or ""
 
@@ -289,7 +327,19 @@ def editar_usuario(request, id: int):
         if not getattr(supervisor, "perfil", None) or supervisor.perfil.rol != "supervisor":
             messages.error(request, "El usuario seleccionado no es Supervisor")
             return redirect("listar_usuarios")
+
+    repartidor = None
+    if rol == "preventista" and repartidor_id:
+        repartidor = get_object_or_404(User.objects.select_related("perfil"), id=repartidor_id)
+        if not getattr(repartidor, "perfil", None) or repartidor.perfil.rol != "repartidor":
+            messages.error(request, "El usuario seleccionado no es Repartidor")
+            return redirect("listar_usuarios")
+
+    if rol == "preventista" and (not supervisor or not repartidor):
+        messages.error(request, "Para un Preventista debes asignar un Supervisor y un Repartidor")
+        return redirect("listar_usuarios")
     perfil.supervisor = supervisor
+    perfil.repartidor = repartidor
     perfil.save()
 
     if password and usuario.id == request.user.id:

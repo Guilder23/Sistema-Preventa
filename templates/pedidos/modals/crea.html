@@ -37,7 +37,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h6 class="mb-0">Detalle</h6>
                         <button type="button" class="btn btn-outline-primary btn-sm" id="btnAgregarItem">
-                            <i class="fas fa-plus"></i> Agregar producto
+                            <i class="fas fa-cart-plus"></i> Agregar producto al carrito
                         </button>
                     </div>
 
@@ -82,7 +82,15 @@
                                 <input type="text" class="form-control form-control-sm item-precio" value="0.00" readonly>
                             </td>
                             <td>
-                                <input type="number" min="1" class="form-control form-control-sm item-cantidad" name="cantidad[]" value="1" required>
+                                <div class="item-cantidad-wrap">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm btn-cant-menos" title="Restar">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" min="1" class="form-control form-control-sm item-cantidad" name="cantidad[]" value="1" required>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm btn-cant-mas" title="Sumar">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                             </td>
                             <td>
                                 <input type="text" class="form-control form-control-sm item-subtotal" value="0.00" readonly>

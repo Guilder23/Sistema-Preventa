@@ -13,8 +13,9 @@ class Producto(models.Model):
     stock_umbral_rojo = models.PositiveIntegerField(default=3)
 
     precio_unidad = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    precio_mayor = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     precio_caja = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    precio_compra_unidad = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    precio_compra_caja = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     activo = models.BooleanField(default=True)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)

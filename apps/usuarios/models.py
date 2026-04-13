@@ -22,6 +22,22 @@ class PerfilUsuario(models.Model):
         related_name="preventistas_asignados",
     )
 
+    repartidor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="preventistas_asignados_como_repartidor",
+    )
+
+    creado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="perfiles_usuario_creados",
+    )
+
     telefono = models.CharField(max_length=30, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
     foto = models.ImageField(upload_to="usuarios/perfiles/", blank=True, null=True)

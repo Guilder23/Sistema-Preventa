@@ -29,6 +29,24 @@
                 $('#verEmail').text(data.email);
                 $('#verNombrecompleto').text(data.nombre_completo || 'No especificado');
                 $('#verTipo').text(data.rol_display);
+
+                const supervisorGrupo = $('#verSupervisorGrupo');
+                const repartidorGrupo = $('#verRepartidorGrupo');
+                if (data.supervisor_nombre) {
+                    $('#verSupervisor').text(data.supervisor_nombre);
+                    supervisorGrupo.show();
+                } else {
+                    $('#verSupervisor').text('');
+                    supervisorGrupo.hide();
+                }
+
+                if (data.repartidor_nombre) {
+                    $('#verRepartidor').text(data.repartidor_nombre);
+                    repartidorGrupo.show();
+                } else {
+                    $('#verRepartidor').text('');
+                    repartidorGrupo.hide();
+                }
                 
                 // Mostrar estado con badge personalizado
                 const estadoBadge = data.is_active 

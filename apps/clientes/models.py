@@ -9,6 +9,8 @@ class Cliente(models.Model):
     telefono = models.CharField(max_length=30, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
 
+    descripcion = models.TextField(blank=True, null=True)
+
     foto_tienda = models.ImageField(upload_to="clientes/tiendas/", blank=True, null=True)
 
     latitud = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)

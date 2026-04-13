@@ -21,6 +21,7 @@
                     $('#verClienteCiNit').text(data.ci_nit || '—');
                     $('#verClienteTelefono').text(data.telefono || '—');
                     $('#verClienteDireccion').text(data.direccion || '—');
+                    $('#verClienteDescripcion').text(data.descripcion || '—');
 
                     const ubicacion = (data.latitud && data.longitud)
                         ? `${parseFloat(data.latitud).toFixed(5)}, ${parseFloat(data.longitud).toFixed(5)}`

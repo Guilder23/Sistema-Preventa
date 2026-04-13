@@ -12,24 +12,42 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Nombres <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="nombres" required>
+                                <input type="text" class="form-control" name="nombres" placeholder="Ej: Juan Carlos" required>
                             </div>
                             <div class="form-group">
                                 <label>Apellidos</label>
-                                <input type="text" class="form-control" name="apellidos">
+                                <input type="text" class="form-control" name="apellidos" placeholder="Ej: Pérez Gómez">
                             </div>
                             <div class="form-group">
                                 <label>CI/NIT</label>
-                                <input type="text" class="form-control" name="ci_nit">
+                                <input type="text" class="form-control" name="ci_nit" placeholder="Ej: 1234567 LP">
                             </div>
                             <div class="form-group">
                                 <label>Teléfono</label>
-                                <input type="text" class="form-control" name="telefono">
+                                <input type="text" class="form-control" name="telefono" placeholder="Ej: 70012345">
                             </div>
 
                             <div class="form-group">
                                 <label>Imagen de la tienda</label>
-                                <input type="file" class="form-control" id="crearFotoTienda" name="foto_tienda" accept="image/*">
+                                <input type="file" class="d-none" id="crearFotoTienda" name="foto_tienda" accept="image/*">
+                                <div class="cliente-foto-actions d-flex flex-wrap align-items-start" style="gap:8px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCrearFotoSeleccionar" title="Seleccionar una imagen desde el dispositivo">
+                                        <i class="fas fa-image"></i> Seleccionar foto
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCrearFotoCamara" title="Pedir permiso y usar la cámara">
+                                        <i class="fas fa-camera"></i> Tomar foto
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-1" id="crearFotoTiendaNombre">Ningún archivo seleccionado</small>
+                                <div id="crearCamaraWrap" class="cliente-camara-wrap d-none mt-2">
+                                    <video id="crearCamaraVideo" class="cliente-camara-video" playsinline muted autoplay></video>
+                                    <div class="d-flex flex-wrap mt-2" style="gap:8px;">
+                                        <button type="button" class="btn btn-primary btn-sm" id="btnCrearCamaraCapturar">
+                                            <i class="fas fa-camera-retro"></i> Capturar
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCrearCamaraCerrar">Cerrar cámara</button>
+                                    </div>
+                                </div>
                                 <div class="mt-2">
                                     <img id="crearFotoTiendaPreview" class="cliente-foto-preview d-none" alt="Previsualización de tienda">
                                 </div>
@@ -38,7 +56,12 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Dirección</label>
-                                <textarea class="form-control" name="direccion" rows="3"></textarea>
+                                <textarea class="form-control" name="direccion" rows="3" placeholder="Ej: Av. Alemana, zona norte"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Descripción</label>
+                                <textarea class="form-control" name="descripcion" rows="2" placeholder="Ej: referencias, horario, notas..."></textarea>
                             </div>
 
                             <div class="form-group">
