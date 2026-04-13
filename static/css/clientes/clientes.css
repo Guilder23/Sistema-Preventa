@@ -33,6 +33,19 @@
     color: var(--color-texto-secundario);
 }
 
+.cliente-foto-actions .btn {
+    white-space: nowrap;
+}
+
+/* Nombre de archivo seleccionado (input file custom) */
+#crearFotoTiendaNombre,
+#editFotoTiendaNombre {
+    padding: 6px 8px;
+    border: 1px dashed var(--color-borde);
+    border-radius: var(--radio-md);
+    background: color-mix(in srgb, var(--color-gris-claro), transparent 35%);
+}
+
 /* Badges de estado (activo/inactivo) */
 .badge-estado {
     display: inline-flex;

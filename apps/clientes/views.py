@@ -133,6 +133,7 @@ def crear_cliente(request):
     ci_nit = (request.POST.get("ci_nit") or "").strip()
     telefono = (request.POST.get("telefono") or "").strip()
     direccion = (request.POST.get("direccion") or "").strip()
+    descripcion = (request.POST.get("descripcion") or "").strip()
     latitud = (request.POST.get("latitud") or "").strip()
     longitud = (request.POST.get("longitud") or "").strip()
     foto_tienda = request.FILES.get("foto_tienda")
@@ -147,6 +148,7 @@ def crear_cliente(request):
         ci_nit=ci_nit or None,
         telefono=telefono or None,
         direccion=direccion or None,
+        descripcion=descripcion or None,
         latitud=latitud or None,
         longitud=longitud or None,
         foto_tienda=foto_tienda,
@@ -177,6 +179,7 @@ def obtener_cliente(request, id: int):
             "ci_nit": cliente.ci_nit or "",
             "telefono": cliente.telefono or "",
             "direccion": cliente.direccion or "",
+            "descripcion": cliente.descripcion or "",
             "latitud": str(cliente.latitud) if cliente.latitud is not None else "",
             "longitud": str(cliente.longitud) if cliente.longitud is not None else "",
             "foto_url": cliente.foto_tienda.url if cliente.foto_tienda else "",
@@ -197,6 +200,7 @@ def editar_cliente(request, id: int):
     ci_nit = (request.POST.get("ci_nit") or "").strip()
     telefono = (request.POST.get("telefono") or "").strip()
     direccion = (request.POST.get("direccion") or "").strip()
+    descripcion = (request.POST.get("descripcion") or "").strip()
     latitud = (request.POST.get("latitud") or "").strip()
     longitud = (request.POST.get("longitud") or "").strip()
     foto_tienda = request.FILES.get("foto_tienda")
@@ -211,6 +215,7 @@ def editar_cliente(request, id: int):
     cliente.ci_nit = ci_nit or None
     cliente.telefono = telefono or None
     cliente.direccion = direccion or None
+    cliente.descripcion = descripcion or None
     cliente.latitud = latitud or None
     cliente.longitud = longitud or None
     if foto_tienda:

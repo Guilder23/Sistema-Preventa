@@ -27,6 +27,22 @@
     }
 
     $(document).ready(function () {
+        let camaraEditar = null;
+        if (typeof window.initClienteFotoCamara === 'function') {
+            camaraEditar = window.initClienteFotoCamara({
+                fileInputId: 'editFotoTienda',
+                previewId: 'editFotoTiendaPreview',
+                btnAbrirId: 'btnEditFotoCamara',
+                wrapId: 'editCamaraWrap',
+                videoId: 'editCamaraVideo',
+                btnCapturarId: 'btnEditCamaraCapturar',
+                btnCerrarId: 'btnEditCamaraCerrar'
+            });
+        }
+
+        const btnSeleccionar = document.getElementById('btnEditFotoSeleccionar');
+        const fotoNombre = document.getElementById('editFotoTiendaNombre');
+
         $(document).on('click', '.btn-editar-cliente', function (e) {
             e.preventDefault();
             const id = $(this).data('cliente-id');
@@ -43,6 +59,7 @@
                     $('#editCiNit').val(data.ci_nit || '');
                     $('#editTelefono').val(data.telefono || '');
                     $('#editDireccion').val(data.direccion || '');
+                    $('#editDescripcion').val(data.descripcion || '');
                     $('#editLatitud').val(data.latitud || '');
                     $('#editLongitud').val(data.longitud || '');
                     $('#editActivoCliente').prop('checked', !!data.activo);
@@ -83,9 +100,19 @@
 
         const fotoInput = document.getElementById('editFotoTienda');
         const fotoPreview = document.getElementById('editFotoTiendaPreview');
+
+        if (btnSeleccionar && fotoInput) {
+            btnSeleccionar.addEventListener('click', function () {
+                fotoInput.click();
+            });
+        }
+
         if (fotoInput && fotoPreview) {
             fotoInput.addEventListener('change', function () {
                 const file = fotoInput.files && fotoInput.files[0];
+                if (fotoNombre) {
+                    fotoNombre.textContent = file ? file.name : 'Ningún archivo seleccionado';
+                }
                 if (!file) {
                     fotoPreview.src = '';
                     fotoPreview.classList.add('d-none');
@@ -107,6 +134,9 @@
         });
 
         $('#modalEditarCliente').on('hidden.bs.modal', function () {
+            if (camaraEditar) {
+                camaraEditar.stop();
+            }
             $('#formEditarCliente')[0].reset();
             setEstado(document.getElementById('ubicacionEditarEstado'), 'Sin ubicación');
 
@@ -117,6 +147,10 @@
                 fp.classList.add('d-none');
             }
             if (fi) fi.value = '';
+
+            if (fotoNombre) {
+                fotoNombre.textContent = 'Ningún archivo seleccionado';
+            }
         });
     });
 })();
