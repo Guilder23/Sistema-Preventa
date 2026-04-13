@@ -50,6 +50,7 @@
         puntos.forEach(function (p) {
           if (typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
 
+          var nombreCliente = p.cliente || 'Cliente';
           var popup = '<strong>Pedido #' + (p.pedido_id || '') + '</strong>';
           if (p.cliente) popup += '<br><small><b>Cliente:</b> ' + p.cliente + '</small>';
           if (p.estado_str) popup += '<br><small><b>Estado:</b> ' + p.estado_str + '</small>';
@@ -71,7 +72,15 @@
             weight: 2,
             opacity: 1,
             fillOpacity: 0.9
-          }).addTo(map).bindPopup(popup);
+          })
+            .addTo(map)
+            .bindTooltip(nombreCliente, {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -12],
+              className: 'mapa-cliente-label'
+            })
+            .bindPopup(popup);
 
           bounds.push([p.lat, p.lng]);
         });

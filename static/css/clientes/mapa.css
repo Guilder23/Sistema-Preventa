@@ -13,3 +13,19 @@
 .leaflet-control-zoom a {
     border-radius: 8px !important;
 }
+
+.leaflet-tooltip.mapa-cliente-label {
+    background: rgba(17, 24, 39, 0.9);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 4px 8px;
+}
+
+.leaflet-tooltip-top.mapa-cliente-label:before {
+    border-top-color: rgba(17, 24, 39, 0.9);
+}

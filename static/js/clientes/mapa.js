@@ -51,12 +51,21 @@
         puntos.forEach(function (p) {
           if (typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
 
+          var nombreCliente = p.nombre || 'Cliente';
           var popup = '<strong>' + (p.nombre || 'Cliente') + '</strong>';
           if (p.ci_nit) popup += '<br><small>CI/NIT: ' + p.ci_nit + '</small>';
           if (p.telefono) popup += '<br><small>Tel: ' + p.telefono + '</small>';
           if (p.direccion) popup += '<br><small>' + p.direccion + '</small>';
 
-          L.marker([p.lat, p.lng]).addTo(map).bindPopup(popup);
+          L.marker([p.lat, p.lng])
+            .addTo(map)
+            .bindTooltip(nombreCliente, {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -8],
+              className: 'mapa-cliente-label'
+            })
+            .bindPopup(popup);
           bounds.push([p.lat, p.lng]);
         });
 
