@@ -122,7 +122,8 @@
                             <th>Preventista</th>
                             <th>Fecha</th>
                             <th>Estado</th>
-                            <th>Total</th>
+                            <th>Total bruto</th>
+                            <th>Total real</th>
                             <th class="text-center">PDF</th>
                         </tr>
                     </thead>
@@ -135,6 +136,7 @@
                             <td>{{ p.fecha|date:'d/m/Y H:i' }}</td>
                             <td>{{ p.get_estado_display }}</td>
                             <td>Bs {{ p.total|floatformat:2 }}</td>
+                            <td>Bs {{ p.total_neto|floatformat:2 }}</td>
                             <td class="text-center">
                                 <a class="btn btn-danger btn-sm" href="{% url 'reporte_pedido_pdf' p.id %}" target="_blank" rel="noopener">
                                     <i class="fas fa-file-pdf"></i>
@@ -143,7 +145,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No hay pedidos para mostrar.</td>
+                            <td colspan="8" class="text-center text-muted py-4">No hay pedidos para mostrar.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
