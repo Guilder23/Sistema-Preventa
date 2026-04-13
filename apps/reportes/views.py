@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from decimal import Decimal
 from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
@@ -19,13 +21,28 @@ from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Tabl
 @login_required
 def _pedidos_filtrados(request, user):
     from apps.pedidos.models import Pedido
+    from django.contrib.auth.models import User
 
     q = (request.GET.get("q") or "").strip()
     estado = (request.GET.get("estado") or "").strip().lower()
     desde = (request.GET.get("desde") or "").strip()
     hasta = (request.GET.get("hasta") or "").strip()
+    tipo = (request.GET.get("tipo") or "general").strip().lower()
+    preventista_id_raw = (request.GET.get("preventista") or "").strip()
+
+    if tipo not in {"general", "despacho"}:
+        tipo = "general"
+
+    # Para despacho, si no se eligió estado, se asume pendiente.
+    if tipo == "despacho" and not estado:
+        estado = Pedido.ESTADO_PENDIENTE
 
     pedidos = _pedido_qs_para_usuario(user).select_related("cliente", "preventista")
+    pedidos_base = pedidos
+
+    # Opciones de preventista dentro del alcance del usuario.
+    preventista_ids = pedidos_base.values_list("preventista_id", flat=True).distinct()
+    preventistas = User.objects.filter(id__in=preventista_ids).order_by("username")
 
     if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
         estado = ""
@@ -40,6 +57,16 @@ def _pedidos_filtrados(request, user):
 
     if estado:
         pedidos = pedidos.filter(estado=estado)
+
+    preventista_id = ""
+    if preventista_id_raw:
+        try:
+            preventista_id_int = int(preventista_id_raw)
+        except ValueError:
+            preventista_id_int = None
+        if preventista_id_int is not None:
+            pedidos = pedidos.filter(preventista_id=preventista_id_int)
+            preventista_id = str(preventista_id_int)
 
     fecha_desde = parse_date(desde) if desde else None
     fecha_hasta = parse_date(hasta) if hasta else None
@@ -56,15 +83,17 @@ def _pedidos_filtrados(request, user):
         "estado": estado,
         "desde": desde,
         "hasta": hasta,
+        "tipo": tipo,
+        "preventista": preventista_id,
     }
-    return pedidos, filtros
+    return pedidos, filtros, preventistas
 
 
 @login_required
 def reportes_inicio(request):
     from apps.pedidos.models import Pedido
 
-    pedidos, filtros = _pedidos_filtrados(request, request.user)
+    pedidos, filtros, preventistas = _pedidos_filtrados(request, request.user)
 
     resumen = pedidos.aggregate(total_monto=Sum("total"))
     total_pedidos = pedidos.count()
@@ -95,6 +124,9 @@ def reportes_inicio(request):
             "estado": filtros["estado"],
             "desde": filtros["desde"],
             "hasta": filtros["hasta"],
+            "tipo": filtros["tipo"],
+            "preventista": filtros["preventista"],
+            "preventistas": preventistas,
             "total_pedidos": total_pedidos,
             "total_monto": total_monto,
             "total_vendidos": total_vendidos,
@@ -109,7 +141,9 @@ def reportes_inicio(request):
 
 @login_required
 def pedidos_pdf(request):
-    pedidos, filtros = _pedidos_filtrados(request, request.user)
+    from apps.pedidos.models import DetallePedido
+
+    pedidos, filtros, _ = _pedidos_filtrados(request, request.user)
 
     def _fmt_money(value) -> str:
         try:
@@ -255,7 +289,9 @@ def pedidos_pdf(request):
     filtros_box = [
         Paragraph("FILTROS APLICADOS", label_style),
         Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
+        Paragraph(f"Tipo reporte: {filtros['tipo'].capitalize()}", value_style),
         Paragraph(f"Estado: {filtros['estado'] or 'Todos'}", value_style),
+        Paragraph(f"Preventista: {filtros['preventista'] or 'Todos'}", value_style),
         Paragraph(f"Desde: {filtros['desde'] or '--'}", value_style),
         Paragraph(f"Hasta: {filtros['hasta'] or '--'}", value_style),
     ]
@@ -361,6 +397,99 @@ def pedidos_pdf(request):
         ),
     )
     story.append(totals_wrap)
+
+    # Sección de despacho: consolidado + detalle de productos por pedido.
+    if filtros["tipo"] == "despacho" and pedidos.exists():
+        story.append(Spacer(1, 12))
+        story.append(Paragraph("CONSOLIDADO DE CARGA PARA REPARTO", label_style))
+        story.append(Spacer(1, 4))
+
+        pedido_ids = list(pedidos.values_list("id", flat=True))
+        detalles = (
+            DetallePedido.objects.select_related("pedido", "pedido__cliente", "pedido__preventista", "producto")
+            .filter(pedido_id__in=pedido_ids)
+            .order_by("producto__nombre", "pedido_id")
+        )
+
+        consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set()})
+        for d in detalles:
+            key = d.producto_id
+            item = consolidado[key]
+            item["nombre"] = d.producto.nombre
+            item["cantidad"] += int(d.cantidad or 0)
+            item["monto"] += d.subtotal or Decimal("0.00")
+            item["clientes"].add(d.pedido.cliente_id)
+
+        data_consolidado = [["Producto", "Cant. total", "Clientes", "Monto total"]]
+        for _, item in sorted(consolidado.items(), key=lambda kv: kv[1].get("nombre", "")):
+            data_consolidado.append(
+                [
+                    item.get("nombre", "-"),
+                    str(item["cantidad"]),
+                    str(len(item["clientes"])),
+                    _fmt_money(item["monto"]),
+                ]
+            )
+
+        tabla_consolidado = Table(
+            data_consolidado,
+            colWidths=[84 * mm, 28 * mm, 28 * mm, 36 * mm],
+            repeatRows=1,
+        )
+        tabla_consolidado.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 9),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+                    ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+                    ("ALIGN", (3, 1), (3, -1), "RIGHT"),
+                ]
+            )
+        )
+        story.append(tabla_consolidado)
+
+        story.append(Spacer(1, 10))
+        story.append(Paragraph("DETALLE DE PRODUCTOS POR PEDIDO", label_style))
+        story.append(Spacer(1, 4))
+
+        data_detalle = [["Pedido", "Cliente", "Preventista", "Producto", "Cant.", "Precio", "Subtotal"]]
+        for d in detalles:
+            data_detalle.append(
+                [
+                    f"#{d.pedido_id}",
+                    f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
+                    d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
+                    d.producto.nombre,
+                    str(d.cantidad),
+                    _fmt_money(d.precio_unitario),
+                    _fmt_money(d.subtotal),
+                ]
+            )
+
+        tabla_detalle = Table(
+            data_detalle,
+            colWidths=[14 * mm, 34 * mm, 30 * mm, 54 * mm, 14 * mm, 18 * mm, 20 * mm],
+            repeatRows=1,
+        )
+        tabla_detalle.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 8),
+                    ("FONTSIZE", (0, 1), (-1, -1), 7),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+                    ("ALIGN", (4, 1), (4, -1), "CENTER"),
+                    ("ALIGN", (5, 1), (6, -1), "RIGHT"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
+        story.append(tabla_detalle)
 
     doc.build(story, onFirstPage=_draw_header_footer, onLaterPages=_draw_header_footer)
 
