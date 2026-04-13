@@ -67,9 +67,10 @@
                         <th style="width: 12%;">Código</th>
                         <th style="width: 22%;">Producto</th>
                         <th style="width: 10%;" class="text-center">Stock</th>
-                        <th style="width: 12%;">P. Unidad</th>
-                        <th style="width: 12%;">P. Mayor</th>
-                        <th style="width: 12%;">P. Caja</th>
+                        <th style="width: 10%;">V. Unidad</th>
+                        <th style="width: 10%;">C. Unidad</th>
+                        <th style="width: 10%;">V. Caja</th>
+                        <th style="width: 10%;">C. Caja</th>
                         <th style="width: 10%;" class="text-center">Estado</th>
                         <th style="width: 14%;" class="text-center">Acciones</th>
                     </tr>
@@ -101,8 +102,9 @@
                             {% endif %}
                         </td>
                         <td>Bs {{ p.precio_unidad|floatformat:2 }}</td>
-                        <td>Bs {{ p.precio_mayor|floatformat:2 }}</td>
+                        <td>Bs {{ p.precio_compra_unidad|floatformat:2 }}</td>
                         <td>Bs {{ p.precio_caja|floatformat:2 }}</td>
+                        <td>Bs {{ p.precio_compra_caja|floatformat:2 }}</td>
                         <td class="text-center">
                             {% if p.activo %}
                             <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Activo</span>
@@ -128,7 +130,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4">
+                        <td colspan="9" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay productos registrados</p>
                         </td>
