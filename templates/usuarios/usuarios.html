@@ -124,15 +124,15 @@
                                                     <i class="fas fa-shield-alt"></i> Administrador
                                                 </span>
                                             {% elif usuario.perfil.rol == 'supervisor' %}
-                                                <span class="badge-rol badge-rol-admin" data-rol="supervisor">
+                                                <span class="badge-rol badge-rol-supervisor" data-rol="supervisor">
                                                     <i class="fas fa-user-tie"></i> Supervisor
                                                 </span>
                                             {% elif usuario.perfil.rol == 'repartidor' %}
-                                                <span class="badge-rol badge-rol-tienda" data-rol="repartidor">
+                                                <span class="badge-rol badge-rol-repartidor" data-rol="repartidor">
                                                     <i class="fas fa-truck"></i> Repartidor
                                                 </span>
                                             {% elif usuario.perfil.rol == 'preventista' %}
-                                                <span class="badge-rol badge-rol-tienda" data-rol="preventista">
+                                                <span class="badge-rol badge-rol-preventista" data-rol="preventista">
                                                     <i class="fas fa-route"></i> Preventista
                                                 </span>
                                             {% else %}

@@ -121,6 +121,17 @@
                                 <small class="form-text text-muted">Asigna un Supervisor para que pueda ver sus clientes/pedidos/mapa.</small>
                             </div>
 
+                            <div class="form-group" id="grupoRepartidor" style="display: none;">
+                                <label for="repartidor_id" class="form-label">Repartidor</label>
+                                <select class="form-control" id="repartidor_id" name="repartidor_id">
+                                    <option value="">-- Sin repartidor --</option>
+                                    {% for r in repartidores %}
+                                        <option value="{{ r.id }}">{{ r.get_full_name|default:r.username }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Asigna un Repartidor para el seguimiento de pedidos del preventista.</small>
+                            </div>
+
                             {% if usuarios_quota_json %}
                             <div
                                 class="alert alert-info py-2 quota-alert"
