@@ -123,3 +123,20 @@
         font-size: 1.45rem;
     }
 }
+
+.tabla-reportes-compacta th,
+.tabla-reportes-compacta td {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.84rem;
+    white-space: nowrap;
+}
+
+.tabla-reportes-compacta th {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.tabla-reportes-compacta .btn.btn-sm {
+    padding: 0.2rem 0.45rem;
+}

@@ -26,6 +26,13 @@ class Pedido(models.Model):
     preventista = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="pedidos"
     )
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="pedidos_registrados",
+        blank=True,
+        null=True,
+    )
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default=ESTADO_PENDIENTE)
     fecha_vendido = models.DateTimeField(blank=True, null=True)

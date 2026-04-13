@@ -318,6 +318,7 @@ def crear_pedido(request):
         pedido = Pedido.objects.create(
             cliente=cliente,
             preventista=preventista_asignado,
+            registrado_por=request.user,
             observacion=observacion or None,
         )
 
