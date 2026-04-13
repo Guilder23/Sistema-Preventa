@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
@@ -63,6 +64,26 @@ def _pedidos_qs_para_usuario(user):
 def listar_pedidos(request):
     q = (request.GET.get("q") or "").strip()
     estado = (request.GET.get("estado") or "").strip().lower()
+    rol_usuario = (request.GET.get("rol") or "").strip().lower()
+    fecha_desde_raw = (request.GET.get("fecha_desde") or "").strip()
+    fecha_hasta_raw = (request.GET.get("fecha_hasta") or "").strip()
+
+    fecha_desde = None
+    fecha_hasta = None
+    try:
+        if fecha_desde_raw:
+            fecha_desde = date.fromisoformat(fecha_desde_raw)
+    except ValueError:
+        fecha_desde = None
+        fecha_desde_raw = ""
+
+    try:
+        if fecha_hasta_raw:
+            fecha_hasta = date.fromisoformat(fecha_hasta_raw)
+    except ValueError:
+        fecha_hasta = None
+        fecha_hasta_raw = ""
+
     pedidos = _pedidos_qs_para_usuario(request.user)
 
     if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
@@ -77,6 +98,23 @@ def listar_pedidos(request):
 
     if estado:
         pedidos = pedidos.filter(estado=estado)
+
+    roles_validos = {"administrador", "supervisor", "preventista", "repartidor"}
+    if rol_usuario not in roles_validos:
+        rol_usuario = ""
+
+    if rol_usuario:
+        if rol_usuario == "administrador":
+            pedidos = pedidos.filter(
+                Q(preventista__is_superuser=True) | Q(preventista__perfil__rol="administrador")
+            )
+        else:
+            pedidos = pedidos.filter(preventista__perfil__rol=rol_usuario)
+
+    if fecha_desde:
+        pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
+    if fecha_hasta:
+        pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
 
     perfil = getattr(request.user, "perfil", None)
     if perfil and perfil.rol == "repartidor":
@@ -112,6 +150,9 @@ def listar_pedidos(request):
             "pedidos": pedidos,
             "q": q,
             "estado": estado,
+            "rol_usuario": rol_usuario,
+            "fecha_desde": fecha_desde_raw,
+            "fecha_hasta": fecha_hasta_raw,
             "clientes": clientes,
             "productos": productos,
             "clientes_data": clientes_data,
@@ -153,6 +194,22 @@ def crear_pedido(request):
         messages.error(request, "Agrega al menos un producto con cantidad")
         return redirect("listar_pedidos")
 
+    items_validos = []
+    for pid, cantidad_int in items:
+        producto = get_object_or_404(Producto, id=pid, activo=True)
+        stock = int(getattr(producto, "stock_unidades", 0) or 0)
+        precio = producto.precio_unidad or Decimal("0.00")
+
+        if cantidad_int > stock:
+            messages.error(request, f'Stock insuficiente para "{producto.nombre}" (stock: {stock})')
+            return redirect("listar_pedidos")
+
+        if precio <= 0:
+            messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
+            return redirect("listar_pedidos")
+
+        items_validos.append((producto, cantidad_int, precio))
+
     with transaction.atomic():
         preventista_asignado = cliente.creado_por or request.user
         pedido = Pedido.objects.create(
@@ -162,9 +219,7 @@ def crear_pedido(request):
         )
 
         total = Decimal("0.00")
-        for pid, cantidad_int in items:
-            producto = get_object_or_404(Producto, id=pid, activo=True)
-            precio = producto.precio_unidad or Decimal("0.00")
+        for producto, cantidad_int, precio in items_validos:
             subtotal = (precio * Decimal(cantidad_int)).quantize(Decimal("0.01"))
             DetallePedido.objects.create(
                 pedido=pedido,
@@ -243,14 +298,28 @@ def editar_pedido(request, id: int):
         messages.error(request, "Agrega al menos un producto con cantidad")
         return redirect("listar_pedidos")
 
+    items_validos = []
+    for pid, cantidad_int in items:
+        producto = get_object_or_404(Producto, id=pid, activo=True)
+        stock = int(getattr(producto, "stock_unidades", 0) or 0)
+        precio = producto.precio_unidad or Decimal("0.00")
+
+        if cantidad_int > stock:
+            messages.error(request, f'Stock insuficiente para "{producto.nombre}" (stock: {stock})')
+            return redirect("listar_pedidos")
+
+        if precio <= 0:
+            messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
+            return redirect("listar_pedidos")
+
+        items_validos.append((producto, cantidad_int, precio))
+
     with transaction.atomic():
         pedido.observacion = observacion or None
         pedido.detalles.all().delete()
 
         total = Decimal("0.00")
-        for pid, cantidad_int in items:
-            producto = get_object_or_404(Producto, id=pid, activo=True)
-            precio = producto.precio_unidad or Decimal("0.00")
+        for producto, cantidad_int, precio in items_validos:
             subtotal = (precio * Decimal(cantidad_int)).quantize(Decimal("0.01"))
             DetallePedido.objects.create(
                 pedido=pedido,

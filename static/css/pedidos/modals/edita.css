@@ -15,6 +15,13 @@
 #modalEditarPedido .table thead th {
     border-top: 0;
     border-bottom: 0;
+    background: var(--color-primario) !important;
+    color: #fff !important;
+}
+
+#modalEditarPedido #tablaItemsPedidoEditar thead th {
+    background: var(--color-primario) !important;
+    color: #fff !important;
 }
 
 #modalEditarPedido .table td,
@@ -39,14 +46,46 @@
     min-width: 90px;
 }
 
+#modalEditarPedido .item-cantidad-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#modalEditarPedido .item-cantidad-wrap .item-cantidad {
+    min-width: 74px;
+    text-align: center;
+}
+
+#modalEditarPedido .item-cantidad-wrap .btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Evita que el dropdown del autocomplete se recorte dentro de la tabla */
+#modalEditarPedido .table-responsive {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+#modalEditarPedido #tablaItemsPedidoEditar,
+#modalEditarPedido #tablaItemsPedidoEditar td {
+    overflow: visible;
+}
+
 /* Autocomplete dropdown */
 #modalEditarPedido .ac-wrap {
     position: relative;
+    z-index: 1065;
 }
 
 #modalEditarPedido .ac-dropdown {
     position: absolute;
-    z-index: 1052;
+    z-index: 1070;
     top: calc(100% + 4px);
     left: 0;
     right: 0;
@@ -73,6 +112,37 @@
 }
 
 #modalEditarPedido .ac-empty {
+    padding: 8px 10px;
+    color: #6c757d;
+}
+
+/* Dropdown flotante (se renderiza en body para evitar recortes por scroll/overflow) */
+.ac-dropdown-floating {
+    position: fixed;
+    z-index: 2060;
+    max-height: 300px;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+}
+
+.ac-dropdown-floating .ac-item {
+    width: 100%;
+    text-align: left;
+    padding: 8px 10px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.ac-dropdown-floating .ac-item:hover,
+.ac-dropdown-floating .ac-item.active {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.ac-dropdown-floating .ac-empty {
     padding: 8px 10px;
     color: #6c757d;
 }

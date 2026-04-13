@@ -24,16 +24,28 @@
         wrap.appendChild(inputEl);
 
         const dd = document.createElement('div');
-        dd.className = 'ac-dropdown d-none';
-        wrap.appendChild(dd);
+        dd.className = 'ac-dropdown ac-dropdown-floating d-none';
+        document.body.appendChild(dd);
 
-        return dd;
+        function place() {
+            const rect = inputEl.getBoundingClientRect();
+            const width = rect.width;
+            const maxLeft = Math.max(8, window.innerWidth - width - 8);
+            const left = Math.min(Math.max(rect.left, 8), maxLeft);
+
+            dd.style.left = `${left}px`;
+            dd.style.top = `${rect.bottom + 4}px`;
+            dd.style.width = `${width}px`;
+        }
+
+        return { el: dd, place };
     }
 
     function attachAutocomplete({ inputEl, hiddenIdEl, items, onPick }) {
         if (!inputEl || !hiddenIdEl) return null;
 
-        const dropdownEl = createDropdown(inputEl);
+        const dropdown = createDropdown(inputEl);
+        const dropdownEl = dropdown.el;
         let activeIndex = -1;
         let filtered = [];
 
@@ -44,6 +56,7 @@
         }
 
         function show() {
+            dropdown.place();
             dropdownEl.classList.remove('d-none');
         }
 
@@ -67,6 +80,8 @@
                 empty.textContent = 'Sin resultados';
                 dropdownEl.appendChild(empty);
             }
+
+            dropdown.place();
         }
 
         function applyFilter() {
@@ -144,6 +159,12 @@
         return Number.isFinite(n) ? n : 0;
     }
 
+    function getNombreProductoPorId(id) {
+        const prod = id ? (window.__pedidosProductosById?.get(String(id)) || null) : null;
+        if (!prod || !prod.label) return 'Producto';
+        return String(prod.label);
+    }
+
     function getProductoById(id) {
         return id ? (window.__pedidosProductosById?.get(String(id)) || null) : null;
     }
@@ -165,11 +186,18 @@
         if (stockEl) stockEl.value = String(stock);
         if (cantEl) {
             cantEl.max = stock > 0 ? String(stock) : '';
-            if (stock > 0 && cant > stock) {
+            if (cant > stock) {
                 cantEl.classList.add('is-invalid');
             } else {
                 cantEl.classList.remove('is-invalid');
             }
+        }
+
+        const buscarEl = tr.querySelector('.item-producto-buscar');
+        if (buscarEl && productoId && (stock === 0 || precio <= 0)) {
+            buscarEl.classList.add('is-invalid');
+        } else {
+            buscarEl?.classList.remove('is-invalid');
         }
 
         precioEl.value = precio.toFixed(2);
@@ -206,6 +234,26 @@
             calcularFila(tr);
             calcularTotal();
         });
+
+        tr.querySelector('.btn-cant-menos')?.addEventListener('click', function () {
+            const cantEl = tr.querySelector('.item-cantidad');
+            const actual = parseInt(cantEl?.value || '1', 10) || 1;
+            const siguiente = Math.max(actual - 1, 1);
+            if (cantEl) {
+                cantEl.value = String(siguiente);
+                cantEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+
+        tr.querySelector('.btn-cant-mas')?.addEventListener('click', function () {
+            const cantEl = tr.querySelector('.item-cantidad');
+            const actual = parseInt(cantEl?.value || '1', 10) || 1;
+            if (cantEl) {
+                cantEl.value = String(actual + 1);
+                cantEl.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+
         tr.querySelector('.btn-quitar-item')?.addEventListener('click', function () {
             tr.remove();
             calcularTotal();
@@ -251,6 +299,10 @@
         if (totalEl) totalEl.textContent = '0.00';
         const clienteEl = document.getElementById('editarPedidoCliente');
         if (clienteEl) clienteEl.value = '';
+
+        document.querySelectorAll('.ac-dropdown-floating').forEach((el) => {
+            el.classList.add('d-none');
+        });
 
         setInlineError('');
     }
@@ -335,7 +387,10 @@
         if (form) {
             form.addEventListener('submit', function (e) {
                 let ok = true;
+                const errores = [];
+                let fila = 0;
                 document.querySelectorAll('#itemsPedidoEditarBody tr').forEach((tr) => {
+                    fila += 1;
                     const buscarEl = tr.querySelector('.item-producto-buscar');
                     const idEl = tr.querySelector('.item-producto-id');
                     const cantEl = tr.querySelector('.item-cantidad');
@@ -346,26 +401,40 @@
                         idEl.value = '';
                         buscarEl.classList.add('is-invalid');
                         ok = false;
+                        errores.push(`Fila ${fila}: selecciona un producto válido.`);
                     } else {
                         idEl.value = String(match.id);
                         buscarEl.classList.remove('is-invalid');
 
+                        const nombreProducto = getNombreProductoPorId(match.id);
                         const stock = parseInt(match.stock || '0', 10) || 0;
+                        const precio = parseFloat(match.precio || '0') || 0;
                         const cant = parseInt(cantEl?.value || '0', 10) || 0;
-                        if (cantEl && stock > 0 && cant > stock) {
+                        if (cantEl && cant > stock) {
                             cantEl.classList.add('is-invalid');
                             ok = false;
+                            errores.push(`Fila ${fila} (${nombreProducto}): cantidad ${cant} supera stock ${stock}.`);
+                        } else if (cantEl) {
+                            cantEl.classList.remove('is-invalid');
                         }
+
                         if (stock === 0) {
                             buscarEl.classList.add('is-invalid');
                             ok = false;
+                            errores.push(`Fila ${fila} (${nombreProducto}): stock agotado.`);
+                        }
+
+                        if (precio <= 0) {
+                            buscarEl.classList.add('is-invalid');
+                            ok = false;
+                            errores.push(`Fila ${fila} (${nombreProducto}): no tiene precio de venta válido.`);
                         }
                     }
                 });
 
                 if (!ok) {
                     e.preventDefault();
-                    setInlineError('Verifica: productos válidos y stock suficiente.');
+                    setInlineError(errores.join(' | '));
                 }
             });
         }
