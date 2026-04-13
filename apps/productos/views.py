@@ -60,8 +60,9 @@ def crear_producto(request):
     nombre = (request.POST.get("nombre") or "").strip()
     descripcion = (request.POST.get("descripcion") or "").strip()
     precio_unidad = request.POST.get("precio_unidad") or "0"
-    precio_mayor = request.POST.get("precio_mayor") or "0"
     precio_caja = request.POST.get("precio_caja") or "0"
+    precio_compra_unidad = request.POST.get("precio_compra_unidad") or "0"
+    precio_compra_caja = request.POST.get("precio_compra_caja") or "0"
     foto = request.FILES.get("foto")
     stock_unidades = (request.POST.get("stock_unidades") or "0").strip()
     stock_umbral_amarillo = (request.POST.get("stock_umbral_amarillo") or "10").strip()
@@ -79,8 +80,9 @@ def crear_producto(request):
         nombre=nombre,
         descripcion=descripcion or None,
         precio_unidad=precio_unidad or 0,
-        precio_mayor=precio_mayor or 0,
         precio_caja=precio_caja or 0,
+        precio_compra_unidad=precio_compra_unidad or 0,
+        precio_compra_caja=precio_compra_caja or 0,
         foto=foto,
         stock_unidades=stock_unidades or 0,
         stock_umbral_amarillo=stock_umbral_amarillo or 10,
@@ -101,8 +103,9 @@ def obtener_producto(request, id: int):
             "nombre": producto.nombre,
             "descripcion": producto.descripcion or "",
             "precio_unidad": str(producto.precio_unidad),
-            "precio_mayor": str(producto.precio_mayor),
             "precio_caja": str(producto.precio_caja),
+            "precio_compra_unidad": str(producto.precio_compra_unidad),
+            "precio_compra_caja": str(producto.precio_compra_caja),
             "activo": producto.activo,
             "foto_url": producto.foto.url if producto.foto else None,
             "stock_unidades": producto.stock_unidades,
@@ -119,8 +122,9 @@ def editar_producto(request, id: int):
     nombre = (request.POST.get("nombre") or "").strip()
     descripcion = (request.POST.get("descripcion") or "").strip()
     precio_unidad = request.POST.get("precio_unidad") or "0"
-    precio_mayor = request.POST.get("precio_mayor") or "0"
     precio_caja = request.POST.get("precio_caja") or "0"
+    precio_compra_unidad = request.POST.get("precio_compra_unidad") or "0"
+    precio_compra_caja = request.POST.get("precio_compra_caja") or "0"
     foto = request.FILES.get("foto")
     activo = request.POST.get("activo") == "on"
     stock_unidades = (request.POST.get("stock_unidades") or "0").strip()
@@ -134,8 +138,9 @@ def editar_producto(request, id: int):
     producto.nombre = nombre
     producto.descripcion = descripcion or None
     producto.precio_unidad = precio_unidad or 0
-    producto.precio_mayor = precio_mayor or 0
     producto.precio_caja = precio_caja or 0
+    producto.precio_compra_unidad = precio_compra_unidad or 0
+    producto.precio_compra_caja = precio_compra_caja or 0
     producto.stock_unidades = stock_unidades or 0
     producto.stock_umbral_amarillo = stock_umbral_amarillo or 10
     producto.stock_umbral_rojo = stock_umbral_rojo or 3

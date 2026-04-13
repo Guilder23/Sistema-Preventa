@@ -42,8 +42,9 @@
                     $('#editNombre').val(data.nombre);
                     $('#editDescripcion').val(data.descripcion || '');
                     $('#editPrecioUnidad').val(data.precio_unidad || '0');
-                    $('#editPrecioMayor').val(data.precio_mayor || '0');
+                    $('#editPrecioCompraUnidad').val(data.precio_compra_unidad || '0');
                     $('#editPrecioCaja').val(data.precio_caja || '0');
+                    $('#editPrecioCompraCaja').val(data.precio_compra_caja || '0');
                     $('#editActivo').prop('checked', !!data.activo);
 
                     $('#editStockUnidades').val(data.stock_unidades ?? 0);

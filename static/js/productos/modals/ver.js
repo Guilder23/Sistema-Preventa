@@ -32,8 +32,9 @@
                     $('#verProductoNombre').text(data.nombre || '—');
                     $('#verProductoDescripcion').text(data.descripcion || '—');
                     $('#verProductoPrecioUnidad').text(data.precio_unidad || '0.00');
-                    $('#verProductoPrecioMayor').text(data.precio_mayor || '0.00');
+                    $('#verProductoPrecioCompraUnidad').text(data.precio_compra_unidad || '0.00');
                     $('#verProductoPrecioCaja').text(data.precio_caja || '0.00');
+                    $('#verProductoPrecioCompraCaja').text(data.precio_compra_caja || '0.00');
 
                     const activo = !!data.activo;
                     $('#verProductoEstado').html(
