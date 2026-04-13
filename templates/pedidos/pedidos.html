@@ -28,7 +28,7 @@
     <div class="card card-filtros">
         <div class="card-body py-3">
             <div class="row align-items-center">
-                <div class="col-md-5">
+                <div class="col-md-3">
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
@@ -36,7 +36,7 @@
                         <input type="text" class="form-control form-control-sm border-left-0" id="buscarPedido" placeholder="Buscar por cliente o CI/NIT..." value="{{ q }}">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select class="form-control form-control-sm" id="estadoPedido" name="estado">
                         <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
                         <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
@@ -44,7 +44,22 @@
                         <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
                     </select>
                 </div>
-                <div class="col-md-4 text-right">
+                <div class="col-md-2">
+                    <select class="form-control form-control-sm" id="rolPedido" name="rol">
+                        <option value="" {% if not rol_usuario %}selected{% endif %}>Todos los roles</option>
+                        <option value="administrador" {% if rol_usuario == 'administrador' %}selected{% endif %}>Administrador</option>
+                        <option value="supervisor" {% if rol_usuario == 'supervisor' %}selected{% endif %}>Supervisor</option>
+                        <option value="preventista" {% if rol_usuario == 'preventista' %}selected{% endif %}>Preventista</option>
+                        <option value="repartidor" {% if rol_usuario == 'repartidor' %}selected{% endif %}>Repartidor</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control form-control-sm" id="fechaDesdePedido" name="fecha_desde" value="{{ fecha_desde }}" title="Fecha desde">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" class="form-control form-control-sm" id="fechaHastaPedido" name="fecha_hasta" value="{{ fecha_hasta }}" title="Fecha hasta">
+                </div>
+                <div class="col-md-1 text-right">
                     <small class="text-muted">Mostrando {{ pedidos|length }} pedidos</small>
                 </div>
             </div>
