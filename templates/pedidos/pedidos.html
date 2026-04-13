@@ -41,6 +41,7 @@
                         <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
                         <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
                         <option value="vendido" {% if estado == 'vendido' %}selected{% endif %}>Vendido</option>
+                        <option value="no_entregado" {% if estado == 'no_entregado' %}selected{% endif %}>No entregado</option>
                         <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
                     </select>
                 </div>
@@ -96,6 +97,8 @@
                         <td class="text-center">
                             {% if p.estado == 'anulado' %}
                             <span class="badge-estado badge-estado-anulado"><i class="fas fa-ban"></i> Anulado</span>
+                            {% elif p.estado == 'no_entregado' %}
+                            <span class="badge-estado badge-estado-anulado"><i class="fas fa-store-slash"></i> No entregado</span>
                             {% elif p.estado == 'vendido' %}
                             <span class="badge-estado badge-estado-vendido"><i class="fas fa-check-circle"></i> Vendido</span>
                             {% else %}
@@ -116,13 +119,15 @@
                                     {% endif %}
                                 {% endif %}
 
-                                {% if not user.is_superuser %}
-                                    {% if user.perfil.rol == 'preventista' or user.perfil.rol == 'repartidor' %}
-                                        {% if p.estado != 'anulado' and p.estado != 'vendido' %}
-                                            <button type="button" class="btn btn-success btn-sm btn-marcar-vendido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Marcar como vendido">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                        {% endif %}
+                                {% if not user.is_superuser and p.estado == 'pendiente' %}
+                                    {% if user.perfil.rol == 'preventista' %}
+                                        <button type="button" class="btn btn-success btn-sm btn-marcar-vendido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Marcar como vendido">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    {% elif user.perfil.rol == 'repartidor' %}
+                                        <button type="button" class="btn btn-success btn-sm btn-registrar-entrega" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Registrar entrega/devolución">
+                                            <i class="fas fa-truck"></i>
+                                        </button>
                                     {% endif %}
                                 {% endif %}
 
@@ -166,6 +171,7 @@
     {% include 'pedidos/modals/ver.html' %}
     {% include 'pedidos/modals/anula.html' %}
     {% include 'pedidos/modals/vendido.html' %}
+    {% include 'pedidos/modals/entrega.html' %}
 </div>
 {% endblock %}
 
@@ -177,5 +183,6 @@
 <script src="{% static 'js/pedidos/modals/ver.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/anula.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/vendido.js' %}"></script>
+<script src="{% static 'js/pedidos/modals/entrega.js' %}"></script>
 <script src="{% static 'js/pedidos/pedidos.js' %}"></script>
 {% endblock %}

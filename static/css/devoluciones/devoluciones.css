@@ -1,0 +1,68 @@
+.form-label-sm {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.tabla-devoluciones th {
+    white-space: nowrap;
+}
+
+.tabla-devoluciones td {
+    vertical-align: middle;
+}
+
+.filtro-compacto {
+    max-width: 170px;
+}
+
+.badge-soft {
+    display: inline-block;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    border-radius: 0.35rem;
+    border: 1px solid;
+}
+
+.badge-soft-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+.badge-soft-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #fbbf24;
+}
+
+.badge-soft-success {
+    background-color: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+}
+
+.badge-soft-info {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-color: #93c5fd;
+}
+
+.badge-soft-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+.acciones-btns {
+    gap: 0.35rem;
+}
+
+.btn-filtrar {
+    min-width: 38px;
+}

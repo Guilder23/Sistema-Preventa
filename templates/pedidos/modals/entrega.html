@@ -1,0 +1,53 @@
+{% if not user.is_superuser and user.perfil.rol == 'repartidor' %}
+<div class="modal fade" id="modalRegistrarEntrega" tabindex="-1" role="dialog" aria-labelledby="modalRegistrarEntregaTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalRegistrarEntregaTitle"><i class="fas fa-truck"></i> Registrar entrega</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <form id="formRegistrarEntrega" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 mb-3">
+                        Pedido <strong id="entregaPedidoLabel"></strong>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Resultado de entrega</label>
+                            <select class="form-control" id="entregaResultado" name="resultado" required>
+                                <option value="entregado_completo">Entregado completo</option>
+                                <option value="entregado_parcial">Entregado parcial (con devoluciones)</option>
+                                <option value="no_entregado">No entregado</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Motivo/Observación</label>
+                            <input type="text" class="form-control" id="entregaMotivo" name="motivo_general" placeholder="Ej: tienda cerrada, cliente rechazó producto">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="tablaEntregaDetalles">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Pedido</th>
+                                    <th class="text-center">Entregar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="entregaDetallesBody"></tbody>
+                        </table>
+                    </div>
+                    <small class="text-muted">Si eliges "entrega parcial", ajusta cantidades entregadas por producto. Lo no entregado se registra como devolución.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar entrega</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
