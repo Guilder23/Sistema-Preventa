@@ -42,6 +42,7 @@
         $('#modalEditarUsuario').on('hidden.bs.modal', function() {
             $('#formEditarUsuario')[0].reset();
             $('#editGrupoSupervisor').hide();
+            $('#editGrupoRepartidor').hide();
         });
     });
     
@@ -61,6 +62,7 @@
                 $('#editLastName').val(data.last_name || '');
                 $('#editRol').val(data.rol);
                 $('#editSupervisorId').val(data.supervisor_id || '');
+                $('#editRepartidorId').val(data.repartidor_id || '');
                 $('#editIsActive').prop('checked', data.is_active);
                 
                 // Mostrar los selectores según el rol
@@ -87,15 +89,23 @@
         console.log('→ mostrarOcultarSelectoresEditar(' + rol + ')');
 
         const $grupoSupervisor = $('#editGrupoSupervisor');
+        const $grupoRepartidor = $('#editGrupoRepartidor');
         const $selectSupervisor = $('#editSupervisorId');
+        const $selectRepartidor = $('#editRepartidorId');
 
         $grupoSupervisor.hide();
+        $grupoRepartidor.hide();
         $selectSupervisor.removeAttr('required');
+        $selectRepartidor.removeAttr('required');
 
         if (rol === 'preventista') {
             $grupoSupervisor.show();
+            $grupoRepartidor.show();
+            $selectSupervisor.attr('required', 'required');
+            $selectRepartidor.attr('required', 'required');
         } else {
             $selectSupervisor.val('');
+            $selectRepartidor.val('');
         }
     }
     

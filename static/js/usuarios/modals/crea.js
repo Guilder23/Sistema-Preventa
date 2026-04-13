@@ -57,18 +57,26 @@
         console.log('→ mostrarOcultarSelectores(' + rol + ')');
         
         const $grupoSupervisor = $('#grupoSupervisor');
+        const $grupoRepartidor = $('#grupoRepartidor');
         const $selectSupervisor = $('#supervisor_id');
+        const $selectRepartidor = $('#repartidor_id');
         
         // Limpiar valores
         $selectSupervisor.val('');
+        $selectRepartidor.val('');
         
         // Ocultar todo por defecto
         $grupoSupervisor.hide();
+        $grupoRepartidor.hide();
         $selectSupervisor.removeAttr('required');
+        $selectRepartidor.removeAttr('required');
         
         // Mostrar según rol
         if (rol === 'preventista') {
             $grupoSupervisor.show();
+            $grupoRepartidor.show();
+            $selectSupervisor.attr('required', 'required');
+            $selectRepartidor.attr('required', 'required');
         }
     }
 
@@ -197,7 +205,9 @@
     function limpiarFormulario() {
         $('#formCrearUsuario')[0].reset();
         $('#grupoSupervisor').hide();
+        $('#grupoRepartidor').hide();
         $('#supervisor_id').removeAttr('required');
+        $('#repartidor_id').removeAttr('required');
         $('.is-invalid').removeClass('is-invalid');
 
         actualizarCuposUI('');

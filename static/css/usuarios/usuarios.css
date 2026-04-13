@@ -204,28 +204,22 @@
     border-color: #fca5a5;
 }
 
-.badge-rol-almacen {
-    background-color: #dbeafe;
-    color: #1e40af;
-    border-color: #93c5fd;
+.badge-rol-supervisor {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    border-color: #a5b4fc;
 }
 
-.badge-rol-tienda {
+.badge-rol-repartidor {
     background-color: #d1fae5;
     color: #065f46;
     border-color: #6ee7b7;
 }
 
-.badge-rol-deposito {
-    background-color: #fed7aa;
+.badge-rol-preventista {
+    background-color: #fef3c7;
     color: #92400e;
     border-color: #fbbf24;
-}
-
-.badge-rol-online {
-    background-color: #cffafe;
-    color: #164e63;
-    border-color: #67e8f9;
 }
 
 .badge-rol-sinrol {
