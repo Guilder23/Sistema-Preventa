@@ -62,7 +62,7 @@
     <div class="card shadow-sm mb-3">
         <div class="card-body">
             <form method="get" class="form-row align-items-end" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
-                <div class="col-md-4 mb-2">
+                <div class="col-md-3 mb-2">
                     <label class="small text-muted">Buscar</label>
                     <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, usuario" autocomplete="off">
                 </div>
@@ -73,6 +73,24 @@
                         <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
                         <option value="vendido" {% if estado == 'vendido' %}selected{% endif %}>Vendido</option>
                         <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="small text-muted">Tipo reporte</label>
+                    <select name="tipo" class="form-control">
+                        <option value="general" {% if tipo == 'general' %}selected{% endif %}>General</option>
+                        <option value="despacho" {% if tipo == 'despacho' %}selected{% endif %}>Despacho</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="small text-muted">Preventista</label>
+                    <select name="preventista" class="form-control">
+                        <option value="">Todos</option>
+                        {% for u in preventistas %}
+                            <option value="{{ u.id }}" {% if preventista == u.id|stringformat:'s' %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2 mb-2">
