@@ -93,9 +93,10 @@ def _pedidos_filtrados(request, user):
 
 @login_required
 def reportes_inicio(request):
-    from apps.pedidos.models import Pedido, DevolucionItem
+    from apps.pedidos.models import Pedido, DevolucionItem, DevolucionPedido
 
     pedidos, filtros, preventistas = _pedidos_filtrados(request, request.user)
+    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
 
     resumen = pedidos.aggregate(total_monto=Sum("total"))
     total_pedidos = pedidos.count()
@@ -120,6 +121,7 @@ def reportes_inicio(request):
     pedidos = list(pedidos)
     pedido_ids = [p.id for p in pedidos]
     devuelto_monto_por_pedido = defaultdict(lambda: Decimal("0.00"))
+    devolucion_reciente_por_pedido = {}
 
     if pedido_ids:
         devolucion_items = DevolucionItem.objects.filter(
@@ -132,10 +134,62 @@ def reportes_inicio(request):
             monto = (precio or Decimal("0.00")) * Decimal(int(item.cantidad_devuelta or 0))
             devuelto_monto_por_pedido[item.devolucion.pedido_id] += monto
 
+        devoluciones = (
+            DevolucionPedido.objects.filter(pedido_id__in=pedido_ids)
+            .select_related("repartidor")
+            .order_by("pedido_id", "-fecha_creacion")
+        )
+        for d in devoluciones:
+            if d.pedido_id not in devolucion_reciente_por_pedido:
+                devolucion_reciente_por_pedido[d.pedido_id] = d
+
+    def _cliente_corto(cliente):
+        nombres = (cliente.nombres or "").strip()
+        apellidos = (cliente.apellidos or "").strip()
+        if not apellidos:
+            return nombres
+        iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
+        return f"{nombres} {iniciales}".strip()
+
     for p in pedidos:
         monto_devuelto = devuelto_monto_por_pedido.get(p.id, Decimal("0.00"))
         p.total_devuelto_monto = monto_devuelto
         p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
+        p.cliente_corto = _cliente_corto(p.cliente)
+
+        creado_por_cliente = getattr(p.cliente, "creado_por", None)
+        p.cliente_registrado_por = (
+            (creado_por_cliente.get_full_name() or creado_por_cliente.username)
+            if creado_por_cliente
+            else "-"
+        )
+
+        registrador = getattr(p, "registrado_por", None)
+        p.pedido_registrado_por = (
+            (registrador.get_full_name() or registrador.username)
+            if registrador
+            else (p.preventista.get_full_name() or p.preventista.username)
+        )
+        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
+        p.fecha_entrega_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+
+        devol = devolucion_reciente_por_pedido.get(p.id)
+        if devol and devol.repartidor:
+            p.repartidor_nombre = devol.repartidor.get_full_name() or devol.repartidor.username
+        else:
+            p.repartidor_nombre = "-"
+
+        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+            p.estado_entrega = "No entregado"
+        elif p.estado == Pedido.ESTADO_VENDIDO:
+            if devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+                p.estado_entrega = "Entregado parcial"
+            else:
+                p.estado_entrega = "Entregado completo"
+        elif p.estado == Pedido.ESTADO_PENDIENTE:
+            p.estado_entrega = "Pendiente"
+        else:
+            p.estado_entrega = "-"
 
     return render(
         request,
@@ -163,7 +217,7 @@ def reportes_inicio(request):
 
 @login_required
 def pedidos_pdf(request):
-    from apps.pedidos.models import DetallePedido, DevolucionItem
+    from apps.pedidos.models import DetallePedido, DevolucionItem, DevolucionPedido, Pedido
 
     pedidos, filtros, _ = _pedidos_filtrados(request, request.user)
 
@@ -343,9 +397,11 @@ def pedidos_pdf(request):
     story.append(info_table)
     story.append(Spacer(1, 12))
 
+    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
     pedido_ids = list(pedidos.values_list("id", flat=True))
     devueltos_por_pedido = {}
     monto_devuelto_por_pedido = defaultdict(lambda: Decimal("0.00"))
+    devolucion_reciente_por_pedido = {}
     if pedido_ids:
         devueltos_rows = (
             DevolucionItem.objects.filter(devolucion__pedido_id__in=pedido_ids)
@@ -364,20 +420,69 @@ def pedidos_pdf(request):
             monto = (precio or Decimal("0.00")) * Decimal(int(item.cantidad_devuelta or 0))
             monto_devuelto_por_pedido[item.devolucion.pedido_id] += monto
 
-    data = [["#", "Cliente", "Preventista", "Fecha", "Estado", "Devueltos", "Total bruto", "Total real"]]
+        devoluciones = (
+            DevolucionPedido.objects.filter(pedido_id__in=pedido_ids)
+            .select_related("repartidor")
+            .order_by("pedido_id", "-fecha_creacion")
+        )
+        for d in devoluciones:
+            if d.pedido_id not in devolucion_reciente_por_pedido:
+                devolucion_reciente_por_pedido[d.pedido_id] = d
+
+    def _cliente_corto(cliente):
+        nombres = (cliente.nombres or "").strip()
+        apellidos = (cliente.apellidos or "").strip()
+        if not apellidos:
+            return nombres
+        iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
+        return f"{nombres} {iniciales}".strip()
+
+    def _short(text: str, max_len: int) -> str:
+        text = (text or "").strip()
+        if len(text) <= max_len:
+            return text
+        return text[: max_len - 1] + "…"
+
+    data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "Est. ent.", "Dev.", "Bruto", "Real"]]
     total_monto = 0
     total_monto_neto = Decimal("0.00")
     for p in pedidos:
         total_monto += p.total
         total_neto = (p.total or Decimal("0.00")) - monto_devuelto_por_pedido.get(p.id, Decimal("0.00"))
         total_monto_neto += total_neto
+
+        creado_por_cliente = getattr(p.cliente, "creado_por", None)
+        cliente_reg_por = (creado_por_cliente.get_full_name() or creado_por_cliente.username) if creado_por_cliente else "-"
+        registrador = getattr(p, "registrado_por", None)
+        pedido_reg_por = (
+            (registrador.get_full_name() or registrador.username)
+            if registrador
+            else (p.preventista.get_full_name() or p.preventista.username)
+        )
+        devol = devolucion_reciente_por_pedido.get(p.id)
+        repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
+
+        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+            estado_entrega = "No entregado"
+        elif p.estado == Pedido.ESTADO_VENDIDO and devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+            estado_entrega = "Entregado parcial"
+        elif p.estado == Pedido.ESTADO_VENDIDO:
+            estado_entrega = "Entregado completo"
+        elif p.estado == Pedido.ESTADO_PENDIENTE:
+            estado_entrega = "Pendiente"
+        else:
+            estado_entrega = "-"
+
         data.append(
             [
                 str(p.id),
-                f"{p.cliente.nombres} {p.cliente.apellidos or ''}".strip(),
-                p.preventista.get_full_name() or p.preventista.username,
+                _short(_cliente_corto(p.cliente), 11),
+                _short(cliente_reg_por, 11),
+                _short(pedido_reg_por, 11),
+                _short(repartidor, 10),
                 p.fecha.strftime("%d/%m/%Y %H:%M"),
-                p.get_estado_display(),
+                p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
+                _short(estado_entrega, 14),
                 str(devueltos_por_pedido.get(p.id, 0)),
                 _fmt_money(p.total),
                 _fmt_money(total_neto),
@@ -386,7 +491,7 @@ def pedidos_pdf(request):
 
     table = Table(
         data,
-        colWidths=[8 * mm, 33 * mm, 24 * mm, 28 * mm, 18 * mm, 14 * mm, 21 * mm, 21 * mm],
+        colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
         repeatRows=1,
     )
     table.setStyle(
@@ -395,17 +500,19 @@ def pedidos_pdf(request):
                 ("BACKGROUND", (0, 0), (-1, 0), header_bg),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("FONTSIZE", (0, 0), (-1, 0), 7),
+                ("FONTSIZE", (0, 1), (-1, -1), 6),
                 ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                ("ALIGN", (5, 1), (5, -1), "CENTER"),
-                ("ALIGN", (6, 1), (7, -1), "RIGHT"),
+                ("ALIGN", (5, 1), (6, -1), "CENTER"),
+                ("ALIGN", (8, 1), (8, -1), "CENTER"),
+                ("ALIGN", (9, 1), (10, -1), "RIGHT"),
                 ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("TOPPADDING", (0, 0), (-1, -1), 3),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
             ]
         )
     )
