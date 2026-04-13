@@ -1,0 +1,35 @@
+.inventario-resumen {
+    border: 1px solid var(--color-borde);
+    border-radius: 0.75rem;
+    background: var(--color-gris-claro);
+    padding: 0.85rem 1rem;
+}
+
+.inventario-resumen__label {
+    font-size: 0.75rem;
+    color: var(--color-texto-secundario);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+
+.inventario-resumen__value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-texto);
+}
+
+.inventario-table thead th {
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    background: var(--color-primario);
+    color: #fff;
+    border-bottom: 0;
+}
+
+.inventario-table td,
+.inventario-table th {
+    vertical-align: middle;
+    white-space: nowrap;
+}

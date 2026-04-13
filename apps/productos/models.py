@@ -29,3 +29,32 @@ class Producto(models.Model):
 
     def __str__(self) -> str:
         return f"{self.codigo} - {self.nombre}"
+
+
+class MovimientoInventario(models.Model):
+    TIPO_ENTRADA = "entrada"
+    TIPO_SALIDA = "salida"
+
+    TIPOS = (
+        (TIPO_ENTRADA, "Entrada"),
+        (TIPO_SALIDA, "Salida"),
+    )
+
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="movimientos_inventario")
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    cantidad = models.PositiveIntegerField()
+    stock_anterior = models.IntegerField()
+    stock_nuevo = models.IntegerField()
+    precio_compra_unitario = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    valor_compra_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    motivo = models.TextField(blank=True, null=True)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Movimiento de inventario"
+        verbose_name_plural = "Movimientos de inventario"
+        ordering = ["-fecha", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.producto} - {self.get_tipo_display()} x{self.cantidad}"

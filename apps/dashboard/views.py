@@ -11,7 +11,7 @@ from decimal import Decimal
 def dashboard(request):
     from apps.clientes.models import Cliente
     from apps.pedidos.models import DetallePedido, DevolucionItem, DevolucionPedido, Pedido
-    from apps.productos.models import Producto
+    from apps.productos.models import MovimientoInventario, Producto
 
     user = request.user
     perfil = getattr(user, "perfil", None)
@@ -26,6 +26,12 @@ def dashboard(request):
         Decimal("0.00"),
     )
     total_usuarios = User.objects.filter(is_active=True).count()
+
+    movimientos_entrada_qs = MovimientoInventario.objects.filter(tipo=MovimientoInventario.TIPO_ENTRADA)
+    movimientos_salida_qs = MovimientoInventario.objects.filter(tipo=MovimientoInventario.TIPO_SALIDA)
+    total_unidades_ingresadas = movimientos_entrada_qs.aggregate(total=Sum("cantidad")).get("total") or 0
+    valor_compra_ingresado_total = movimientos_entrada_qs.aggregate(total=Sum("valor_compra_total")).get("total") or Decimal("0.00")
+    total_unidades_retiradas = movimientos_salida_qs.aggregate(total=Sum("cantidad")).get("total") or 0
 
     # Clientes: admin ve todos; preventista solo los suyos
     clientes_qs = Cliente.objects.filter(activo=True)
@@ -175,6 +181,9 @@ def dashboard(request):
             "total_anulados": total_anulados,
             "total_monto": total_monto,
             "costo_inventario_total": costo_inventario_total,
+            "total_unidades_ingresadas": total_unidades_ingresadas,
+            "valor_compra_ingresado_total": valor_compra_ingresado_total,
+            "total_unidades_retiradas": total_unidades_retiradas,
             "pedidos_hoy": pedidos_hoy,
             "pendientes_hoy": pendientes_hoy,
             "anulados_hoy": anulados_hoy,

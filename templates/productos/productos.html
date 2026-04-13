@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{% static 'css/productos/modals/crea.css' %}">
 <link rel="stylesheet" href="{% static 'css/productos/modals/edita.css' %}">
 <link rel="stylesheet" href="{% static 'css/productos/modals/ver.css' %}">
+<link rel="stylesheet" href="{% static 'css/productos/modals/inventario.css' %}">
 <link rel="stylesheet" href="{% static 'css/productos/modals/elimina.css' %}">
 {% endblock %}
 
@@ -67,6 +68,7 @@
                         <th style="width: 12%;">Código</th>
                         <th style="width: 22%;">Producto</th>
                         <th style="width: 10%;" class="text-center">Stock</th>
+                        <th style="width: 10%;" class="text-center">Agregado</th>
                         <th style="width: 10%;">V. Unidad</th>
                         <th style="width: 10%;">C. Unidad</th>
                         <th style="width: 10%;">V. Caja</th>
@@ -101,6 +103,9 @@
                                 <span class="badge-stock badge-stock-verde" title="Stock alto">{{ p.stock_unidades }}</span>
                             {% endif %}
                         </td>
+                        <td class="text-center">
+                            <span class="badge-stock badge-stock-verde" title="Suma de entradas de inventario">{{ p.stock_agregado }}</span>
+                        </td>
                         <td>Bs {{ p.precio_unidad|floatformat:2 }}</td>
                         <td>Bs {{ p.precio_compra_unidad|floatformat:2 }}</td>
                         <td>Bs {{ p.precio_caja|floatformat:2 }}</td>
@@ -118,6 +123,9 @@
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                                <button type="button" class="btn btn-success btn-sm btn-ajustar-inventario-producto" data-producto-id="{{ p.id }}" title="Ajustar inventario">
+                                    <i class="fas fa-boxes-stacked"></i>
+                                </button>
                                 <button type="button" class="btn btn-warning btn-sm btn-editar-producto" data-producto-id="{{ p.id }}" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -130,7 +138,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-4">
+                        <td colspan="11" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay productos registrados</p>
                         </td>
@@ -144,6 +152,7 @@
     {% include 'productos/modals/crea.html' %}
     {% include 'productos/modals/edita.html' %}
     {% include 'productos/modals/ver.html' %}
+    {% include 'productos/modals/inventario.html' %}
     {% include 'productos/modals/elimina.html' %}
 </div>
 {% endblock %}
@@ -152,6 +161,7 @@
 <script src="{% static 'js/productos/modals/crea.js' %}"></script>
 <script src="{% static 'js/productos/modals/edita.js' %}"></script>
 <script src="{% static 'js/productos/modals/ver.js' %}"></script>
+<script src="{% static 'js/productos/modals/inventario.js' %}"></script>
 <script src="{% static 'js/productos/modals/elimina.js' %}"></script>
 <script src="{% static 'js/productos/productos.js' %}"></script>
 {% endblock %}

@@ -1,0 +1,93 @@
+{% if user.is_superuser or user.perfil.rol == 'administrador' %}
+<div class="modal fade" id="modalAjustarInventario" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <div>
+                    <h5 class="modal-title mb-0"><i class="fas fa-boxes-stacked"></i> Ajustar inventario</h5>
+                    <small id="inventarioProductoTitulo" class="d-block text-white-50">Producto</small>
+                </div>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="formAjustarInventario" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="inventarioProductoId" name="producto_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="inventario-resumen">
+                                <div class="inventario-resumen__label">Stock actual</div>
+                                <div class="inventario-resumen__value" id="inventarioStockActual">0</div>
+                            </div>
+                            <div class="inventario-resumen mt-3">
+                                <div class="inventario-resumen__label">Precio compra unidad</div>
+                                <div class="inventario-resumen__value">Bs <span id="inventarioPrecioCompra">0.00</span></div>
+                            </div>
+                            <div class="inventario-resumen mt-3">
+                                <div class="inventario-resumen__label">Valor inventario compra</div>
+                                <div class="inventario-resumen__value">Bs <span id="inventarioValorCompra">0.00</span></div>
+                            </div>
+
+                            <div class="card mt-3 border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="form-group mb-3">
+                                        <label>Tipo de ajuste <span class="text-danger">*</span></label>
+                                        <select class="form-control" id="inventarioTipo" name="tipo" required>
+                                            <option value="entrada">Agregar stock</option>
+                                            <option value="salida">Reducir stock</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>Cantidad <span class="text-danger">*</span></label>
+                                        <input type="number" min="1" class="form-control" id="inventarioCantidad" name="cantidad" required>
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <label>Motivo</label>
+                                        <textarea class="form-control" id="inventarioMotivo" name="motivo" rows="3" placeholder="Ej. compra, ajuste por daño, corrección de inventario"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8 mt-3 mt-lg-0">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-clock-rotate-left"></i> Historial de movimientos</span>
+                                    <small class="text-white-50">Últimos movimientos</small>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0 inventario-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Tipo</th>
+                                                <th class="text-center">Cantidad</th>
+                                                <th class="text-center">Stock antes</th>
+                                                <th class="text-center">Stock después</th>
+                                                <th>Usuario</th>
+                                                <th>Motivo</th>
+                                                <th>Valor compra</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inventarioMovimientosBody">
+                                            <tr>
+                                                <td colspan="8" class="text-center text-muted py-4">Sin movimientos registrados</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="mr-auto text-muted small" id="inventarioAyuda">El stock no se puede reducir por debajo de cero.</div>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar movimiento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
