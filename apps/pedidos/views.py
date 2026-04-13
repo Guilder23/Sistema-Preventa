@@ -117,7 +117,7 @@ def _pedidos_qs_para_usuario(user):
     if perfil and perfil.rol == "administrador":
         return qs
     if perfil and perfil.rol == "repartidor":
-        return qs.filter(estado=Pedido.ESTADO_PENDIENTE)
+        return qs.filter(estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO])
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",
@@ -136,6 +136,9 @@ def listar_pedidos(request):
     rol_usuario = (request.GET.get("rol") or "").strip().lower()
     fecha_desde_raw = (request.GET.get("fecha_desde") or "").strip()
     fecha_hasta_raw = (request.GET.get("fecha_hasta") or "").strip()
+    vista_pedidos = (request.GET.get("tab") or "pendientes").strip().lower()
+    if vista_pedidos not in {"pendientes", "anteriores"}:
+        vista_pedidos = "pendientes"
 
     fecha_desde = None
     fecha_hasta = None
@@ -190,6 +193,11 @@ def listar_pedidos(request):
     if fecha_hasta:
         pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
 
+    if vista_pedidos == "pendientes":
+        pedidos = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE)
+    else:
+        pedidos = pedidos.exclude(estado=Pedido.ESTADO_PENDIENTE)
+
     perfil = getattr(request.user, "perfil", None)
     if perfil and perfil.rol == "repartidor":
         clientes = Cliente.objects.none()
@@ -227,6 +235,7 @@ def listar_pedidos(request):
             "rol_usuario": rol_usuario,
             "fecha_desde": fecha_desde_raw,
             "fecha_hasta": fecha_hasta_raw,
+            "vista_pedidos": vista_pedidos,
             "clientes": clientes,
             "productos": productos,
             "clientes_data": clientes_data,

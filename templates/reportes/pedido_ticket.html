@@ -1,0 +1,156 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Ticket de Pedido #{{ pedido.id }}{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/pedido_ticket.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="ticket-shell">
+    <div class="ticket-actions no-print">
+        <button type="button" class="btn btn-dark btn-sm" id="btnImprimirTicket">
+            <i class="fas fa-print"></i> Imprimir
+        </button>
+        <a href="{% url 'reporte_pedido_ticket_whatsapp' pedido.id %}" class="btn btn-success btn-sm" target="_blank" rel="noopener">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+        </a>
+        <a href="{% url 'listar_pedidos' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+
+    <main class="ticket-paper" aria-label="Ticket de pedido">
+        <header class="ticket-header">
+            <div class="ticket-brand">
+                <div class="ticket-brand-title">D. Jeremy</div>
+                <div class="ticket-brand-subtitle">Comprobante de entrega</div>
+            </div>
+            <div class="ticket-badge">#{{ pedido.id }}</div>
+        </header>
+
+        <section class="ticket-block ticket-summary">
+            <div class="ticket-row">
+                <span>Fecha</span>
+                <strong>{{ pedido.fecha|date:'d/m/Y H:i' }}</strong>
+            </div>
+            <div class="ticket-row">
+                <span>Estado</span>
+                <strong>{{ estado_display }}</strong>
+            </div>
+            <div class="ticket-row">
+                <span>Cliente</span>
+                <strong>{{ cliente_nombre }}</strong>
+            </div>
+            {% if pedido.cliente.ci_nit %}
+            <div class="ticket-row">
+                <span>CI/NIT</span>
+                <strong>{{ pedido.cliente.ci_nit }}</strong>
+            </div>
+            {% endif %}
+            {% if pedido.cliente.telefono %}
+            <div class="ticket-row">
+                <span>Teléfono</span>
+                <strong>{{ pedido.cliente.telefono }}</strong>
+            </div>
+            {% endif %}
+            {% if pedido.cliente.direccion %}
+            <div class="ticket-row ticket-row--stacked">
+                <span>Dirección</span>
+                <strong>{{ pedido.cliente.direccion }}</strong>
+            </div>
+            {% endif %}
+            <div class="ticket-row">
+                <span>Preventista</span>
+                <strong>{{ preventista_nombre }}</strong>
+            </div>
+            <div class="ticket-row">
+                <span>Repartidor</span>
+                <strong>{{ repartidor_nombre }}</strong>
+            </div>
+        </section>
+
+        <section class="ticket-block">
+            <div class="ticket-section-title">Detalle</div>
+            <div class="ticket-items">
+                {% for d in detalles %}
+                <article class="ticket-item">
+                    <div class="ticket-item-main">
+                        <div class="ticket-item-name">{{ d.producto.nombre }}</div>
+                        <div class="ticket-item-meta">{{ d.cantidad }} x Bs {{ d.precio_unitario|floatformat:2 }}</div>
+                    </div>
+                    <div class="ticket-item-total">Bs {{ d.subtotal|floatformat:2 }}</div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="ticket-block ticket-total-box">
+            <div class="ticket-row ticket-row--total">
+                <span>Total</span>
+                <strong>Bs {{ pedido.total|floatformat:2 }}</strong>
+            </div>
+            {% if pedido.observacion %}
+            <div class="ticket-note">
+                <span>Observación:</span>
+                <p>{{ pedido.observacion }}</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <footer class="ticket-footer">
+            <p>Gracias por su compra.</p>
+            <p>Impresión térmica lista para 80mm.</p>
+        </footer>
+    </main>
+</div>
+
+<script>
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function marcarImpresoYVolver() {
+        var url = "{% url 'reporte_pedido_ticket_impreso' pedido.id %}";
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .finally(function () {
+            window.location.href = "{% url 'listar_pedidos' %}";
+        });
+    }
+
+    window.addEventListener('load', function () {
+        var btnImprimir = document.getElementById('btnImprimirTicket');
+        if (!btnImprimir) return;
+
+        btnImprimir.addEventListener('click', function () {
+            window.print();
+
+            setTimeout(function () {
+                var confirmado = window.confirm('¿Se imprimió correctamente el ticket?');
+                if (confirmado) {
+                    marcarImpresoYVolver();
+                }
+            }, 150);
+        });
+    });
+</script>
+{% endblock %}

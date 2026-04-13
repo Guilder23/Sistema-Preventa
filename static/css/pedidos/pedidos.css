@@ -4,6 +4,37 @@
     vertical-align: middle;
 }
 
+.pedido-tabs {
+    display: inline-flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
+    background: var(--color-blanco);
+}
+
+.pedido-tab-btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: transparent;
+    color: var(--color-texto-secundario);
+    transition: all 0.2s ease;
+}
+
+.pedido-tab-btn:hover {
+    background: color-mix(in srgb, var(--color-acento), transparent 88%);
+    color: var(--color-acento);
+}
+
+.pedido-tab-btn.active {
+    background: var(--color-acento);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
 /* Badges de estado (pendiente/vendido/anulado) */
 .badge-estado {
     display: inline-flex;
