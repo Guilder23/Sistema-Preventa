@@ -3,12 +3,14 @@ from __future__ import annotations
 from collections import defaultdict
 from decimal import Decimal
 from io import BytesIO
+from urllib.parse import quote
 
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.db.models import Q, Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.dateparse import parse_date
 
 from reportlab.lib import colors
@@ -501,6 +503,34 @@ def pedidos_pdf(request):
     return resp
 
 
+@login_required
+def pedido_ticket(request, id: int):
+    from apps.pedidos.models import Pedido
+
+    pedido = get_object_or_404(_pedido_qs_para_usuario(request.user), id=id)
+    if pedido.estado not in {Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO}:
+        return redirect("listar_pedidos")
+
+    detalles = pedido.detalles.select_related("producto").all()
+
+    repartidor = request.user.get_full_name() or request.user.username
+    cliente_nombre = f"{pedido.cliente.nombres} {pedido.cliente.apellidos or ''}".strip()
+    preventista_nombre = pedido.preventista.get_full_name() or pedido.preventista.username
+
+    return render(
+        request,
+        "reportes/pedido_ticket.html",
+        {
+            "pedido": pedido,
+            "detalles": detalles,
+            "cliente_nombre": cliente_nombre,
+            "preventista_nombre": preventista_nombre,
+            "repartidor_nombre": repartidor,
+            "estado_display": pedido.get_estado_display(),
+        },
+    )
+
+
 def _pedido_qs_para_usuario(user):
     from apps.pedidos.models import Pedido
     from apps.usuarios.models import PerfilUsuario
@@ -511,6 +541,8 @@ def _pedido_qs_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "repartidor":
+        return qs.filter(estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO])
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",
@@ -520,6 +552,62 @@ def _pedido_qs_para_usuario(user):
         ).values_list("usuario_id", flat=True)
         return qs.filter(Q(preventista=user) | Q(preventista_id__in=preventistas_ids))
     return qs.filter(preventista=user)
+
+
+@login_required
+def marcar_ticket_impreso(request, id: int):
+    from apps.pedidos.models import Pedido
+
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+
+    perfil = getattr(request.user, "perfil", None)
+    if not (request.user.is_superuser or (perfil and perfil.rol == "repartidor")):
+        return JsonResponse({"ok": False, "error": "Sin permisos"}, status=403)
+
+    pedido = get_object_or_404(_pedido_qs_para_usuario(request.user), id=id)
+    if pedido.estado not in {Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO}:
+        return JsonResponse(
+            {"ok": False, "error": "El ticket se habilita cuando el pedido está vendido o no entregado"},
+            status=400,
+        )
+
+    if not pedido.ticket_impreso:
+        pedido.ticket_impreso = True
+        pedido.save(update_fields=["ticket_impreso"])
+
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def compartir_ticket_whatsapp(request, id: int):
+    from apps.pedidos.models import Pedido
+
+    perfil = getattr(request.user, "perfil", None)
+    if not (request.user.is_superuser or (perfil and perfil.rol == "repartidor")):
+        return redirect("listar_pedidos")
+
+    pedido = get_object_or_404(_pedido_qs_para_usuario(request.user), id=id)
+    if pedido.estado not in {Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO}:
+        return redirect("listar_pedidos")
+
+    if not pedido.ticket_compartido:
+        pedido.ticket_compartido = True
+        pedido.save(update_fields=["ticket_compartido"])
+
+    cliente_nombre = f"{pedido.cliente.nombres} {pedido.cliente.apellidos or ''}".strip()
+    ticket_url = request.build_absolute_uri(reverse("reporte_pedido_ticket", args=[pedido.id]))
+
+    mensaje = (
+        f"Comprobante de entrega\n"
+        f"Pedido #{pedido.id}\n"
+        f"Cliente: {cliente_nombre}\n"
+        f"Estado: {pedido.get_estado_display()}\n"
+        f"Total: Bs {pedido.total:.2f}\n"
+        f"Ticket: {ticket_url}"
+    )
+
+    return redirect(f"https://wa.me/?text={quote(mensaje)}")
 
 
 @login_required
