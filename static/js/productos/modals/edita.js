@@ -47,7 +47,6 @@
                     $('#editPrecioCompraCaja').val(data.precio_compra_caja || '0');
                     $('#editActivo').prop('checked', !!data.activo);
 
-                    $('#editStockUnidades').val(data.stock_unidades ?? 0);
                     $('#editStockAmarillo').val(data.stock_umbral_amarillo ?? 10);
                     $('#editStockRojo').val(data.stock_umbral_rojo ?? 3);
 

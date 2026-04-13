@@ -65,6 +65,30 @@
                 </div>
             </div>
         </div>
+        <div class="stat-card stat-card--success-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Unidades agregadas</div>
+                    <div class="stat-card-value">{{ total_unidades_ingresadas }}</div>
+                    <div class="stat-card-sub">Entradas registradas en inventario</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-circle-plus"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--info-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Valor compra agregado</div>
+                    <div class="stat-card-value">Bs {{ valor_compra_ingresado_total|floatformat:2 }}</div>
+                    <div class="stat-card-sub">Costo total de las entradas registradas</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+            </div>
+        </div>
         <div class="stat-card stat-card--info">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -158,6 +182,18 @@
                 </div>
                 <div class="stat-card-icon" aria-hidden="true">
                     <i class="fas fa-box-open"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--danger-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Unidades retiradas</div>
+                    <div class="stat-card-value">{{ total_unidades_retiradas }}</div>
+                    <div class="stat-card-sub">Salidas registradas en inventario</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-circle-minus"></i>
                 </div>
             </div>
         </div>
