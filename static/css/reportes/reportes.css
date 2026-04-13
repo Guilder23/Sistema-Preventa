@@ -140,3 +140,96 @@
 .tabla-reportes-compacta .btn.btn-sm {
     padding: 0.2rem 0.45rem;
 }
+
+.reportes-filtros-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1.1fr 1.2fr 1fr 1fr auto;
+    gap: 0.45rem 0.55rem;
+    align-items: end;
+}
+
+.filtro-item label {
+    margin-bottom: 0.2rem;
+    font-size: 0.74rem;
+}
+
+.filtro-item .form-control {
+    height: 34px;
+    padding-top: 0.22rem;
+    padding-bottom: 0.22rem;
+}
+
+.filtro-tipo {
+    background: color-mix(in srgb, var(--color-acento), white 90%);
+    border-color: color-mix(in srgb, var(--color-acento), transparent 55%);
+}
+
+.btn-icon-only {
+    width: 38px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.filtro-item--pdf {
+    display: flex;
+    flex-direction: column;
+}
+
+.estado-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    padding: 0.12rem 0.5rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.estado-badge--pendiente {
+    color: #b26d00;
+    background: #fff7df;
+    border-color: #ffe19a;
+}
+
+.estado-badge--vendido,
+.estado-badge--entregado_completo {
+    color: #0f7a39;
+    background: #e8f7ee;
+    border-color: #9eddba;
+}
+
+.estado-badge--entregado_parcial {
+    color: #005f9f;
+    background: #e8f2fb;
+    border-color: #9bc7ef;
+}
+
+.estado-badge--no_entregado {
+    color: #b42318;
+    background: #ffecea;
+    border-color: #ffb4ad;
+}
+
+.estado-badge--anulado {
+    color: #6b7280;
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+@media (max-width: 1200px) {
+    .reportes-filtros-grid {
+        grid-template-columns: repeat(4, minmax(160px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .reportes-filtros-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+}

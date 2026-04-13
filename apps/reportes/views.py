@@ -22,7 +22,7 @@ from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Tabl
 
 @login_required
 def _pedidos_filtrados(request, user):
-    from apps.pedidos.models import Pedido
+    from apps.pedidos.models import DevolucionPedido, Pedido
     from django.contrib.auth.models import User
 
     q = (request.GET.get("q") or "").strip()
@@ -31,6 +31,7 @@ def _pedidos_filtrados(request, user):
     hasta = (request.GET.get("hasta") or "").strip()
     tipo = (request.GET.get("tipo") or "general").strip().lower()
     preventista_id_raw = (request.GET.get("preventista") or "").strip()
+    estado_entrega = (request.GET.get("estado_entrega") or "").strip().lower()
 
     if tipo not in {"general", "despacho"}:
         tipo = "general"
@@ -60,6 +61,29 @@ def _pedidos_filtrados(request, user):
     if estado:
         pedidos = pedidos.filter(estado=estado)
 
+    estados_entrega_validos = {
+        "pendiente",
+        "entregado_completo",
+        "entregado_parcial",
+        "no_entregado",
+    }
+    if estado_entrega not in estados_entrega_validos:
+        estado_entrega = ""
+
+    if estado_entrega:
+        parcial_ids = DevolucionPedido.objects.filter(
+            tipo=DevolucionPedido.TIPO_PARCIAL
+        ).values_list("pedido_id", flat=True)
+
+        if estado_entrega == "pendiente":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE)
+        elif estado_entrega == "no_entregado":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_NO_ENTREGADO)
+        elif estado_entrega == "entregado_parcial":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_VENDIDO, id__in=parcial_ids)
+        elif estado_entrega == "entregado_completo":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_VENDIDO).exclude(id__in=parcial_ids)
+
     preventista_id = ""
     if preventista_id_raw:
         try:
@@ -87,6 +111,7 @@ def _pedidos_filtrados(request, user):
         "hasta": hasta,
         "tipo": tipo,
         "preventista": preventista_id,
+        "estado_entrega": estado_entrega,
     }
     return pedidos, filtros, preventistas
 
@@ -155,6 +180,7 @@ def reportes_inicio(request):
         monto_devuelto = devuelto_monto_por_pedido.get(p.id, Decimal("0.00"))
         p.total_devuelto_monto = monto_devuelto
         p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
+        p.estado_key = p.estado
         p.cliente_corto = _cliente_corto(p.cliente)
 
         creado_por_cliente = getattr(p.cliente, "creado_por", None)
@@ -181,15 +207,20 @@ def reportes_inicio(request):
 
         if p.estado == Pedido.ESTADO_NO_ENTREGADO:
             p.estado_entrega = "No entregado"
+            p.estado_entrega_key = "no_entregado"
         elif p.estado == Pedido.ESTADO_VENDIDO:
             if devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
                 p.estado_entrega = "Entregado parcial"
+                p.estado_entrega_key = "entregado_parcial"
             else:
                 p.estado_entrega = "Entregado completo"
+                p.estado_entrega_key = "entregado_completo"
         elif p.estado == Pedido.ESTADO_PENDIENTE:
             p.estado_entrega = "Pendiente"
+            p.estado_entrega_key = "pendiente"
         else:
             p.estado_entrega = "-"
+            p.estado_entrega_key = "otro"
 
     return render(
         request,
@@ -202,6 +233,7 @@ def reportes_inicio(request):
             "hasta": filtros["hasta"],
             "tipo": filtros["tipo"],
             "preventista": filtros["preventista"],
+            "estado_entrega": filtros["estado_entrega"],
             "preventistas": preventistas,
             "total_pedidos": total_pedidos,
             "total_monto": total_monto,
