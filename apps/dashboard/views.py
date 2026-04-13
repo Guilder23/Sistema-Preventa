@@ -206,7 +206,446 @@ def dashboard(request):
 
 @login_required
 def ayuda(request):
-    return render(request, "dashboard/ayuda.html")
+    rol = ""
+    if request.user.is_superuser:
+        rol = "administrador"
+    elif hasattr(request.user, "perfil"):
+        rol = request.user.perfil.rol or "preventista"
+    
+    # Contenido de ayuda por rol
+    ayuda_contenido = {
+        "administrador": {
+            "titulo": "Guía del Administrador",
+            "descripcion": "Panel completo de control del sistema. Acceso a todas las secciones y decisiones clave.",
+            "secciones": [
+                {
+                    "titulo": "Dashboard - Panel de Control",
+                    "icono": "fa-gauge",
+                    "contenido": [
+                        "Visualiza métricas clave del negocio en tiempo real",
+                        "Monta total de ventas, clientes activos y productos disponibles",
+                        "Seguimiento del inventario: unidades agregadas, valor de compras, unidades retiradas",
+                        "Nuevos ordenes hoy, estado de entregas (pendientes, vendidos, no entregados)"
+                    ],
+                    "pasos": [
+                        "Accede a Dashboard desde el menú principal",
+                        "Revisa las tarjetas KPI (Ventas, Ganancias, Inventario)",
+                        "Haz clic en cualquier tarjeta para ver detalles detallados"
+                    ]
+                },
+                {
+                    "titulo": "Gestión de Clientes",
+                    "icono": "fa-users",
+                    "contenido": [
+                        "Crea, edita y gestiona toda la base de clientes",
+                        "Registra ubicación del cliente en el mapa (opcional)",
+                        "Marca clientes como activos o inactivos",
+                        "Asigna clientes específicos a preventistas"
+                    ],
+                    "pasos": [
+                        "Ve a Clientes en el menú PREVENTA",
+                        "Haz clic en 'Nuevo Cliente' para agregar",
+                        "Completa: nombre, teléfono, correo, tipo de negocio",
+                        "Usa 'Ver Mapa' para ubicar la tienda en el mapa"
+                    ]
+                },
+                {
+                    "titulo": "Administración de Productos",
+                    "icono": "fa-cube",
+                    "contenido": [
+                        "Solo admin puede crear, editar y bloquear productos",
+                        "Define código único, nombre, descripción y foto",
+                        "Establece precios de compra y venta (unidad y caja)",
+                        "Gestiona inventario mediante el modal de ajustes"
+                    ],
+                    "pasos": [
+                        "Ve a Productos en el menú PREVENTA",
+                        "Para crear: haz clic en 'Nuevo Producto'",
+                        "Completa todos los campos requeridos",
+                        "Para ajustar stock: haz clic en el ícono de cajas",
+                        "Registra entrada/salida con motivo y cantidad"
+                    ]
+                },
+                {
+                    "titulo": "Gestión de Pedidos",
+                    "icono": "fa-shopping-bag",
+                    "contenido": [
+                        "Crea y controla todos los pedidos del sistema",
+                        "Visualiza estado: pendiente, vendido, no entregado, anulado",
+                        "Consulta historial completo de transacciones",
+                        "Genera reportes PDF de cada pedido"
+                    ],
+                    "pasos": [
+                        "Ve a Pedidos en el menú PREVENTA",
+                        "Haz clic en 'Nuevo Pedido'",
+                        "Selecciona cliente y agrega productos",
+                        "Marca como vendido una vez completado",
+                        "Imprime PDF si es necesario"
+                    ]
+                },
+                {
+                    "titulo": "Devoluciones",
+                    "icono": "fa-undo",
+                    "contenido": [
+                        "Registra y gestiona devoluciones de productos",
+                        "Asocia devoluciones a pedidos específicos",
+                        "Controla qué productos fueron devueltos y cantidades",
+                        "Actualiza inmediatamente el inventario"
+                    ],
+                    "pasos": [
+                        "Ve a Devoluciones en el menú PREVENTA",
+                        "Selecciona el pedido que tiene devoluciones",
+                        "Agrega cada producto devuelto y cantidad",
+                        "Asigna repartidor responsable",
+                        "Guarda para actualizar inventario automáticamente"
+                    ]
+                },
+                {
+                    "titulo": "Reportes y Análisis",
+                    "icono": "fa-chart-bar",
+                    "contenido": [
+                        "Accede a reportes detallados de ventas",
+                        "Analiza rendimiento por cliente, producto o período",
+                        "Exporta datos para análisis externo",
+                        "Filtra por fechas y criterios específicos"
+                    ],
+                    "pasos": [
+                        "Ve a Reportes en el menú PREVENTA",
+                        "Selecciona el tipo de reporte deseado",
+                        "Aplica filtros (fechas, clientes, productos)",
+                        "Descarga o visualiza resultados"
+                    ]
+                },
+                {
+                    "titulo": "Gestión de Usuarios",
+                    "icono": "fa-person-badge",
+                    "contenido": [
+                        "Crea y administra cuentas de supervisor, repartidor y preventista",
+                        "Asigna roles y permisos específicos",
+                        "Activa o desactiva usuarios",
+                        "Controla acceso al sistema"
+                    ],
+                    "pasos": [
+                        "Ve a Usuarios en el menú SISTEMA",
+                        "Haz clic en 'Nuevo Usuario'",
+                        "Asigna nombre, correo, teléfono y rol",
+                        "El usuario recibirá instrucciones por correo",
+                        "Edita después si necesitas cambiar rol"
+                    ]
+                }
+            ]
+        },
+        "supervisor": {
+            "titulo": "Guía del Supervisor",
+            "descripcion": "Supervisa las operaciones de preventistas y repartidores bajo tu área.",
+            "secciones": [
+                {
+                    "titulo": "Funciones del Supervisor",
+                    "icono": "fa-person-hiking",
+                    "contenido": [
+                        "Supervisa preventistas y repartidores de tu zona",
+                        "Revisa todos los pedidos de tu equipo",
+                        "Accede a reportes de desempeño",
+                        "Valida transacciones antes de finalizar"
+                    ],
+                    "pasos": [
+                        "Revisa el Dashboard para ver métricas de tu equipo",
+                        "Ve a Pedidos para supervisar transacciones",
+                        "Haz clic en 'Ver' para detalles de cada pedido",
+                        "Valida estados y descarga reportes"
+                    ]
+                },
+                {
+                    "titulo": "Gestión de Clientes",
+                    "icono": "fa-users",
+                    "contenido": [
+                        "Visualiza clientes asignados a tu zona",
+                        "Puedes crear clientes nuevos en tu área",
+                        "Revisa información de contacto y ubicación",
+                        "Actualiza datos si es necesario"
+                    ],
+                    "pasos": [
+                        "Ve a Clientes en el menú PREVENTA",
+                        "Visualiza lista de clientes de tu supervisión",
+                        "Usa el mapa para ver ubicaciones",
+                        "Actualiza información según sea necesario"
+                    ]
+                },
+                {
+                    "titulo": "Consulta de Productos",
+                    "icono": "fa-cube",
+                    "contenido": [
+                        "Visualiza catálogo completo de productos",
+                        "Revisa precios de compra y venta",
+                        "Verifica niveles de inventario",
+                        "Consulta histórico de movimientos"
+                    ],
+                    "pasos": [
+                        "Ve a Productos en el menú PREVENTA",
+                        "Visualiza el catálogo completo",
+                        "Haz clic en 'Ver Inventario' para detalles",
+                        "Revisa historial de entradas/salidas"
+                    ]
+                },
+                {
+                    "titulo": "Seguimiento de Pedidos",
+                    "icono": "fa-shopping-bag",
+                    "contenido": [
+                        "Consulta todos los pedidos de tu zona",
+                        "Filtra por estado, cliente o preventista",
+                        "Revisa detalles y montos",
+                        "Descarga reportes en PDF"
+                    ],
+                    "pasos": [
+                        "Ve a Pedidos en el menú PREVENTA",
+                        "Aplica filtros para ver tu zona",
+                        "Haz clic en un pedido para detalles",
+                        "Usa 'Imprimir PDF' para reportes"
+                    ]
+                }
+            ]
+        },
+        "repartidor": {
+            "titulo": "Guía del Repartidor",
+            "descripcion": "Tu función es entregar pedidos y registrar devoluciones.",
+            "secciones": [
+                {
+                    "titulo": "Tu Rol como Repartidor",
+                    "icono": "fa-truck",
+                    "contenido": [
+                        "Entregas pedidos a clientes finales",
+                        "Registras devoluciones de productos defectuosos",
+                        "Recolectas pagos (si aplica)",
+                        "Reportas estado de entregas"
+                    ],
+                    "pasos": [
+                        "Revisa Dashboard para ver resumen",
+                        "Ve a Pedidos para consultar tus entregas",
+                        "Toma nota de la información del cliente",
+                        "Entrega el pedido",
+                        "Si hay devoluciones, regresa al sistema"
+                    ]
+                },
+                {
+                    "titulo": "Consulta de Pedidos",
+                    "icono": "fa-shopping-bag",
+                    "contenido": [
+                        "Visualiza todos los pedidos asignados para entrega",
+                        "Revisa ubicación del cliente en el mapa",
+                        "Consulta productos y cantidades",
+                        "Verifica dirección y contacto"
+                    ],
+                    "pasos": [
+                        "Ve a Pedidos en el menú superior",
+                        "Haz clic en un pedido para ver detalles",
+                        "Usa 'Ver Mapa' para ubicación del cliente",
+                        "Ten a mano teléfono del cliente"
+                    ]
+                },
+                {
+                    "titulo": "Registrar Devoluciones",
+                    "icono": "fa-undo",
+                    "contenido": [
+                        "Si el cliente devuelve productos, regístralo en el sistema",
+                        "Especifica qué productos se devuelven",
+                        "Nota problemas (daño, color, etc.)",
+                        "Confirma para actualizar inventario"
+                    ],
+                    "pasos": [
+                        "Ve a Devoluciones en el menú superior",
+                        "Selecciona el pedido con devoluciones",
+                        "Agrega cada producto devuelto",
+                        "Escribe motivo de devolución",
+                        "Presiona 'Guardar Devolución'"
+                    ]
+                },
+                {
+                    "titulo": "Ver Ubicación en Mapa",
+                    "icono": "fa-map",
+                    "contenido": [
+                        "Consulta la ubicación del cliente en el mapa",
+                        "Planifica tu ruta de entregas",
+                        "Evita errores de dirección",
+                        "Calcula tiempo de desplazamiento"
+                    ],
+                    "pasos": [
+                        "Ve al Mapa en el menú superior",
+                        "Busca el cliente en el mapa",
+                        "Visualiza dirección exacta",
+                        "Usa GPS o navegador externo si necesitas"
+                    ]
+                }
+            ]
+        },
+        "preventista": {
+            "titulo": "Guía del Preventista",
+            "descripcion": "Tu función es crear pedidos y gestionar clientes de tu zona.",
+            "secciones": [
+                {
+                    "titulo": "Tu Rol como Preventista",
+                    "icono": "fa-person-biking",
+                    "contenido": [
+                        "Eres vendedor en tu zona de cobertura",
+                        "Creas pedidos para tus clientes",
+                        "Registras nuevos clientes",
+                        "Consultas productos disponibles y precios",
+                        "Ves tus comisiones y desempeño"
+                    ],
+                    "pasos": [
+                        "Ingresa a tu Dashboard personal",
+                        "Revisa clientes asignados a tu zona",
+                        "Consulta catálogo de productos",
+                        "Crea pedidos para tus clientes",
+                        "Revisa tus números y comisiones"
+                    ]
+                },
+                {
+                    "titulo": "Gestión de Clientes",
+                    "icono": "fa-users",
+                    "contenido": [
+                        "Administra clientes de tu zona de cobertura",
+                        "Registra nuevos clientes con ubicación",
+                        "Actualiza información de contacto",
+                        "Consulta historial de compras de cada cliente",
+                        "Ve ubicación en mapa"
+                    ],
+                    "pasos": [
+                        "Ve a Clientes en el menú PREVENTA",
+                        "Visualiza tus clientes ",
+                        "Para nuevo: haz clic en 'Nuevo Cliente'",
+                        "Completa: nombre, teléfono, correo, ubicación",
+                        "Usa 'Ver Mapa' para visualizar área de cobertura"
+                    ]
+                },
+                {
+                    "titulo": "Consulta de Productos",
+                    "icono": "fa-cube",
+                    "contenido": [
+                        "Consulta catálogo completo de productos",
+                        "Revisa precios de venta (lo que cobras al cliente)",
+                        "Verifica disponibilidad y stock",
+                        "Ver descripción y foto de cada producto"
+                    ],
+                    "pasos": [
+                        "Ve a Productos en el menú PREVENTA",
+                        "Revisa el catálogo en la tabla",
+                        "Haz clic en un producto para ver detalles",
+                        "Anota precios unitario y caja para tus clientes"
+                    ]
+                },
+                {
+                    "titulo": "Crear Pedidos",
+                    "icono": "fa-shopping-bag",
+                    "contenido": [
+                        "Crea pedidos para tus clientes",
+                        "Agrega múltiples productos en una orden",
+                        "Define cantidad de unidades o cajas",
+                        "El sistema calcula total automáticamente",
+                        "Guarda pedido para transferencia a repartidor"
+                    ],
+                    "pasos": [
+                        "Ve a Pedidos en el menú PREVENTA",
+                        "Haz clic en 'Nuevo Pedido'",
+                        "Selecciona el cliente de tu lista",
+                        "Agrega productos con cantidades",
+                        "Revisa total y haz clic en 'Guardar Pedido'",
+                        "El repartidor entregará después"
+                    ]
+                },
+                {
+                    "titulo": "Ubicación del Cliente en Mapa",
+                    "icono": "fa-map",
+                    "contenido": [
+                        "Visualiza la ubicación de cada cliente",
+                        "Planifica tu ruta de ventas",
+                        "Coordina con repartidor para entregas",
+                        "Calcula distancias entre clientes"
+                    ],
+                    "pasos": [
+                        "Ve a Mapa en el menú PREVENTA",
+                        "Visualiza todos tus clientes en el mapa",
+                        "Haz clic en un marcador para detalles",
+                        "Planifica orden de visitas"
+                    ]
+                },
+                {
+                    "titulo": "Ver Tu Desempeño",
+                    "icono": "fa-chart-line",
+                    "contenido": [
+                        "Consulta tus números en el Dashboard",
+                        "Revisa total de pedidos creados",
+                        "Ve monto vendido en el período",
+                        "Compara con metas y comisiones",
+                        "Descarga reportes de tu desempeño"
+                    ],
+                    "pasos": [
+                        "Abre Dashboard desde el menú",
+                        "Revisa las tarjetas KPI",
+                        "Ve a Reportes para análisis detalladoss",
+                        "Descarga reportes en PDF"
+                    ]
+                }
+            ]
+        }
+    }
+
+    # Conceptos importantes que aplican a todos
+    conceptos = [
+        {
+            "titulo": "¿Qué es un PEDIDO?",
+            "contenido": "Un pedido es una orden de compra que contiene uno o más productos con cantidades específicas. Puede estar en estado pendiente (creado), vendido (completado y pagado) o devuelto (cliente quiere cambiar productos).",
+            "icono": "fa-file-invoice"
+        },
+        {
+            "titulo": "¿Qué es una DEVOLUCIÓN?",
+            "contenido": "Es cuando un cliente devuelve productos de un pedido ya vendido. Puede ser por defecto, cambio de color, mal despacho, etc. Se registra en el sistema para actualizar el inventario.",
+            "icono": "fa-sync"
+        },
+        {
+            "titulo": "¿Qué es el INVENTARIO?",
+            "contenido": "Es el registro de todos los productos disponibles. Se actualiza cuando se agregan (compras) o se retiran (ventas, devoluciones). El valor de inventario = cantidad × precio de compra.",
+            "icono": "fa-warehouse"
+        },
+        {
+            "titulo": "¿Qué es una GANANCIA?",
+            "contenido": "La ganancia es la diferencia entre el precio de venta y el precio de compra. Por ejemplo: compras a 10, vendes a 20, ganancias = 10 por unidad.",
+            "icono": "fa-chart-pie"
+        },
+        {
+            "titulo": "ESTADOS DE PEDIDO",
+            "contenido": "Pendiente: no completado. Vendido: pagado y entregado. No Entregado: cliente rechazó. Anulado: se canceló la orden. Devuelto: cliente devolvió parte o todo.",
+            "icono": "fa-list-check"
+        },
+        {
+            "titulo": "¿QUÉ ES LA COMISIÓN?",
+            "contenido": "Es el monto que gana un preventista por cada venta realizada. Se calcula como un porcentaje de la ganancia del pedido, no del total vendido.",
+            "icono": "fa-coins"
+        }
+    ]
+
+    # Información de soporte
+    soporte = {
+        "telefono": "68440201",
+        "whatsapp": "68440201",
+        "website": "appyaa.com",
+        "email": "soporte@appyaa.com",
+        "redes_sociales": [
+            {"nombre": "Facebook", "icono": "fab fa-facebook-f", "enlace": "https://facebook.com/appyaa"},
+            {"nombre": "TikTok", "icono": "fab fa-tiktok", "enlace": "https://tiktok.com/@appyaa"},
+            {"nombre": "X (Twitter)", "icono": "fab fa-x-twitter", "enlace": "https://x.com/appyaa"},
+            {"nombre": "WhatsApp", "icono": "fab fa-whatsapp", "enlace": "https://wa.me/+59168440201"}
+        ]
+    }
+
+    contexto = {
+        "rol": rol,
+        "ayuda": ayuda_contenido.get(rol, ayuda_contenido["preventista"]),
+        "conceptos": conceptos,
+        "soporte": soporte,
+        "roles_disponibles": list(ayuda_contenido.keys())
+    }
+    
+    return render(request, "dashboard/ayuda.html", contexto)
 
 
 @login_required

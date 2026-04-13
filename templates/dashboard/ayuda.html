@@ -1,25 +1,822 @@
 {% extends 'base/base.html' %}
+{% load static %}
 
-{% block titulo %}Ayuda{% endblock %}
+{% block titulo %}Centro de Ayuda{% endblock %}
 
 {% block contenido %}
-<div class="container-fluid">
-    <div class="page-header">
+<div class="container-fluid ayuda-container">
+    <!-- Header -->
+    <div class="page-header ayuda-header">
         <div class="page-header-content">
-            <h1 class="page-title"><i class="fas fa-circle-question"></i> Ayuda</h1>
-            <p class="page-subtitle">Guía rápida</p>
+            <h1 class="page-title"><i class="fas fa-circle-question"></i> Centro de Ayuda</h1>
+            <p class="page-subtitle">Aprende cómo usar el sistema según tu rol</p>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <ul class="mb-0">
-                <li><strong>Clientes:</strong> registra y edita clientes (con ubicación opcional).</li>
-                <li><strong>Productos:</strong> catálogo y precios (solo admin puede crear/editar/bloquear).</li>
-                <li><strong>Pedidos:</strong> crea pedidos con productos y cantidades; revisa el historial.</li>
-                <li><strong>PDF:</strong> en “Ver pedido” usa “Imprimir PDF”.</li>
-            </ul>
+    <!-- Buscador -->
+    <div class="ayuda-busqueda">
+        <div class="busqueda-contenedor">
+            <i class="fas fa-search"></i>
+            <input 
+                type="text" 
+                id="busquedaAyuda" 
+                class="busqueda-input" 
+                placeholder="Busca en toda la ayuda... (ej: pedidos, clientes, devoluciones)"
+                data-role="{{ rol }}"
+            >
+            <div id="resultadosBusqueda" class="resultados-busqueda"></div>
+        </div>
+    </div>
+
+    <div class="ayuda-contenido">
+        <!-- Tabs de roles -->
+        <div class="tabs-roles">
+            <button class="tab-rol {% if rol == 'administrador' %}active{% endif %}" data-rol="administrador">
+                <i class="fas fa-crown"></i> Administrador
+            </button>
+            <button class="tab-rol {% if rol == 'supervisor' %}active{% endif %}" data-rol="supervisor">
+                <i class="fas fa-person-hiking"></i> Supervisor
+            </button>
+            <button class="tab-rol {% if rol == 'repartidor' %}active{% endif %}" data-rol="repartidor">
+                <i class="fas fa-truck"></i> Repartidor
+            </button>
+            <button class="tab-rol {% if rol == 'preventista' %}active{% endif %}" data-rol="preventista">
+                <i class="fas fa-person-biking"></i> Preventista
+            </button>
+        </div>
+
+        <!-- Rol Admin -->
+        <div class="rol-contenido {% if rol == 'administrador' %}active{% endif %}" data-rol="administrador">
+            <div class="rol-header">
+                <h2>Guía del Administrador</h2>
+                <p class="rol-descripcion">Panel completo de control del sistema. Acceso a todas las secciones y decisiones clave.</p>
+            </div>
+
+            <div class="secciones-grid">
+                <div class="seccion-card seccion-searchable" data-seccion="dashboard">
+                    <div class="seccion-header">
+                        <i class="fas fa-gauge"></i>
+                        <h3>Dashboard - Panel de Control</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Visualiza métricas clave del negocio en tiempo real</li>
+                                <li>Monto total de ventas, clientes activos y productos disponibles</li>
+                                <li>Seguimiento del inventario: unidades agregadas, valor de compras, unidades retiradas</li>
+                                <li>Nuevos pedidos hoy, estado de entregas (pendientes, vendidos, no entregados)</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Accede a Dashboard desde el menú principal</li>
+                                <li>Revisa las tarjetas KPI (Ventas, Ganancias, Inventario)</li>
+                                <li>Haz clic en cualquier tarjeta para ver detalles detallados</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="clientes">
+                    <div class="seccion-header">
+                        <i class="fas fa-users"></i>
+                        <h3>Gestión de Clientes</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Crea, edita y gestiona toda la base de clientes</li>
+                                <li>Registra ubicación del cliente en el mapa (opcional)</li>
+                                <li>Marca clientes como activos o inactivos</li>
+                                <li>Asigna clientes específicos a preventistas</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Clientes en el menú PREVENTA</li>
+                                <li>Haz clic en 'Nuevo Cliente' para agregar</li>
+                                <li>Completa: nombre, teléfono, correo, tipo de negocio</li>
+                                <li>Usa 'Ver Mapa' para ubicar la tienda en el mapa</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="productos">
+                    <div class="seccion-header">
+                        <i class="fas fa-cube"></i>
+                        <h3>Administración de Productos</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Solo admin puede crear, editar y bloquear productos</li>
+                                <li>Define código único, nombre, descripción y foto</li>
+                                <li>Establece precios de compra y venta (unidad y caja)</li>
+                                <li>Gestiona inventario mediante el modal de ajustes</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Productos en el menú PREVENTA</li>
+                                <li>Para crear: haz clic en 'Nuevo Producto'</li>
+                                <li>Completa todos los campos requeridos</li>
+                                <li>Para ajustar stock: haz clic en el ícono de cajas</li>
+                                <li>Registra entrada/salida con motivo y cantidad</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="pedidos">
+                    <div class="seccion-header">
+                        <i class="fas fa-shopping-bag"></i>
+                        <h3>Gestión de Pedidos</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Crea y controla todos los pedidos del sistema</li>
+                                <li>Visualiza estado: pendiente, vendido, no entregado, anulado</li>
+                                <li>Consulta historial completo de transacciones</li>
+                                <li>Genera reportes PDF de cada pedido</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Pedidos en el menú PREVENTA</li>
+                                <li>Haz clic en 'Nuevo Pedido'</li>
+                                <li>Selecciona cliente y agrega productos</li>
+                                <li>Marca como vendido una vez completado</li>
+                                <li>Imprime PDF si es necesario</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="devoluciones">
+                    <div class="seccion-header">
+                        <i class="fas fa-undo"></i>
+                        <h3>Devoluciones</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Registra y gestiona devoluciones de productos</li>
+                                <li>Asocia devoluciones a pedidos específicos</li>
+                                <li>Controla qué productos fueron devueltos y cantidades</li>
+                                <li>Actualiza inmediatamente el inventario</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Devoluciones en el menú PREVENTA</li>
+                                <li>Selecciona el pedido que tiene devoluciones</li>
+                                <li>Agrega cada producto devuelto y cantidad</li>
+                                <li>Asigna repartidor responsable</li>
+                                <li>Guarda para actualizar inventario automáticamente</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="reportes">
+                    <div class="seccion-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3>Reportes y Análisis</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Accede a reportes detallados de ventas</li>
+                                <li>Analiza rendimiento por cliente, producto o período</li>
+                                <li>Exporta datos para análisis externo</li>
+                                <li>Filtra por fechas y criterios específicos</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Reportes en el menú PREVENTA</li>
+                                <li>Selecciona el tipo de reporte deseado</li>
+                                <li>Aplica filtros (fechas, clientes, productos)</li>
+                                <li>Descarga o visualiza resultados</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="usuarios">
+                    <div class="seccion-header">
+                        <i class="fas fa-person-badge"></i>
+                        <h3>Gestión de Usuarios</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Crea y administra cuentas de supervisor, repartidor y preventista</li>
+                                <li>Asigna roles y permisos específicos</li>
+                                <li>Activa o desactiva usuarios</li>
+                                <li>Controla acceso al sistema</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Usuarios en el menú SISTEMA</li>
+                                <li>Haz clic en 'Nuevo Usuario'</li>
+                                <li>Asigna nombre, correo, teléfono y rol</li>
+                                <li>El usuario recibirá instrucciones por correo</li>
+                                <li>Edita después si necesitas cambiar rol</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rol Supervisor -->
+        <div class="rol-contenido {% if rol == 'supervisor' %}active{% endif %}" data-rol="supervisor">
+            <div class="rol-header">
+                <h2>Guía del Supervisor</h2>
+                <p class="rol-descripcion">Supervisa las operaciones de preventistas y repartidores bajo tu área.</p>
+            </div>
+
+            <div class="secciones-grid">
+                <div class="seccion-card seccion-searchable" data-seccion="supervisor-rol">
+                    <div class="seccion-header">
+                        <i class="fas fa-person-hiking"></i>
+                        <h3>Funciones del Supervisor</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Supervisa preventistas y repartidores de tu zona</li>
+                                <li>Revisa todos los pedidos de tu equipo</li>
+                                <li>Accede a reportes de desempeño</li>
+                                <li>Valida transacciones antes de finalizar</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Revisa el Dashboard para ver métricas de tu equipo</li>
+                                <li>Ve a Pedidos para supervisar transacciones</li>
+                                <li>Haz clic en 'Ver' para detalles de cada pedido</li>
+                                <li>Valida estados y descarga reportes</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="supervisor-clientes">
+                    <div class="seccion-header">
+                        <i class="fas fa-users"></i>
+                        <h3>Gestión de Clientes</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Visualiza clientes asignados a tu zona</li>
+                                <li>Puedes crear clientes nuevos en tu área</li>
+                                <li>Revisa información de contacto y ubicación</li>
+                                <li>Actualiza datos si es necesario</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Clientes en el menú PREVENTA</li>
+                                <li>Visualiza lista de clientes de tu supervisión</li>
+                                <li>Usa el mapa para ver ubicaciones</li>
+                                <li>Actualiza información según sea necesario</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="supervisor-productos">
+                    <div class="seccion-header">
+                        <i class="fas fa-cube"></i>
+                        <h3>Consulta de Productos</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Visualiza catálogo completo de productos</li>
+                                <li>Revisa precios de compra y venta</li>
+                                <li>Verifica niveles de inventario</li>
+                                <li>Consulta histórico de movimientos</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Productos en el menú PREVENTA</li>
+                                <li>Visualiza el catálogo completo</li>
+                                <li>Haz clic en 'Ver Inventario' para detalles</li>
+                                <li>Revisa historial de entradas/salidas</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="supervisor-pedidos">
+                    <div class="seccion-header">
+                        <i class="fas fa-shopping-bag"></i>
+                        <h3>Seguimiento de Pedidos</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Consulta todos los pedidos de tu zona</li>
+                                <li>Filtra por estado, cliente o preventista</li>
+                                <li>Revisa detalles y montos</li>
+                                <li>Descarga reportes en PDF</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Pedidos en el menú PREVENTA</li>
+                                <li>Aplica filtros para ver tu zona</li>
+                                <li>Haz clic en un pedido para detalles</li>
+                                <li>Usa 'Imprimir PDF' para reportes</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rol Repartidor -->
+        <div class="rol-contenido {% if rol == 'repartidor' %}active{% endif %}" data-rol="repartidor">
+            <div class="rol-header">
+                <h2>Guía del Repartidor</h2>
+                <p class="rol-descripcion">Tu función es entregar pedidos y registrar devoluciones.</p>
+            </div>
+
+            <div class="secciones-grid">
+                <div class="seccion-card seccion-searchable" data-seccion="repartidor-rol">
+                    <div class="seccion-header">
+                        <i class="fas fa-truck"></i>
+                        <h3>Tu Rol como Repartidor</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Entregas pedidos a clientes finales</li>
+                                <li>Registras devoluciones de productos defectuosos</li>
+                                <li>Recolectas pagos (si aplica)</li>
+                                <li>Reportas estado de entregas</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Revisa Dashboard para ver resumen</li>
+                                <li>Ve a Pedidos para consultar tus entregas</li>
+                                <li>Toma nota de la información del cliente</li>
+                                <li>Entrega el pedido</li>
+                                <li>Si hay devoluciones, regresa al sistema</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="repartidor-pedidos">
+                    <div class="seccion-header">
+                        <i class="fas fa-shopping-bag"></i>
+                        <h3>Consulta de Pedidos</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Visualiza todos los pedidos asignados para entrega</li>
+                                <li>Revisa ubicación del cliente en el mapa</li>
+                                <li>Consulta productos y cantidades</li>
+                                <li>Verifica dirección y contacto</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Pedidos en el menú superior</li>
+                                <li>Haz clic en un pedido para ver detalles</li>
+                                <li>Usa 'Ver Mapa' para ubicación del cliente</li>
+                                <li>Ten a mano teléfono del cliente</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="repartidor-devoluciones">
+                    <div class="seccion-header">
+                        <i class="fas fa-undo"></i>
+                        <h3>Registrar Devoluciones</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Si el cliente devuelve productos, regístralo en el sistema</li>
+                                <li>Especifica qué productos se devuelven</li>
+                                <li>Nota problemas (daño, color, etc.)</li>
+                                <li>Confirma para actualizar inventario</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Devoluciones en el menú superior</li>
+                                <li>Selecciona el pedido con devoluciones</li>
+                                <li>Agrega cada producto devuelto</li>
+                                <li>Escribe motivo de devolución</li>
+                                <li>Presiona 'Guardar Devolución'</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="repartidor-mapa">
+                    <div class="seccion-header">
+                        <i class="fas fa-map"></i>
+                        <h3>Ver Ubicación en Mapa</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Consulta la ubicación del cliente en el mapa</li>
+                                <li>Planifica tu ruta de entregas</li>
+                                <li>Evita errores de dirección</li>
+                                <li>Calcula tiempo de desplazamiento</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve al Mapa en el menú superior</li>
+                                <li>Busca el cliente en el mapa</li>
+                                <li>Visualiza dirección exacta</li>
+                                <li>Usa GPS o navegador externo si necesitas</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rol Preventista -->
+        <div class="rol-contenido {% if rol == 'preventista' %}active{% endif %}" data-rol="preventista">
+            <div class="rol-header">
+                <h2>Guía del Preventista</h2>
+                <p class="rol-descripcion">Tu función es crear pedidos y gestionar clientes de tu zona.</p>
+            </div>
+
+            <div class="secciones-grid">
+                <div class="seccion-card seccion-searchable" data-seccion="preventista-rol">
+                    <div class="seccion-header">
+                        <i class="fas fa-person-biking"></i>
+                        <h3>Tu Rol como Preventista</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Eres vendedor en tu zona de cobertura</li>
+                                <li>Creas pedidos para tus clientes</li>
+                                <li>Registras nuevos clientes</li>
+                                <li>Consultas productos disponibles y precios</li>
+                                <li>Ves tus comisiones y desempeño</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ingresa a tu Dashboard personal</li>
+                                <li>Revisa clientes asignados a tu zona</li>
+                                <li>Consulta catálogo de productos</li>
+                                <li>Crea pedidos para tus clientes</li>
+                                <li>Revisa tus números y comisiones</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="preventista-clientes">
+                    <div class="seccion-header">
+                        <i class="fas fa-users"></i>
+                        <h3>Gestión de Clientes</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Administra clientes de tu zona de cobertura</li>
+                                <li>Registra nuevos clientes con ubicación</li>
+                                <li>Actualiza información de contacto</li>
+                                <li>Consulta historial de compras de cada cliente</li>
+                                <li>Ve ubicación en mapa</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Clientes en el menú PREVENTA</li>
+                                <li>Visualiza tus clientes</li>
+                                <li>Para nuevo: haz clic en 'Nuevo Cliente'</li>
+                                <li>Completa: nombre, teléfono, correo, ubicación</li>
+                                <li>Usa 'Ver Mapa' para visualizar área de cobertura</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="preventista-productos">
+                    <div class="seccion-header">
+                        <i class="fas fa-cube"></i>
+                        <h3>Consulta de Productos</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Consulta catálogo completo de productos</li>
+                                <li>Revisa precios de venta (lo que cobras al cliente)</li>
+                                <li>Verifica disponibilidad y stock</li>
+                                <li>Ver descripción y foto de cada producto</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Productos en el menú PREVENTA</li>
+                                <li>Revisa el catálogo en la tabla</li>
+                                <li>Haz clic en un producto para ver detalles</li>
+                                <li>Anota precios unitario y caja para tus clientes</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="preventista-pedidos">
+                    <div class="seccion-header">
+                        <i class="fas fa-shopping-bag"></i>
+                        <h3>Crear Pedidos</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Crea pedidos para tus clientes</li>
+                                <li>Agrega múltiples productos en una orden</li>
+                                <li>Define cantidad de unidades o cajas</li>
+                                <li>El sistema calcula total automáticamente</li>
+                                <li>Guarda pedido para transferencia a repartidor</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Pedidos en el menú PREVENTA</li>
+                                <li>Haz clic en 'Nuevo Pedido'</li>
+                                <li>Selecciona el cliente de tu lista</li>
+                                <li>Agrega productos con cantidades</li>
+                                <li>Revisa total y haz clic en 'Guardar Pedido'</li>
+                                <li>El repartidor entregará después</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="preventista-mapa">
+                    <div class="seccion-header">
+                        <i class="fas fa-map"></i>
+                        <h3>Ubicación del Cliente en Mapa</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Visualiza la ubicación de cada cliente</li>
+                                <li>Planifica tu ruta de ventas</li>
+                                <li>Coordina con repartidor para entregas</li>
+                                <li>Calcula distancias entre clientes</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Ve a Mapa en el menú PREVENTA</li>
+                                <li>Visualiza todos tus clientes en el mapa</li>
+                                <li>Haz clic en un marcador para detalles</li>
+                                <li>Planifica orden de visitas</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="seccion-card seccion-searchable" data-seccion="preventista-desempenio">
+                    <div class="seccion-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Ver Tu Desempeño</h3>
+                    </div>
+                    <div class="seccion-body">
+                        <div class="contenido-bloque">
+                            <h4>Información</h4>
+                            <ul class="contenido-lista">
+                                <li>Consulta tus números en el Dashboard</li>
+                                <li>Revisa total de pedidos creados</li>
+                                <li>Ve monto vendido en el período</li>
+                                <li>Compara con metas y comisiones</li>
+                                <li>Descarga reportes de tu desempeño</li>
+                            </ul>
+                        </div>
+                        <div class="contenido-bloque" style="margin-top: 1rem;">
+                            <h4>Cómo hacerlo</h4>
+                            <ol class="pasos-lista">
+                                <li>Abre Dashboard desde el menú</li>
+                                <li>Revisa las tarjetas KPI</li>
+                                <li>Ve a Reportes para análisis detallados</li>
+                                <li>Descarga reportes en PDF</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conceptos Importantes -->
+    <div class="conceptos-seccion">
+        <h2 class="conceptos-titulo"><i class="fas fa-lightbulb"></i> Conceptos Importantes</h2>
+        <p class="conceptos-subtitulo">Información esencial que debes conocer</p>
+
+        <div class="conceptos-grid">
+            <div class="concepto-card concepto-searchable" data-concepto="pedido">
+                <div class="concepto-icono">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <h3>¿Qué es un PEDIDO?</h3>
+                <p>Un pedido es una orden de compra que contiene uno o más productos con cantidades específicas. Puede estar en estado pendiente (creado), vendido (completado y pagado) o devuelto (cliente quiere cambiar productos).</p>
+            </div>
+
+            <div class="concepto-card concepto-searchable" data-concepto="devolucion">
+                <div class="concepto-icono">
+                    <i class="fas fa-sync"></i>
+                </div>
+                <h3>¿Qué es una DEVOLUCIÓN?</h3>
+                <p>Es cuando un cliente devuelve productos de un pedido ya vendido. Puede ser por defecto, cambio de color, mal despacho, etc. Se registra en el sistema para actualizar el inventario.</p>
+            </div>
+
+            <div class="concepto-card concepto-searchable" data-concepto="inventario">
+                <div class="concepto-icono">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <h3>¿Qué es el INVENTARIO?</h3>
+                <p>Es el registro de todos los productos disponibles. Se actualiza cuando se agregan (compras) o se retiran (ventas, devoluciones). El valor de inventario = cantidad × precio de compra.</p>
+            </div>
+
+            <div class="concepto-card concepto-searchable" data-concepto="ganancia">
+                <div class="concepto-icono">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <h3>¿Qué es una GANANCIA?</h3>
+                <p>La ganancia es la diferencia entre el precio de venta y el precio de compra. Por ejemplo: compras a 10, vendes a 20, ganancias = 10 por unidad.</p>
+            </div>
+
+            <div class="concepto-card concepto-searchable" data-concepto="estado">
+                <div class="concepto-icono">
+                    <i class="fas fa-list-check"></i>
+                </div>
+                <h3>ESTADOS DE PEDIDO</h3>
+                <p>Pendiente: no completado. Vendido: pagado y entregado. No Entregado: cliente rechazó. Anulado: se canceló la orden. Devuelto: cliente devolvió parte o todo.</p>
+            </div>
+
+            <div class="concepto-card concepto-searchable" data-concepto="comision">
+                <div class="concepto-icono">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <h3>¿QUÉ ES LA COMISIÓN?</h3>
+                <p>Es el monto que gana un preventista por cada venta realizada. Se calcula como un porcentaje de la ganancia del pedido, no del total vendido.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Soporte -->
+    <div class="soporte-seccion">
+        <h2 class="soporte-titulo"><i class="fas fa-headset"></i> ¿Necesitas más ayuda?</h2>
+        <p class="soporte-subtitle">Contáctanos a través de nuestros canales de soporte</p>
+
+        <div class="soporte-grid">
+            <!-- Sitio Web -->
+            <div class="soporte-card">
+                <div class="soporte-icono" style="background: var(--color-primario);">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <h3>Sitio Web</h3>
+                <p class="soporte-info">{{ soporte.website }}</p>
+                <a href="https://{{ soporte.website }}" target="_blank" class="soporte-enlace">
+                    Visitar sitio
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- WhatsApp -->
+            <div class="soporte-card">
+                <div class="soporte-icono" style="background: var(--color-exito);">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <h3>WhatsApp</h3>
+                <p class="soporte-info">{{ soporte.whatsapp }}</p>
+                <a href="https://wa.me/+59168440201" target="_blank" class="soporte-enlace">
+                    Enviar mensaje
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Teléfono -->
+            <div class="soporte-card">
+                <div class="soporte-icono" style="background: var(--color-peligro);">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <h3>Teléfono</h3>
+                <p class="soporte-info">{{ soporte.telefono }}</p>
+                <a href="tel:+591{{ soporte.telefono }}" class="soporte-enlace">
+                    Llamar ahora
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Correo -->
+            <div class="soporte-card">
+                <div class="soporte-icono" style="background: var(--color-advertencia);">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h3>Correo Electrónico</h3>
+                <p class="soporte-info">{{ soporte.email }}</p>
+                <a href="mailto:{{ soporte.email }}" class="soporte-enlace">
+                    Enviar correo
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Redes Sociales -->
+        <div class="redes-sociales">
+            <p class="redes-titulo">Síguenos en redes sociales</p>
+            <div class="redes-contenedor">
+                <a href="https://facebook.com/appyaa" target="_blank" class="red-enlace" title="Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                    <span>Facebook</span>
+                </a>
+                <a href="https://tiktok.com/@appyaa" target="_blank" class="red-enlace" title="TikTok">
+                    <i class="fab fa-tiktok"></i>
+                    <span>TikTok</span>
+                </a>
+                <a href="https://x.com/appyaa" target="_blank" class="red-enlace" title="X (Twitter)">
+                    <i class="fab fa-x-twitter"></i>
+                    <span>X</span>
+                </a>
+                <a href="https://wa.me/+59168440201" target="_blank" class="red-enlace" title="WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Información adicional -->
+        <div class="soporte-info-box">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <h4>Horario de Soporte</h4>
+                <p>Lunes a viernes: 8:00 AM - 6:00 PM<br>Sábado: 9:00 AM - 1:00 PM</p>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Incluir CSS y JS -->
+<link rel="stylesheet" href="{% static 'css/dashboard/ayuda.css' %}">
+<script src="{% static 'js/dashboard/ayuda.js' %}"></script>
+
 {% endblock %}
