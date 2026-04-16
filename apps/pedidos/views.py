@@ -117,7 +117,7 @@ def _pedidos_qs_para_usuario(user):
     if perfil and perfil.rol == "administrador":
         return qs
     if perfil and perfil.rol == "repartidor":
-        return qs.filter(estado=Pedido.ESTADO_PENDIENTE)
+        return qs.filter(estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO])
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",
@@ -136,6 +136,9 @@ def listar_pedidos(request):
     rol_usuario = (request.GET.get("rol") or "").strip().lower()
     fecha_desde_raw = (request.GET.get("fecha_desde") or "").strip()
     fecha_hasta_raw = (request.GET.get("fecha_hasta") or "").strip()
+    vista_pedidos = (request.GET.get("tab") or "pendientes").strip().lower()
+    if vista_pedidos not in {"pendientes", "anteriores"}:
+        vista_pedidos = "pendientes"
 
     fecha_desde = None
     fecha_hasta = None
@@ -190,6 +193,31 @@ def listar_pedidos(request):
     if fecha_hasta:
         pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
 
+    if vista_pedidos == "pendientes":
+        pedidos = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE)
+    else:
+        pedidos = pedidos.exclude(estado=Pedido.ESTADO_PENDIENTE)
+
+    pedidos = list(pedidos.order_by("-fecha"))
+
+    pedido_ids = [p.id for p in pedidos]
+    devuelto_monto_por_pedido = defaultdict(lambda: Decimal("0.00"))
+    if pedido_ids:
+        devolucion_items = DevolucionItem.objects.filter(
+            devolucion__pedido_id__in=pedido_ids,
+            detalle_pedido__isnull=False,
+        ).select_related("detalle_pedido", "devolucion")
+
+        for item in devolucion_items:
+            precio = item.detalle_pedido.precio_unitario if item.detalle_pedido else Decimal("0.00")
+            monto = (precio or Decimal("0.00")) * Decimal(int(item.cantidad_devuelta or 0))
+            devuelto_monto_por_pedido[item.devolucion.pedido_id] += monto
+
+    for p in pedidos:
+        monto_devuelto = devuelto_monto_por_pedido.get(p.id, Decimal("0.00"))
+        p.total_devuelto_monto = monto_devuelto
+        p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
+
     perfil = getattr(request.user, "perfil", None)
     if perfil and perfil.rol == "repartidor":
         clientes = Cliente.objects.none()
@@ -227,6 +255,7 @@ def listar_pedidos(request):
             "rol_usuario": rol_usuario,
             "fecha_desde": fecha_desde_raw,
             "fecha_hasta": fecha_hasta_raw,
+            "vista_pedidos": vista_pedidos,
             "clientes": clientes,
             "productos": productos,
             "clientes_data": clientes_data,
@@ -289,6 +318,7 @@ def crear_pedido(request):
         pedido = Pedido.objects.create(
             cliente=cliente,
             preventista=preventista_asignado,
+            registrado_por=request.user,
             observacion=observacion or None,
         )
 
@@ -315,18 +345,39 @@ def crear_pedido(request):
 def obtener_pedido(request, id: int):
     pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
 
-    detalles = (
-        pedido.detalles.select_related("producto")
-        .all()
-        .values(
-            "id",
-            "producto_id",
-            "producto__nombre",
-            "cantidad",
-            "precio_unitario",
-            "subtotal",
+    detalles_qs = pedido.detalles.select_related("producto").all()
+    detalle_ids = [d.id for d in detalles_qs]
+
+    devueltos_por_detalle = defaultdict(int)
+    if detalle_ids:
+        devolucion_items = DevolucionItem.objects.filter(
+            devolucion__pedido_id=pedido.id,
+            detalle_pedido_id__in=detalle_ids,
         )
-    )
+        for it in devolucion_items:
+            devueltos_por_detalle[it.detalle_pedido_id] += int(it.cantidad_devuelta or 0)
+
+    detalles = []
+    total_devuelto_monto = Decimal("0.00")
+    for d in detalles_qs:
+        cant_devuelta = int(devueltos_por_detalle.get(d.id, 0))
+        subtotal_neto = (d.subtotal or Decimal("0.00")) - ((d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta))
+        total_devuelto_monto += (d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta)
+
+        detalles.append(
+            {
+                "id": d.id,
+                "producto_id": d.producto_id,
+                "producto__nombre": d.producto.nombre,
+                "cantidad": d.cantidad,
+                "precio_unitario": f"{(d.precio_unitario or Decimal('0.00')):.2f}",
+                "subtotal": f"{(d.subtotal or Decimal('0.00')):.2f}",
+                "cantidad_devuelta": cant_devuelta,
+                "subtotal_neto": f"{subtotal_neto:.2f}",
+            }
+        )
+
+    total_neto = (pedido.total or Decimal("0.00")) - total_devuelto_monto
 
     return JsonResponse(
         {
@@ -336,9 +387,11 @@ def obtener_pedido(request, id: int):
             "fecha": pedido.fecha.strftime("%d/%m/%Y %H:%M"),
             "estado": pedido.estado,
             "estado_display": pedido.get_estado_display(),
-            "total": str(pedido.total),
+            "total": f"{(pedido.total or Decimal('0.00')):.2f}",
+            "total_devuelto_monto": f"{total_devuelto_monto:.2f}",
+            "total_neto": f"{total_neto:.2f}",
             "observacion": pedido.observacion or "",
-            "detalles": list(detalles),
+            "detalles": detalles,
         }
     )
 

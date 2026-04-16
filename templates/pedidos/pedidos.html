@@ -27,6 +27,14 @@
 
     <div class="card card-filtros">
         <div class="card-body py-3">
+            <div class="pedido-tabs mb-3" id="pedidoTabs" data-tab="{{ vista_pedidos|default:'pendientes' }}">
+                <button type="button" class="pedido-tab-btn {% if vista_pedidos != 'anteriores' %}active{% endif %}" data-tab="pendientes">
+                    Pendientes
+                </button>
+                <button type="button" class="pedido-tab-btn {% if vista_pedidos == 'anteriores' %}active{% endif %}" data-tab="anteriores">
+                    Anteriores
+                </button>
+            </div>
             <div class="row align-items-center">
                 <div class="col-md-3">
                     <div class="input-group input-group-sm">
@@ -76,7 +84,8 @@
                         <th style="width: 28%;">Cliente</th>
                         <th style="width: 18%;">Preventista</th>
                         <th style="width: 16%;">Fecha</th>
-                        <th style="width: 12%;">Total</th>
+                        <th style="width: 10%;">Total Bruto</th>
+                        <th style="width: 10%;">Total Real</th>
                         <th style="width: 10%;" class="text-center">Estado</th>
                         <th style="width: 12%;" class="text-center">Acciones</th>
                     </tr>
@@ -94,6 +103,7 @@
                         </td>
                         <td><small class="text-muted">{{ p.fecha|date:'d/m/Y H:i' }}</small></td>
                         <td class="font-weight-bold">Bs {{ p.total|floatformat:2 }}</td>
+                        <td class="font-weight-bold">Bs {{ p.total_neto|floatformat:2 }}</td>
                         <td class="text-center">
                             {% if p.estado == 'anulado' %}
                             <span class="badge-estado badge-estado-anulado"><i class="fas fa-ban"></i> Anulado</span>
@@ -119,15 +129,49 @@
                                     {% endif %}
                                 {% endif %}
 
-                                {% if not user.is_superuser and p.estado == 'pendiente' %}
-                                    {% if user.perfil.rol == 'preventista' %}
+                                {% if not user.is_superuser %}
+                                    {% if user.perfil.rol == 'preventista' and p.estado == 'pendiente' %}
                                         <button type="button" class="btn btn-success btn-sm btn-marcar-vendido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Marcar como vendido">
                                             <i class="fas fa-check"></i>
                                         </button>
-                                    {% elif user.perfil.rol == 'repartidor' %}
+                                    {% elif user.perfil.rol == 'repartidor' and p.estado == 'pendiente' %}
                                         <button type="button" class="btn btn-success btn-sm btn-registrar-entrega" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Registrar entrega/devolución">
                                             <i class="fas fa-truck"></i>
                                         </button>
+                                    {% elif user.perfil.rol == 'repartidor' and vista_pedidos == 'anteriores' and p.estado != 'pendiente' and p.estado != 'anulado' %}
+                                        <a
+                                            class="btn btn-dark btn-sm"
+                                            href="{% url 'reporte_pedido_ticket' p.id %}"
+                                            title="Ticket térmico"
+                                        >
+                                            <i class="fas fa-receipt"></i>
+                                        </a>
+                                        <a
+                                            class="btn btn-success btn-sm"
+                                            href="{% url 'reporte_pedido_ticket_whatsapp' p.id %}"
+                                            title="Compartir por WhatsApp"
+                                        >
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                                    {% if vista_pedidos == 'anteriores' and p.estado != 'pendiente' and p.estado != 'anulado' %}
+                                        <a
+                                            class="btn btn-dark btn-sm"
+                                            href="{% url 'reporte_pedido_ticket' p.id %}"
+                                            title="Ticket térmico"
+                                        >
+                                            <i class="fas fa-receipt"></i>
+                                        </a>
+                                        <a
+                                            class="btn btn-success btn-sm"
+                                            href="{% url 'reporte_pedido_ticket_whatsapp' p.id %}"
+                                            title="Compartir por WhatsApp"
+                                        >
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
                                     {% endif %}
                                 {% endif %}
 
@@ -153,7 +197,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center py-4">
+                        <td colspan="8" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay pedidos registrados</p>
                         </td>

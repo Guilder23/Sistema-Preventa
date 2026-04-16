@@ -4,7 +4,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const rolSelect = document.getElementById('rolPedido');
     const fechaDesdeInput = document.getElementById('fechaDesdePedido');
     const fechaHastaInput = document.getElementById('fechaHastaPedido');
-    if (!input && !estadoSelect && !rolSelect && !fechaDesdeInput && !fechaHastaInput) return;
+    const pedidoTabs = document.getElementById('pedidoTabs');
+    if (!input && !estadoSelect && !rolSelect && !fechaDesdeInput && !fechaHastaInput && !pedidoTabs) return;
+
+    let activeTab = (pedidoTabs && pedidoTabs.dataset.tab ? pedidoTabs.dataset.tab : 'pendientes').trim();
+    if (activeTab !== 'pendientes' && activeTab !== 'anteriores') activeTab = 'pendientes';
 
     function applyFilters() {
         const q = (input && input.value ? input.value : '').trim();
@@ -23,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
         else url.searchParams.delete('fecha_desde');
         if (fechaHasta) url.searchParams.set('fecha_hasta', fechaHasta);
         else url.searchParams.delete('fecha_hasta');
+        url.searchParams.set('tab', activeTab);
         window.location.href = url.toString();
     }
 
@@ -59,6 +64,18 @@ document.addEventListener('DOMContentLoaded', function () {
         fechaHastaInput.addEventListener('change', function () {
             clearTimeout(t);
             applyFilters();
+        });
+    }
+
+    if (pedidoTabs) {
+        const tabButtons = pedidoTabs.querySelectorAll('[data-tab]');
+        tabButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const next = (btn.dataset.tab || '').trim();
+                if (next !== 'pendientes' && next !== 'anteriores') return;
+                activeTab = next;
+                applyFilters();
+            });
         });
     }
 });

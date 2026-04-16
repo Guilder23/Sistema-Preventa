@@ -61,28 +61,39 @@
 
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form method="get" class="form-row align-items-end" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
-                <div class="col-md-3 mb-2">
+            <form method="get" class="reportes-filtros-grid" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
+                <div class="filtro-item filtro-item--buscar">
                     <label class="small text-muted">Buscar</label>
                     <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, usuario" autocomplete="off">
                 </div>
-                <div class="col-md-2 mb-2">
+                <div class="filtro-item">
                     <label class="small text-muted">Estado</label>
                     <select name="estado" class="form-control">
                         <option value="">Todos</option>
                         <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
                         <option value="vendido" {% if estado == 'vendido' %}selected{% endif %}>Vendido</option>
+                        <option value="no_entregado" {% if estado == 'no_entregado' %}selected{% endif %}>No entregado</option>
                         <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
                     </select>
                 </div>
-                <div class="col-md-2 mb-2">
+                <div class="filtro-item">
                     <label class="small text-muted">Tipo reporte</label>
-                    <select name="tipo" class="form-control">
+                    <select name="tipo" class="form-control filtro-tipo">
                         <option value="general" {% if tipo == 'general' %}selected{% endif %}>General</option>
                         <option value="despacho" {% if tipo == 'despacho' %}selected{% endif %}>Despacho</option>
                     </select>
                 </div>
-                <div class="col-md-3 mb-2">
+                <div class="filtro-item">
+                    <label class="small text-muted">Estado entrega</label>
+                    <select name="estado_entrega" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="pendiente" {% if estado_entrega == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="entregado_completo" {% if estado_entrega == 'entregado_completo' %}selected{% endif %}>Entregado completo</option>
+                        <option value="entregado_parcial" {% if estado_entrega == 'entregado_parcial' %}selected{% endif %}>Entregado parcial</option>
+                        <option value="no_entregado" {% if estado_entrega == 'no_entregado' %}selected{% endif %}>No entregado</option>
+                    </select>
+                </div>
+                <div class="filtro-item">
                     <label class="small text-muted">Preventista</label>
                     <select name="preventista" class="form-control">
                         <option value="">Todos</option>
@@ -93,18 +104,18 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2 mb-2">
+                <div class="filtro-item">
                     <label class="small text-muted">Desde</label>
                     <input type="date" name="desde" value="{{ desde }}" class="form-control">
                 </div>
-                <div class="col-md-2 mb-2">
+                <div class="filtro-item">
                     <label class="small text-muted">Hasta</label>
                     <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
                 </div>
-                <div class="col-md-2 mb-2">
+                <div class="filtro-item filtro-item--pdf">
                     <label class="small text-muted d-block">PDF</label>
-                    <a class="btn btn-danger btn-block" id="btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener">
-                        <i class="fas fa-file-pdf"></i> PDF
+                    <a class="btn btn-danger btn-icon-only" id="btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
+                        <i class="fas fa-file-pdf"></i>
                     </a>
                 </div>
             </form>
@@ -114,15 +125,20 @@
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover mb-0 tabla-reportes-compacta">
                     <thead class="thead-light">
                         <tr>
                             <th>#</th>
                             <th>Cliente</th>
-                            <th>Preventista</th>
-                            <th>Fecha</th>
+                            <th>Cliente por</th>
+                            <th>Pedido por</th>
+                            <th>Repartidor</th>
+                            <th>F. pedido</th>
+                            <th>F. entrega</th>
                             <th>Estado</th>
-                            <th>Total</th>
+                            <th>Estado entrega</th>
+                            <th>Total bruto</th>
+                            <th>Total real</th>
                             <th class="text-center">PDF</th>
                         </tr>
                     </thead>
@@ -130,11 +146,16 @@
                         {% for p in pedidos %}
                         <tr>
                             <td>{{ p.id }}</td>
-                            <td>{{ p.cliente.nombres }} {{ p.cliente.apellidos }}</td>
-                            <td>{{ p.preventista.get_full_name|default:p.preventista.username }}</td>
-                            <td>{{ p.fecha|date:'d/m/Y H:i' }}</td>
-                            <td>{{ p.get_estado_display }}</td>
+                            <td>{{ p.cliente_corto }}</td>
+                            <td>{{ p.cliente_registrado_por }}</td>
+                            <td>{{ p.pedido_registrado_por }}</td>
+                            <td>{{ p.repartidor_nombre }}</td>
+                            <td>{{ p.fecha_pedido_display }}</td>
+                            <td>{{ p.fecha_entrega_display }}</td>
+                            <td><span class="estado-badge estado-badge--{{ p.estado_key }}">{{ p.get_estado_display }}</span></td>
+                            <td><span class="estado-badge estado-badge-entrega estado-badge--{{ p.estado_entrega_key }}">{{ p.estado_entrega }}</span></td>
                             <td>Bs {{ p.total|floatformat:2 }}</td>
+                            <td>Bs {{ p.total_neto|floatformat:2 }}</td>
                             <td class="text-center">
                                 <a class="btn btn-danger btn-sm" href="{% url 'reporte_pedido_pdf' p.id %}" target="_blank" rel="noopener">
                                     <i class="fas fa-file-pdf"></i>
@@ -143,7 +164,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No hay pedidos para mostrar.</td>
+                            <td colspan="12" class="text-center text-muted py-4">No hay pedidos para mostrar.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

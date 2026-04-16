@@ -3,12 +3,14 @@ from __future__ import annotations
 from collections import defaultdict
 from decimal import Decimal
 from io import BytesIO
+from urllib.parse import quote
 
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.db.models import Q, Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.dateparse import parse_date
 
 from reportlab.lib import colors
@@ -20,7 +22,7 @@ from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Tabl
 
 @login_required
 def _pedidos_filtrados(request, user):
-    from apps.pedidos.models import Pedido
+    from apps.pedidos.models import DevolucionPedido, Pedido
     from django.contrib.auth.models import User
 
     q = (request.GET.get("q") or "").strip()
@@ -29,6 +31,7 @@ def _pedidos_filtrados(request, user):
     hasta = (request.GET.get("hasta") or "").strip()
     tipo = (request.GET.get("tipo") or "general").strip().lower()
     preventista_id_raw = (request.GET.get("preventista") or "").strip()
+    estado_entrega = (request.GET.get("estado_entrega") or "").strip().lower()
 
     if tipo not in {"general", "despacho"}:
         tipo = "general"
@@ -58,6 +61,29 @@ def _pedidos_filtrados(request, user):
     if estado:
         pedidos = pedidos.filter(estado=estado)
 
+    estados_entrega_validos = {
+        "pendiente",
+        "entregado_completo",
+        "entregado_parcial",
+        "no_entregado",
+    }
+    if estado_entrega not in estados_entrega_validos:
+        estado_entrega = ""
+
+    if estado_entrega:
+        parcial_ids = DevolucionPedido.objects.filter(
+            tipo=DevolucionPedido.TIPO_PARCIAL
+        ).values_list("pedido_id", flat=True)
+
+        if estado_entrega == "pendiente":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE)
+        elif estado_entrega == "no_entregado":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_NO_ENTREGADO)
+        elif estado_entrega == "entregado_parcial":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_VENDIDO, id__in=parcial_ids)
+        elif estado_entrega == "entregado_completo":
+            pedidos = pedidos.filter(estado=Pedido.ESTADO_VENDIDO).exclude(id__in=parcial_ids)
+
     preventista_id = ""
     if preventista_id_raw:
         try:
@@ -85,15 +111,17 @@ def _pedidos_filtrados(request, user):
         "hasta": hasta,
         "tipo": tipo,
         "preventista": preventista_id,
+        "estado_entrega": estado_entrega,
     }
     return pedidos, filtros, preventistas
 
 
 @login_required
 def reportes_inicio(request):
-    from apps.pedidos.models import Pedido
+    from apps.pedidos.models import Pedido, DevolucionItem, DevolucionPedido
 
     pedidos, filtros, preventistas = _pedidos_filtrados(request, request.user)
+    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
 
     resumen = pedidos.aggregate(total_monto=Sum("total"))
     total_pedidos = pedidos.count()
@@ -115,6 +143,85 @@ def reportes_inicio(request):
         or 0
     )
 
+    pedidos = list(pedidos)
+    pedido_ids = [p.id for p in pedidos]
+    devuelto_monto_por_pedido = defaultdict(lambda: Decimal("0.00"))
+    devolucion_reciente_por_pedido = {}
+
+    if pedido_ids:
+        devolucion_items = DevolucionItem.objects.filter(
+            devolucion__pedido_id__in=pedido_ids,
+            detalle_pedido__isnull=False,
+        ).select_related("detalle_pedido", "devolucion")
+
+        for item in devolucion_items:
+            precio = item.detalle_pedido.precio_unitario if item.detalle_pedido else Decimal("0.00")
+            monto = (precio or Decimal("0.00")) * Decimal(int(item.cantidad_devuelta or 0))
+            devuelto_monto_por_pedido[item.devolucion.pedido_id] += monto
+
+        devoluciones = (
+            DevolucionPedido.objects.filter(pedido_id__in=pedido_ids)
+            .select_related("repartidor")
+            .order_by("pedido_id", "-fecha_creacion")
+        )
+        for d in devoluciones:
+            if d.pedido_id not in devolucion_reciente_por_pedido:
+                devolucion_reciente_por_pedido[d.pedido_id] = d
+
+    def _cliente_corto(cliente):
+        nombres = (cliente.nombres or "").strip()
+        apellidos = (cliente.apellidos or "").strip()
+        if not apellidos:
+            return nombres
+        iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
+        return f"{nombres} {iniciales}".strip()
+
+    for p in pedidos:
+        monto_devuelto = devuelto_monto_por_pedido.get(p.id, Decimal("0.00"))
+        p.total_devuelto_monto = monto_devuelto
+        p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
+        p.estado_key = p.estado
+        p.cliente_corto = _cliente_corto(p.cliente)
+
+        creado_por_cliente = getattr(p.cliente, "creado_por", None)
+        p.cliente_registrado_por = (
+            (creado_por_cliente.get_full_name() or creado_por_cliente.username)
+            if creado_por_cliente
+            else "-"
+        )
+
+        registrador = getattr(p, "registrado_por", None)
+        p.pedido_registrado_por = (
+            (registrador.get_full_name() or registrador.username)
+            if registrador
+            else (p.preventista.get_full_name() or p.preventista.username)
+        )
+        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
+        p.fecha_entrega_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+
+        devol = devolucion_reciente_por_pedido.get(p.id)
+        if devol and devol.repartidor:
+            p.repartidor_nombre = devol.repartidor.get_full_name() or devol.repartidor.username
+        else:
+            p.repartidor_nombre = "-"
+
+        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+            p.estado_entrega = "No entregado"
+            p.estado_entrega_key = "no_entregado"
+        elif p.estado == Pedido.ESTADO_VENDIDO:
+            if devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+                p.estado_entrega = "Entregado parcial"
+                p.estado_entrega_key = "entregado_parcial"
+            else:
+                p.estado_entrega = "Entregado completo"
+                p.estado_entrega_key = "entregado_completo"
+        elif p.estado == Pedido.ESTADO_PENDIENTE:
+            p.estado_entrega = "Pendiente"
+            p.estado_entrega_key = "pendiente"
+        else:
+            p.estado_entrega = "-"
+            p.estado_entrega_key = "otro"
+
     return render(
         request,
         "reportes/reportes.html",
@@ -126,6 +233,7 @@ def reportes_inicio(request):
             "hasta": filtros["hasta"],
             "tipo": filtros["tipo"],
             "preventista": filtros["preventista"],
+            "estado_entrega": filtros["estado_entrega"],
             "preventistas": preventistas,
             "total_pedidos": total_pedidos,
             "total_monto": total_monto,
@@ -141,7 +249,7 @@ def reportes_inicio(request):
 
 @login_required
 def pedidos_pdf(request):
-    from apps.pedidos.models import DetallePedido
+    from apps.pedidos.models import DetallePedido, DevolucionItem, DevolucionPedido, Pedido
 
     pedidos, filtros, _ = _pedidos_filtrados(request, request.user)
 
@@ -321,24 +429,101 @@ def pedidos_pdf(request):
     story.append(info_table)
     story.append(Spacer(1, 12))
 
-    data = [["#", "Cliente", "Preventista", "Fecha", "Estado", "Total"]]
+    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
+    pedido_ids = list(pedidos.values_list("id", flat=True))
+    devueltos_por_pedido = {}
+    monto_devuelto_por_pedido = defaultdict(lambda: Decimal("0.00"))
+    devolucion_reciente_por_pedido = {}
+    if pedido_ids:
+        devueltos_rows = (
+            DevolucionItem.objects.filter(devolucion__pedido_id__in=pedido_ids)
+            .values("devolucion__pedido_id")
+            .annotate(total_devuelto=Sum("cantidad_devuelta"))
+        )
+        for row in devueltos_rows:
+            devueltos_por_pedido[row["devolucion__pedido_id"]] = int(row["total_devuelto"] or 0)
+
+        devolucion_items = DevolucionItem.objects.filter(
+            devolucion__pedido_id__in=pedido_ids,
+            detalle_pedido__isnull=False,
+        ).select_related("detalle_pedido", "devolucion")
+        for item in devolucion_items:
+            precio = item.detalle_pedido.precio_unitario if item.detalle_pedido else Decimal("0.00")
+            monto = (precio or Decimal("0.00")) * Decimal(int(item.cantidad_devuelta or 0))
+            monto_devuelto_por_pedido[item.devolucion.pedido_id] += monto
+
+        devoluciones = (
+            DevolucionPedido.objects.filter(pedido_id__in=pedido_ids)
+            .select_related("repartidor")
+            .order_by("pedido_id", "-fecha_creacion")
+        )
+        for d in devoluciones:
+            if d.pedido_id not in devolucion_reciente_por_pedido:
+                devolucion_reciente_por_pedido[d.pedido_id] = d
+
+    def _cliente_corto(cliente):
+        nombres = (cliente.nombres or "").strip()
+        apellidos = (cliente.apellidos or "").strip()
+        if not apellidos:
+            return nombres
+        iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
+        return f"{nombres} {iniciales}".strip()
+
+    def _short(text: str, max_len: int) -> str:
+        text = (text or "").strip()
+        if len(text) <= max_len:
+            return text
+        return text[: max_len - 1] + "…"
+
+    data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "Est. ent.", "Dev.", "Bruto", "Real"]]
     total_monto = 0
+    total_monto_neto = Decimal("0.00")
     for p in pedidos:
         total_monto += p.total
+        total_neto = (p.total or Decimal("0.00")) - monto_devuelto_por_pedido.get(p.id, Decimal("0.00"))
+        total_monto_neto += total_neto
+
+        creado_por_cliente = getattr(p.cliente, "creado_por", None)
+        cliente_reg_por = (creado_por_cliente.get_full_name() or creado_por_cliente.username) if creado_por_cliente else "-"
+        registrador = getattr(p, "registrado_por", None)
+        pedido_reg_por = (
+            (registrador.get_full_name() or registrador.username)
+            if registrador
+            else (p.preventista.get_full_name() or p.preventista.username)
+        )
+        devol = devolucion_reciente_por_pedido.get(p.id)
+        repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
+
+        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+            estado_entrega = "No entregado"
+        elif p.estado == Pedido.ESTADO_VENDIDO and devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+            estado_entrega = "Entregado parcial"
+        elif p.estado == Pedido.ESTADO_VENDIDO:
+            estado_entrega = "Entregado completo"
+        elif p.estado == Pedido.ESTADO_PENDIENTE:
+            estado_entrega = "Pendiente"
+        else:
+            estado_entrega = "-"
+
         data.append(
             [
                 str(p.id),
-                f"{p.cliente.nombres} {p.cliente.apellidos or ''}".strip(),
-                p.preventista.get_full_name() or p.preventista.username,
+                _short(_cliente_corto(p.cliente), 11),
+                _short(cliente_reg_por, 11),
+                _short(pedido_reg_por, 11),
+                _short(repartidor, 10),
                 p.fecha.strftime("%d/%m/%Y %H:%M"),
-                p.get_estado_display(),
+                p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
+                _short(estado_entrega, 14),
+                str(devueltos_por_pedido.get(p.id, 0)),
                 _fmt_money(p.total),
+                _fmt_money(total_neto),
             ]
         )
 
     table = Table(
         data,
-        colWidths=[12 * mm, 45 * mm, 33 * mm, 38 * mm, 26 * mm, 24 * mm],
+        colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
         repeatRows=1,
     )
     table.setStyle(
@@ -347,16 +532,19 @@ def pedidos_pdf(request):
                 ("BACKGROUND", (0, 0), (-1, 0), header_bg),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("FONTSIZE", (0, 0), (-1, 0), 7),
+                ("FONTSIZE", (0, 1), (-1, -1), 6),
                 ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                ("ALIGN", (-1, 1), (-1, -1), "RIGHT"),
+                ("ALIGN", (5, 1), (6, -1), "CENTER"),
+                ("ALIGN", (8, 1), (8, -1), "CENTER"),
+                ("ALIGN", (9, 1), (10, -1), "RIGHT"),
                 ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 5),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-                ("TOPPADDING", (0, 0), (-1, -1), 3),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 1),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
             ]
         )
     )
@@ -367,7 +555,8 @@ def pedidos_pdf(request):
         ["Subtotal vendidos", _fmt_money(subtotal_vendidos)],
         ["Subtotal pendientes", _fmt_money(subtotal_pendientes)],
         ["Subtotal anulados", _fmt_money(subtotal_anulados)],
-        ["TOTAL", _fmt_money(total_monto)],
+        ["TOTAL BRUTO", _fmt_money(total_monto)],
+        ["TOTAL REAL", _fmt_money(total_monto_neto)],
     ]
     totals_table = Table(
         totals_data,
@@ -379,9 +568,9 @@ def pedidos_pdf(request):
                 ("FONTSIZE", (0, 0), (-1, 0), 9),
                 ("TEXTCOLOR", (0, 0), (-1, 0), muted),
                 ("LINEABOVE", (0, 3), (-1, 3), 0.7, colors.HexColor("#cfd4da")),
-                ("FONTNAME", (0, 3), (-1, 3), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 3), (-1, 3), 10),
-                ("TEXTCOLOR", (0, 3), (-1, 3), accent),
+                ("FONTNAME", (0, 3), (-1, 4), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 3), (-1, 4), 10),
+                ("TEXTCOLOR", (0, 3), (-1, 4), accent),
             ]
         ),
     )
@@ -501,6 +690,78 @@ def pedidos_pdf(request):
     return resp
 
 
+@login_required
+def pedido_ticket(request, id: int):
+    from apps.pedidos.models import Pedido, DevolucionItem
+
+    pedido = get_object_or_404(_pedido_qs_para_usuario(request.user), id=id)
+    if pedido.estado not in {Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO}:
+        return redirect("listar_pedidos")
+
+    detalles_qs = list(pedido.detalles.select_related("producto").all())
+    detalle_ids = [d.id for d in detalles_qs]
+
+    devueltos_por_detalle = defaultdict(int)
+    if detalle_ids:
+        devueltos_rows = (
+            DevolucionItem.objects.filter(
+                devolucion__pedido_id=pedido.id,
+                detalle_pedido_id__in=detalle_ids,
+            )
+            .values("detalle_pedido_id")
+            .annotate(total_devuelto=Sum("cantidad_devuelta"))
+        )
+        for row in devueltos_rows:
+            devueltos_por_detalle[row["detalle_pedido_id"]] = int(row["total_devuelto"] or 0)
+
+    detalles = []
+    total_devuelto_unidades = 0
+    total_devuelto_monto = Decimal("0.00")
+    for d in detalles_qs:
+        cant_devuelta = int(devueltos_por_detalle.get(d.id, 0))
+        subtotal_bruto = d.subtotal or Decimal("0.00")
+        monto_devuelto_item = (d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta)
+        subtotal_neto = subtotal_bruto - monto_devuelto_item
+
+        total_devuelto_unidades += cant_devuelta
+        total_devuelto_monto += monto_devuelto_item
+
+        detalles.append(
+            {
+                "producto_nombre": d.producto.nombre,
+                "cantidad": int(d.cantidad or 0),
+                "precio_unitario": d.precio_unitario or Decimal("0.00"),
+                "cantidad_devuelta": cant_devuelta,
+                "subtotal_bruto": subtotal_bruto,
+                "subtotal_neto": subtotal_neto,
+            }
+        )
+
+    total_bruto = pedido.total or Decimal("0.00")
+    total_real = total_bruto - total_devuelto_monto
+
+    repartidor = request.user.get_full_name() or request.user.username
+    cliente_nombre = f"{pedido.cliente.nombres} {pedido.cliente.apellidos or ''}".strip()
+    preventista_nombre = pedido.preventista.get_full_name() or pedido.preventista.username
+
+    return render(
+        request,
+        "reportes/pedido_ticket.html",
+        {
+            "pedido": pedido,
+            "detalles": detalles,
+            "cliente_nombre": cliente_nombre,
+            "preventista_nombre": preventista_nombre,
+            "repartidor_nombre": repartidor,
+            "estado_display": pedido.get_estado_display(),
+            "total_bruto": total_bruto,
+            "total_devuelto_unidades": total_devuelto_unidades,
+            "total_devuelto_monto": total_devuelto_monto,
+            "total_real": total_real,
+        },
+    )
+
+
 def _pedido_qs_para_usuario(user):
     from apps.pedidos.models import Pedido
     from apps.usuarios.models import PerfilUsuario
@@ -511,6 +772,8 @@ def _pedido_qs_para_usuario(user):
         return qs
     if perfil and perfil.rol == "administrador":
         return qs
+    if perfil and perfil.rol == "repartidor":
+        return qs.filter(estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO])
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",
@@ -523,11 +786,98 @@ def _pedido_qs_para_usuario(user):
 
 
 @login_required
-def pedido_pdf(request, id: int):
+def marcar_ticket_impreso(request, id: int):
     from apps.pedidos.models import Pedido
+
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+
+    perfil = getattr(request.user, "perfil", None)
+    if not (request.user.is_superuser or (perfil and perfil.rol in {"repartidor", "administrador"})):
+        return JsonResponse({"ok": False, "error": "Sin permisos"}, status=403)
+
+    pedido = get_object_or_404(_pedido_qs_para_usuario(request.user), id=id)
+    if pedido.estado not in {Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO}:
+        return JsonResponse(
+            {"ok": False, "error": "El ticket se habilita cuando el pedido está vendido o no entregado"},
+            status=400,
+        )
+
+    if not pedido.ticket_impreso:
+        pedido.ticket_impreso = True
+        pedido.save(update_fields=["ticket_impreso"])
+
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def compartir_ticket_whatsapp(request, id: int):
+    from apps.pedidos.models import Pedido, DevolucionItem
+
+    perfil = getattr(request.user, "perfil", None)
+    if not (request.user.is_superuser or (perfil and perfil.rol in {"repartidor", "administrador"})):
+        return redirect("listar_pedidos")
+
+    pedido = get_object_or_404(_pedido_qs_para_usuario(request.user), id=id)
+    if pedido.estado not in {Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO}:
+        return redirect("listar_pedidos")
+
+    if not pedido.ticket_compartido:
+        pedido.ticket_compartido = True
+        pedido.save(update_fields=["ticket_compartido"])
+
+    cliente_nombre = f"{pedido.cliente.nombres} {pedido.cliente.apellidos or ''}".strip()
+    ticket_url = request.build_absolute_uri(reverse("reporte_pedido_ticket", args=[pedido.id]))
+
+    detalle_ids = list(pedido.detalles.values_list("id", flat=True))
+    total_devuelto_monto = Decimal("0.00")
+    if detalle_ids:
+        devolucion_items = DevolucionItem.objects.filter(
+            devolucion__pedido_id=pedido.id,
+            detalle_pedido_id__in=detalle_ids,
+        ).select_related("detalle_pedido")
+        for item in devolucion_items:
+            precio = item.detalle_pedido.precio_unitario if item.detalle_pedido else Decimal("0.00")
+            total_devuelto_monto += (precio or Decimal("0.00")) * Decimal(int(item.cantidad_devuelta or 0))
+
+    total_real = (pedido.total or Decimal("0.00")) - total_devuelto_monto
+
+    mensaje = (
+        f"Comprobante de entrega\n"
+        f"Pedido #{pedido.id}\n"
+        f"Cliente: {cliente_nombre}\n"
+        f"Estado: {pedido.get_estado_display()}\n"
+        f"Total bruto: Bs {(pedido.total or Decimal('0.00')):.2f}\n"
+        f"Total real: Bs {total_real:.2f}\n"
+        f"Ticket: {ticket_url}"
+    )
+
+    return redirect(f"https://wa.me/?text={quote(mensaje)}")
+
+
+@login_required
+def pedido_pdf(request, id: int):
+    from apps.pedidos.models import Pedido, DevolucionItem
 
     pedido = get_object_or_404(_pedido_qs_para_usuario(request.user), id=id)
     detalles = pedido.detalles.select_related("producto").all()
+
+    detalle_ids = list(detalles.values_list("id", flat=True))
+    devueltos_por_detalle = {}
+    if detalle_ids:
+        devueltos_rows = (
+            DevolucionItem.objects.filter(
+                devolucion__pedido_id=pedido.id,
+                detalle_pedido_id__in=detalle_ids,
+            )
+            .values("detalle_pedido_id")
+            .annotate(total_devuelto=Sum("cantidad_devuelta"))
+        )
+        for row in devueltos_rows:
+            devueltos_por_detalle[row["detalle_pedido_id"]] = int(row["total_devuelto"] or 0)
+
+    total_devueltos = sum(devueltos_por_detalle.values())
+    total_devuelto_monto = Decimal("0.00")
 
     def _fmt_money(value) -> str:
         try:
@@ -717,24 +1067,31 @@ def pedido_pdf(request, id: int):
     story.append(Spacer(1, 12))
 
     # Items table
-    data = [["SL", "Descripción", "Precio", "Cant.", "Total"]]
+    data = [["SL", "Descripción", "Precio", "Cant.", "Devueltos", "Total bruto", "Total real"]]
     for idx, d in enumerate(detalles, start=1):
         desc = d.producto.nombre
         if getattr(d.producto, "codigo", None):
             desc = f"{d.producto.codigo} - {desc}"
+        cant_devuelta = int(devueltos_por_detalle.get(d.id, 0))
+        subtotal_neto = (d.subtotal or Decimal("0.00")) - ((d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta))
+        total_devuelto_monto += (d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta)
         data.append(
             [
                 str(idx),
                 desc,
                 _fmt_money(d.precio_unitario),
                 str(d.cantidad),
+                str(cant_devuelta),
                 _fmt_money(d.subtotal),
+                _fmt_money(subtotal_neto),
             ]
         )
 
+    total_neto = (pedido.total or Decimal("0.00")) - total_devuelto_monto
+
     items_table = Table(
         data,
-        colWidths=[10 * mm, 95 * mm, 28 * mm, 18 * mm, 29 * mm],
+        colWidths=[8 * mm, 66 * mm, 20 * mm, 14 * mm, 14 * mm, 24 * mm, 24 * mm],
         repeatRows=1,
     )
     items_table.setStyle(
@@ -745,8 +1102,9 @@ def pedido_pdf(request, id: int):
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                 ("FONTSIZE", (0, 0), (-1, 0), 9),
                 ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
-                ("ALIGN", (3, 1), (3, -1), "CENTER"),
+                ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+                ("ALIGN", (5, 1), (6, -1), "RIGHT"),
+                ("ALIGN", (3, 1), (4, -1), "CENTER"),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
@@ -762,8 +1120,10 @@ def pedido_pdf(request, id: int):
 
     # Totals block (right aligned)
     totals_data = [
-        ["Subtotal", _fmt_money(pedido.total)],
-        ["TOTAL", _fmt_money(pedido.total)],
+        ["Devueltos (unid.)", str(total_devueltos)],
+        ["Monto devuelto", _fmt_money(total_devuelto_monto)],
+        ["Subtotal bruto", _fmt_money(pedido.total)],
+        ["TOTAL REAL", _fmt_money(total_neto)],
     ]
     totals_table = Table(
         totals_data,
@@ -774,10 +1134,10 @@ def pedido_pdf(request, id: int):
                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica"),
                 ("FONTSIZE", (0, 0), (-1, 0), 9),
                 ("TEXTCOLOR", (0, 0), (-1, 0), muted),
-                ("LINEABOVE", (0, 1), (-1, 1), 0.7, colors.HexColor("#cfd4da")),
-                ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 1), (-1, 1), 11),
-                ("TEXTCOLOR", (0, 1), (-1, 1), accent),
+                ("LINEABOVE", (0, 3), (-1, 3), 0.7, colors.HexColor("#cfd4da")),
+                ("FONTNAME", (0, 3), (-1, 3), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 3), (-1, 3), 11),
+                ("TEXTCOLOR", (0, 3), (-1, 3), accent),
                 ("TOPPADDING", (0, 0), (-1, -1), 2),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
             ]

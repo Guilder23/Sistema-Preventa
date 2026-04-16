@@ -26,11 +26,20 @@ class Pedido(models.Model):
     preventista = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="pedidos"
     )
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="pedidos_registrados",
+        blank=True,
+        null=True,
+    )
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default=ESTADO_PENDIENTE)
     fecha_vendido = models.DateTimeField(blank=True, null=True)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     observacion = models.TextField(blank=True, null=True)
+    ticket_impreso = models.BooleanField(default=False)
+    ticket_compartido = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-fecha"]

@@ -16,114 +16,184 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--primary">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Productos activos</div>
-                        <div class="stat-card-value">{{ total_productos }}</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-box"></i>
-                    </div>
+    <div class="dashboard-stats-grid">
+        <div class="stat-card stat-card--primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Productos activos</div>
+                    <div class="stat-card-value">{{ total_productos }}</div>
+                    <div class="stat-card-sub">Productos habilitados para vender</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-box"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--secondary">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Clientes</div>
-                        <div class="stat-card-value">{{ total_clientes }}</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-users"></i>
-                    </div>
+        <div class="stat-card stat-card--secondary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Clientes activos</div>
+                    <div class="stat-card-value">{{ total_clientes }}</div>
+                    <div class="stat-card-sub">Clientes registrados y habilitados</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-users"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--accent">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Pedidos</div>
-                        <div class="stat-card-value">{{ total_pedidos }}</div>
-                        <div class="stat-card-sub">Total: Bs {{ total_monto|floatformat:2 }}</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-clipboard-list"></i>
-                    </div>
+        <div class="stat-card stat-card--accent">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Usuarios activos</div>
+                    <div class="stat-card-value">{{ total_usuarios }}</div>
+                    <div class="stat-card-sub">Usuarios con acceso al sistema</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-user-shield"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--success">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Ventas de hoy</div>
-                        <div class="stat-card-value">Bs {{ monto_vendido_hoy|floatformat:2 }}</div>
-                        <div class="stat-card-sub">{{ vendidos_hoy }} vendidos</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-coins"></i>
-                    </div>
+        <div class="stat-card stat-card--neutral">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Valor inventario compra</div>
+                    <div class="stat-card-value">Bs {{ costo_inventario_total|floatformat:2 }}</div>
+                    <div class="stat-card-sub">Stock actual × precio de compra unitario</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-cubes"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--info">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Pedidos de hoy</div>
-                        <div class="stat-card-value">{{ pedidos_hoy }}</div>
-                        <div class="stat-card-sub">Pendientes: {{ pendientes_hoy }}</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-calendar-day"></i>
-                    </div>
+        <div class="stat-card stat-card--success-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Unidades agregadas</div>
+                    <div class="stat-card-value">{{ total_unidades_ingresadas }}</div>
+                    <div class="stat-card-sub">Entradas registradas en inventario</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-circle-plus"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--warning">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Pendientes</div>
-                        <div class="stat-card-value">{{ total_pendientes }}</div>
-                        <div class="stat-card-sub">Hoy: {{ pendientes_hoy }}</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-clock"></i>
-                    </div>
+        <div class="stat-card stat-card--info-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Valor compra agregado</div>
+                    <div class="stat-card-value">Bs {{ valor_compra_ingresado_total|floatformat:2 }}</div>
+                    <div class="stat-card-sub">Costo total de las entradas registradas</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-money-bill-wave"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--danger">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Anulados</div>
-                        <div class="stat-card-value">{{ total_anulados }}</div>
-                        <div class="stat-card-sub">Hoy: {{ anulados_hoy }}</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-ban"></i>
-                    </div>
+        <div class="stat-card stat-card--info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Pedidos totales</div>
+                    <div class="stat-card-value">{{ total_pedidos }}</div>
+                    <div class="stat-card-sub">Monto bruto total: Bs {{ total_monto|floatformat:2 }}</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-clipboard-list"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="stat-card stat-card--neutral">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-card-label">Vendidos</div>
-                        <div class="stat-card-value">{{ total_vendidos }}</div>
-                        <div class="stat-card-sub">Total vendidos</div>
-                    </div>
-                    <div class="stat-card-icon" aria-hidden="true">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
+        <div class="stat-card stat-card--warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Pendientes</div>
+                    <div class="stat-card-value">{{ total_pendientes }}</div>
+                    <div class="stat-card-sub">Pedidos aún sin cierre</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Anulados</div>
+                    <div class="stat-card-value">{{ total_anulados }}</div>
+                    <div class="stat-card-sub">Pedidos cancelados</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-ban"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--danger-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">No entregados</div>
+                    <div class="stat-card-value">{{ total_no_entregados }}</div>
+                    <div class="stat-card-sub">Pedidos cerrados sin entrega</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-truck-ramp-box"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--info-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Ventas netas hoy</div>
+                    <div class="stat-card-value">Bs {{ ventas_netas_hoy|floatformat:2 }}</div>
+                    <div class="stat-card-sub">Ventas de hoy menos devoluciones</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-cash-register"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Ganancia neta hoy</div>
+                    <div class="stat-card-value">Bs {{ ganancia_real_hoy|floatformat:2 }}</div>
+                    <div class="stat-card-sub">Ventas netas de hoy menos costo de compra</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-coins"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--success-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Ganancia neta total</div>
+                    <div class="stat-card-value">Bs {{ ganancia_real_total|floatformat:2 }}</div>
+                    <div class="stat-card-sub">Ventas netas acumuladas menos costo de compra</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--warning-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Entregas parciales</div>
+                    <div class="stat-card-value">{{ entregas_parciales_total }}</div>
+                    <div class="stat-card-sub">Pedidos con devolución parcial</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-box-open"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card stat-card--danger-soft">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="stat-card-label">Unidades retiradas</div>
+                    <div class="stat-card-value">{{ total_unidades_retiradas }}</div>
+                    <div class="stat-card-sub">Salidas registradas en inventario</div>
+                </div>
+                <div class="stat-card-icon" aria-hidden="true">
+                    <i class="fas fa-circle-minus"></i>
                 </div>
             </div>
         </div>
@@ -138,10 +208,15 @@
                 <thead>
                     <tr>
                         <th style="width: 8%;">#</th>
-                        <th style="width: 34%;">Cliente</th>
-                        <th style="width: 20%;">Preventista</th>
-                        <th style="width: 18%;">Fecha</th>
-                        <th style="width: 12%;">Total</th>
+                        <th style="width: 16%;">Cliente</th>
+                        <th style="width: 14%;">Cliente por</th>
+                        <th style="width: 14%;">Pedido por</th>
+                        <th style="width: 12%;">Repartidor</th>
+                        <th style="width: 14%;">F. pedido</th>
+                        <th style="width: 14%;">F. entrega</th>
+                        <th style="width: 12%;" class="text-center">Estado entrega</th>
+                        <th style="width: 10%;">Bruto</th>
+                        <th style="width: 10%;">Neto</th>
                         <th style="width: 8%;" class="text-center">Estado</th>
                     </tr>
                 </thead>
@@ -150,12 +225,19 @@
                     <tr>
                         <td class="font-weight-bold">{{ p.id }}</td>
                         <td>{{ p.cliente.nombres }}{% if p.cliente.apellidos %} {{ p.cliente.apellidos }}{% endif %}</td>
-                        <td><small class="text-muted">{{ p.preventista.get_full_name|default:p.preventista.username }}</small></td>
+                        <td><small class="text-muted">{{ p.cliente_registrado_por }}</small></td>
+                        <td><small class="text-muted">{{ p.pedido_registrado_por }}</small></td>
+                        <td><small class="text-muted">{{ p.repartidor_nombre }}</small></td>
                         <td><small class="text-muted">{{ p.fecha|date:'d/m/Y H:i' }}</small></td>
+                        <td><small class="text-muted">{% if p.fecha_vendido %}{{ p.fecha_vendido|date:'d/m/Y H:i' }}{% else %}-{% endif %}</small></td>
+                        <td class="text-center"><span class="badge badge-estado badge-estado-entrega">{{ p.estado_entrega }}</span></td>
                         <td class="font-weight-bold">Bs {{ p.total|floatformat:2 }}</td>
+                        <td class="font-weight-bold">Bs {{ p.total_real|floatformat:2 }}</td>
                         <td class="text-center">
                             {% if p.estado == 'anulado' %}
                                 <span class="badge badge-estado badge-estado-anulado">Anulado</span>
+                            {% elif p.estado == 'no_entregado' %}
+                                <span class="badge badge-estado badge-estado-anulado">No entregado</span>
                             {% elif p.estado == 'vendido' %}
                                 <span class="badge badge-estado badge-estado-vendido">Vendido</span>
                             {% else %}
@@ -165,7 +247,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">Sin pedidos recientes</td>
+                        <td colspan="11" class="text-center py-4 text-muted">Sin pedidos recientes</td>
                     </tr>
                     {% endfor %}
                 </tbody>
