@@ -146,3 +146,101 @@
     padding: 8px 10px;
     color: #6c757d;
 }
+
+@media (max-width: 768px) {
+    #modalEditarPedido .col-stock,
+    #modalEditarPedido .col-precio {
+        display: none;
+    }
+
+    #modalEditarPedido .table thead {
+        display: none;
+    }
+
+    #modalEditarPedido .table-responsive {
+        overflow-x: auto;
+    }
+
+    #modalEditarPedido #tablaItemsPedidoEditar {
+        width: 100%;
+        table-layout: auto;
+    }
+
+    #modalEditarPedido #tablaItemsPedidoEditar tbody tr {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #modalEditarPedido #tablaItemsPedidoEditar tbody td {
+        border-top: 0;
+    }
+
+    /* Producto */
+    #modalEditarPedido #tablaItemsPedidoEditar tbody td:nth-child(1) {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* Cantidad */
+    #modalEditarPedido #tablaItemsPedidoEditar tbody td:nth-child(4) {
+        flex: 0 0 96px;
+    }
+
+    /* Subtotal */
+    #modalEditarPedido #tablaItemsPedidoEditar tbody td:nth-child(5) {
+        flex: 0 0 76px;
+    }
+
+    /* Acción */
+    #modalEditarPedido #tablaItemsPedidoEditar tbody td:nth-child(6) {
+        flex: 0 0 34px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    #modalEditarPedido .table td,
+    #modalEditarPedido .table th {
+        padding: 0.35rem;
+        font-size: 12px;
+    }
+
+    #modalEditarPedido .item-producto-buscar {
+        min-width: 0;
+        width: 100%;
+    }
+
+    #modalEditarPedido .item-cantidad {
+        min-width: 0;
+    }
+
+    #modalEditarPedido .item-cantidad-wrap {
+        gap: 4px;
+    }
+
+    #modalEditarPedido .item-cantidad-wrap .btn {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+    }
+
+    #modalEditarPedido .item-cantidad-wrap .item-cantidad {
+        min-width: 0;
+        width: 44px;
+        padding-left: 6px;
+        padding-right: 6px;
+        height: 24px;
+    }
+
+    #modalEditarPedido .item-subtotal {
+        padding-left: 6px;
+        padding-right: 6px;
+        height: 24px;
+        font-size: 12px;
+    }
+
+    #modalEditarPedido .btn.btn-outline-primary.btn-sm {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+}
