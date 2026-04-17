@@ -160,8 +160,17 @@
 }
 
 .filtro-tipo {
-    background: color-mix(in srgb, var(--color-acento), white 90%);
-    border-color: color-mix(in srgb, var(--color-acento), transparent 55%);
+    background: color-mix(in srgb, var(--color-peligro), white 92%);
+    border-color: color-mix(in srgb, var(--color-peligro), transparent 55%);
+}
+
+.filtro-tipo:focus {
+    border-color: color-mix(in srgb, var(--color-peligro), transparent 35%);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-peligro), transparent 82%);
+}
+
+.reportes-filtros-grid--devoluciones {
+    grid-template-columns: 1.6fr 1.2fr 1fr 1fr auto;
 }
 
 .btn-icon-only {
@@ -226,10 +235,18 @@
     .reportes-filtros-grid {
         grid-template-columns: repeat(4, minmax(160px, 1fr));
     }
+
+    .reportes-filtros-grid--devoluciones {
+        grid-template-columns: repeat(3, minmax(160px, 1fr));
+    }
 }
 
 @media (max-width: 768px) {
     .reportes-filtros-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+
+    .reportes-filtros-grid--devoluciones {
         grid-template-columns: repeat(2, minmax(140px, 1fr));
     }
 }
