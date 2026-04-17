@@ -31,6 +31,13 @@ def _descontar_stock_por_detalles(detalles):
         )
 
 
+def _reponer_stock_por_detalles(detalles):
+    for det in detalles:
+        Producto.objects.filter(id=det.producto_id).update(
+            stock_unidades=F("stock_unidades") + det.cantidad
+        )
+
+
 def _reponer_item_devolucion(item: DevolucionItem, user):
     if item.repuesto:
         return False
@@ -297,23 +304,32 @@ def crear_pedido(request):
         messages.error(request, "Agrega al menos un producto con cantidad")
         return redirect("listar_pedidos")
 
-    items_validos = []
+    # Consolidar cantidades por producto (evita duplicados que rompan el stock)
+    qty_por_pid = {}
     for pid, cantidad_int in items:
-        producto = get_object_or_404(Producto, id=pid, activo=True)
-        stock = int(getattr(producto, "stock_unidades", 0) or 0)
-        precio = producto.precio_unidad or Decimal("0.00")
-
-        if cantidad_int > stock:
-            messages.error(request, f'Stock insuficiente para "{producto.nombre}" (stock: {stock})')
-            return redirect("listar_pedidos")
-
-        if precio <= 0:
-            messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
-            return redirect("listar_pedidos")
-
-        items_validos.append((producto, cantidad_int, precio))
+        qty_por_pid[pid] = int(qty_por_pid.get(pid, 0)) + int(cantidad_int)
 
     with transaction.atomic():
+        productos = list(
+            Producto.objects.select_for_update().filter(id__in=qty_por_pid.keys(), activo=True)
+        )
+        productos_por_id = {str(p.id): p for p in productos}
+
+        # validar existencia + stock + precio
+        for pid, cantidad_int in qty_por_pid.items():
+            producto = productos_por_id.get(str(pid))
+            if not producto:
+                messages.error(request, "Producto inválido")
+                return redirect("listar_pedidos")
+            stock = int(getattr(producto, "stock_unidades", 0) or 0)
+            precio = producto.precio_unidad or Decimal("0.00")
+            if cantidad_int > stock:
+                messages.error(request, f'Stock insuficiente para "{producto.nombre}" (stock: {stock})')
+                return redirect("listar_pedidos")
+            if precio <= 0:
+                messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
+                return redirect("listar_pedidos")
+
         preventista_asignado = cliente.creado_por or request.user
         pedido = Pedido.objects.create(
             cliente=cliente,
@@ -323,19 +339,26 @@ def crear_pedido(request):
         )
 
         total = Decimal("0.00")
-        for producto, cantidad_int, precio in items_validos:
+        detalles_creados = []
+        for pid, cantidad_int in qty_por_pid.items():
+            producto = productos_por_id.get(str(pid))
+            precio = producto.precio_unidad or Decimal("0.00")
             subtotal = (precio * Decimal(cantidad_int)).quantize(Decimal("0.01"))
-            DetallePedido.objects.create(
+            det = DetallePedido.objects.create(
                 pedido=pedido,
                 producto=producto,
                 cantidad=cantidad_int,
                 precio_unitario=precio,
                 subtotal=subtotal,
             )
+            detalles_creados.append(det)
             total += subtotal
 
         pedido.total = total.quantize(Decimal("0.01"))
-        pedido.save(update_fields=["total"])
+        # Descontar stock al registrar el pedido
+        _descontar_stock_por_detalles(detalles_creados)
+        pedido.stock_descontado = True
+        pedido.save(update_fields=["total", "stock_descontado"])
 
     messages.success(request, "Pedido creado")
     return redirect("listar_pedidos")
@@ -427,40 +450,69 @@ def editar_pedido(request, id: int):
         messages.error(request, "Agrega al menos un producto con cantidad")
         return redirect("listar_pedidos")
 
-    items_validos = []
+    qty_por_pid = {}
     for pid, cantidad_int in items:
-        producto = get_object_or_404(Producto, id=pid, activo=True)
-        stock = int(getattr(producto, "stock_unidades", 0) or 0)
-        precio = producto.precio_unidad or Decimal("0.00")
-
-        if cantidad_int > stock:
-            messages.error(request, f'Stock insuficiente para "{producto.nombre}" (stock: {stock})')
-            return redirect("listar_pedidos")
-
-        if precio <= 0:
-            messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
-            return redirect("listar_pedidos")
-
-        items_validos.append((producto, cantidad_int, precio))
+        qty_por_pid[pid] = int(qty_por_pid.get(pid, 0)) + int(cantidad_int)
 
     with transaction.atomic():
+        pedido = Pedido.objects.select_for_update().get(id=pedido.id)
+
+        detalles_previos = list(pedido.detalles.select_related("producto").all())
+        qty_prev_por_pid = {}
+        for det in detalles_previos:
+            key = str(det.producto_id)
+            qty_prev_por_pid[key] = int(qty_prev_por_pid.get(key, 0)) + int(det.cantidad or 0)
+
+        productos = list(
+            Producto.objects.select_for_update().filter(id__in=qty_por_pid.keys(), activo=True)
+        )
+        productos_por_id = {str(p.id): p for p in productos}
+
+        for pid, cantidad_int in qty_por_pid.items():
+            pid_key = str(pid)
+            producto = productos_por_id.get(pid_key)
+            if not producto:
+                messages.error(request, "Producto inválido")
+                return redirect("listar_pedidos")
+            stock = int(getattr(producto, "stock_unidades", 0) or 0)
+            # Si el pedido ya había descontado stock, lo disponible incluye lo reservado por este pedido.
+            if pedido.stock_descontado:
+                stock += int(qty_prev_por_pid.get(pid_key, 0))
+            precio = producto.precio_unidad or Decimal("0.00")
+            if cantidad_int > stock:
+                messages.error(request, f'Stock insuficiente para "{producto.nombre}" (stock: {stock})')
+                return redirect("listar_pedidos")
+            if precio <= 0:
+                messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
+                return redirect("listar_pedidos")
+
+        # Ajustar inventario y detalles recién cuando ya validó todo
+        if pedido.stock_descontado:
+            _reponer_stock_por_detalles(detalles_previos)
+
         pedido.observacion = observacion or None
         pedido.detalles.all().delete()
 
         total = Decimal("0.00")
-        for producto, cantidad_int, precio in items_validos:
+        detalles_creados = []
+        for pid, cantidad_int in qty_por_pid.items():
+            producto = productos_por_id.get(str(pid))
+            precio = producto.precio_unidad or Decimal("0.00")
             subtotal = (precio * Decimal(cantidad_int)).quantize(Decimal("0.01"))
-            DetallePedido.objects.create(
+            det = DetallePedido.objects.create(
                 pedido=pedido,
                 producto=producto,
                 cantidad=cantidad_int,
                 precio_unitario=precio,
                 subtotal=subtotal,
             )
+            detalles_creados.append(det)
             total += subtotal
 
         pedido.total = total.quantize(Decimal("0.01"))
-        pedido.save(update_fields=["observacion", "total"])
+        _descontar_stock_por_detalles(detalles_creados)
+        pedido.stock_descontado = True
+        pedido.save(update_fields=["observacion", "total", "stock_descontado"])
 
     messages.success(request, "Pedido actualizado")
     return redirect("listar_pedidos")
@@ -517,8 +569,13 @@ def anular_pedido(request, id: int):
         return redirect("listar_pedidos")
 
     if pedido.estado != Pedido.ESTADO_ANULADO:
-        pedido.estado = Pedido.ESTADO_ANULADO
-        pedido.save(update_fields=["estado"])
+        with transaction.atomic():
+            pedido = Pedido.objects.select_for_update().get(id=pedido.id)
+            if pedido.stock_descontado:
+                _reponer_stock_por_detalles(pedido.detalles.select_related("producto").all())
+                pedido.stock_descontado = False
+            pedido.estado = Pedido.ESTADO_ANULADO
+            pedido.save(update_fields=["estado", "stock_descontado"])
         messages.success(request, "Pedido anulado")
     return redirect("listar_pedidos")
 
@@ -546,12 +603,15 @@ def marcar_vendido(request, id: int):
             messages.error(request, "No puedes marcar vendido un pedido anulado")
             return redirect("listar_pedidos")
 
-        detalles = pedido.detalles.select_related("producto").all()
-        _descontar_stock_por_detalles(detalles)
+        # Compatibilidad: pedidos antiguos que aún no descontaron stock
+        if not pedido.stock_descontado:
+            detalles = pedido.detalles.select_related("producto").all()
+            _descontar_stock_por_detalles(detalles)
+            pedido.stock_descontado = True
 
         pedido.estado = Pedido.ESTADO_VENDIDO
         pedido.fecha_vendido = timezone.now()
-        pedido.save(update_fields=["estado", "fecha_vendido"])
+        pedido.save(update_fields=["estado", "fecha_vendido", "stock_descontado"])
     messages.success(request, "Pedido marcado como vendido")
     return redirect("listar_pedidos")
 
@@ -578,9 +638,13 @@ def registrar_entrega(request, id: int):
             return redirect("listar_pedidos")
 
         with transaction.atomic():
+            pedido = Pedido.objects.select_for_update().get(id=pedido.id)
+            if not pedido.stock_descontado:
+                _descontar_stock_por_detalles(pedido.detalles.select_related("producto").all())
+                pedido.stock_descontado = True
             pedido.estado = Pedido.ESTADO_NO_ENTREGADO
             pedido.observacion = motivo_general
-            pedido.save(update_fields=["estado", "observacion"])
+            pedido.save(update_fields=["estado", "observacion", "stock_descontado"])
 
             devolucion = DevolucionPedido.objects.create(
                 pedido=pedido,
@@ -638,6 +702,8 @@ def registrar_entrega(request, id: int):
         return redirect("listar_pedidos")
 
     with transaction.atomic():
+        pedido = Pedido.objects.select_for_update().get(id=pedido.id)
+
         devolucion = None
         total_devuelto = 0
         if resultado == "entregado_parcial":
@@ -667,13 +733,14 @@ def registrar_entrega(request, id: int):
             messages.error(request, "Si eliges entrega parcial, debe existir al menos una devolución")
             return redirect("listar_pedidos")
 
-        # Regla solicitada: al vender parcial se descuenta TODO lo pedido.
-        # Lo no entregado queda en devoluciones y se repone luego desde gestión de devoluciones.
-        _descontar_stock_por_detalles(pedido.detalles.select_related("producto").all())
+        # El stock se descuenta al registrar el pedido; compatibilidad para pedidos antiguos.
+        if not pedido.stock_descontado:
+            _descontar_stock_por_detalles(pedido.detalles.select_related("producto").all())
+            pedido.stock_descontado = True
 
         pedido.estado = Pedido.ESTADO_VENDIDO
         pedido.fecha_vendido = timezone.now()
-        pedido.save(update_fields=["estado", "fecha_vendido"])
+        pedido.save(update_fields=["estado", "fecha_vendido", "stock_descontado"])
 
         if devolucion is not None:
             devolucion.actualizar_estado_reposicion(save=True)
