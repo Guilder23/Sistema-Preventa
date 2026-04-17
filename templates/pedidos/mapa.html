@@ -6,6 +6,7 @@
 {% block estilos_extra %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <link rel="stylesheet" href="{% static 'css/clientes/mapa.css' %}">
+<link rel="stylesheet" href="{% static 'css/pedidos/mapa_repartidor.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -19,9 +20,64 @@
 
     <div class="card card-tabla">
         <div class="card-body">
-            <div id="mapaPedidos" class="mapa-clientes" aria-label="Mapa de pedidos pendientes"></div>
+            <div class="mapa-repartidor-shell" aria-label="Mapa de pedidos pendientes">
+                <div class="mapa-repartidor-topbar" role="search">
+                    <div class="topbar-row">
+                        <div class="topbar-search" id="repartidorSearchWrap">
+                            <i class="fas fa-search topbar-search-icon" aria-hidden="true"></i>
+                            <input
+                                type="search"
+                                id="repartidorBuscar"
+                                class="topbar-search-input"
+                                placeholder="Buscar cliente, CI/NIT o dirección"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <button type="button" class="topbar-btn" id="btnRepartidorFiltro" aria-label="Filtros">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+
+                    <div class="topbar-filters" id="repartidorFiltros" hidden>
+                        <select id="repartidorEstado" class="topbar-select" aria-label="Filtrar por estado">
+                            <option value="">Todos</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="vendido">Vendido</option>
+                            <option value="no_entregado">No entregado</option>
+                            <option value="anulado">Anulado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="mapaPedidos" class="mapa-clientes mapa-repartidor-mapa"></div>
+
+                <div class="mapa-repartidor-bottom" id="repartidorBottom" hidden>
+                    <div class="bottom-card">
+                        <div class="bottom-media" id="repartidorFotoWrap">
+                            <img id="repartidorFoto" alt="Foto de la tienda" loading="lazy" />
+                            <div class="bottom-media-empty" id="repartidorFotoEmpty">Sin foto</div>
+                        </div>
+                        <div class="bottom-body">
+                            <div class="bottom-title" id="repartidorTitulo"></div>
+                            <div class="bottom-sub" id="repartidorDireccion"></div>
+                            <div class="bottom-meta" id="repartidorMeta"></div>
+                        </div>
+                        <button type="button" class="bottom-close" id="repartidorCerrar" aria-label="Cerrar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
             <small class="text-muted d-block mt-2" id="mapaPedidosInfo"></small>
         </div>
+    </div>
+
+    <div class="img-viewer" id="imgViewer" hidden>
+        <button type="button" class="img-viewer-close" id="imgViewerClose" aria-label="Cerrar">
+            <i class="fas fa-times"></i>
+        </button>
+        <img class="img-viewer-img" id="imgViewerImg" alt="Imagen ampliada" />
     </div>
 </div>
 {% endblock %}
