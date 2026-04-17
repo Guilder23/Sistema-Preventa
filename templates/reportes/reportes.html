@@ -78,9 +78,10 @@
                 </div>
                 <div class="filtro-item">
                     <label class="small text-muted">Tipo reporte</label>
-                    <select name="tipo" class="form-control filtro-tipo">
+                    <select name="tipo" class="form-control filtro-tipo" onchange="this.form.submit()">
                         <option value="general" {% if tipo == 'general' %}selected{% endif %}>General</option>
                         <option value="despacho" {% if tipo == 'despacho' %}selected{% endif %}>Despacho</option>
+                        <option value="devoluciones" {% if tipo == 'devoluciones' %}selected{% endif %}>Devoluciones Físicas</option>
                     </select>
                 </div>
                 <div class="filtro-item">

@@ -1,0 +1,171 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Reporte de Devoluciones{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/reportes.css' %}">
+<link rel="stylesheet" href="{% static 'css/reportes/reportes_devoluciones.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-undo"></i> Reporte de Devoluciones</h1>
+            <p class="page-subtitle">Productos devueltos pendientes de recepción física</p>
+        </div>
+        <div class="page-header-actions">
+            <a href="{% url 'reportes_inicio' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Pedidos
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="report-card report-card--primary">
+                <div class="report-card-icon"><i class="fas fa-boxes"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Filas devueltas</div>
+                    <div class="report-card-value">{{ total_items }}</div>
+                    <div class="report-card-sub">Registros individuales</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="report-card report-card--info">
+                <div class="report-card-icon"><i class="fas fa-layer-group"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Total Unidades</div>
+                    <div class="report-card-value">{{ total_unidades }}</div>
+                    <div class="report-card-sub">Productos físicos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="report-card report-card--success">
+                <div class="report-card-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Monto Estimado</div>
+                    <div class="report-card-value">Bs {{ total_monto_dev|floatformat:2 }}</div>
+                    <div class="report-card-sub">Valor de devoluciones</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" class="reportes-filtros-grid reportes-filtros-grid--devoluciones" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
+                <div class="filtro-item filtro-item--buscar">
+                    <label class="small text-muted">Buscar</label>
+                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, Producto, Repartidor" autocomplete="off">
+                </div>
+                <div class="filtro-item">
+                    <label class="small text-muted">Tipo reporte</label>
+                    <select name="tipo" class="form-control filtro-tipo">
+                        <option value="general">Pedidos General</option>
+                        <option value="despacho">Guía de Despacho</option>
+                        <option value="devoluciones" selected>Devoluciones Físicas</option>
+                    </select>
+                </div>
+                <div class="filtro-item">
+                    <label class="small text-muted">Desde</label>
+                    <input type="date" name="desde" value="{{ desde }}" class="form-control">
+                </div>
+                <div class="filtro-item">
+                    <label class="small text-muted">Hasta</label>
+                    <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
+                </div>
+                <div class="filtro-item filtro-item--pdf">
+                    <label class="small text-muted d-block">PDF</label>
+                    <a class="btn btn-danger btn-icon-only" id="btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-list-ol"></i> Consolidado para Recepción</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 reporte-devoluciones-tabla">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant. Total</th>
+                                    <th class="text-right">Monto Est.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in consolidado %}
+                                <tr>
+                                    <td><strong>{{ c.producto_nombre }}</strong></td>
+                                    <td class="text-center"><span class="badge badge-pill badge-primary">{{ c.cantidad_total }}</span></td>
+                                    <td class="text-right">Bs {{ c.monto_total|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">No hay productos devueltos pendientes.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-history"></i> Detalle de Devoluciones por Pedido</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 reporte-devoluciones-tabla">
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th>Repartidor</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for it in items %}
+                                <tr>
+                                    <td>#{{ it.devolucion.pedido_id }}</td>
+                                    <td>{{ it.devolucion.pedido.cliente.nombres }}</td>
+                                    <td>{{ it.producto.nombre }}</td>
+                                    <td class="text-center"><strong>{{ it.cantidad_devuelta }}</strong></td>
+                                    <td><small>{{ it.devolucion.repartidor.username }}</small></td>
+                                    <td>{{ it.devolucion.fecha_creacion|date:"d/m/y H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">Ningún detalle encontrado.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/reportes/reportes_devoluciones.js' %}"></script>
+{% endblock %}
