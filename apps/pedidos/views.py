@@ -15,6 +15,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from apps.clientes.models import Cliente
 from apps.productos.models import Producto
@@ -833,13 +834,26 @@ def listar_devoluciones(request):
     repartidor_ids = base_qs.values_list("repartidor_id", flat=True).distinct()
     repartidores = User.objects.filter(id__in=repartidor_ids).order_by("username")
     perfil = getattr(request.user, "perfil", None)
+    # PAGINACIÓN (igual que usuarios/clientes)
+    page = request.GET.get("page", 1)
+    paginator = Paginator(devoluciones, 10)  # 10 devoluciones por página
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     is_admin = bool(request.user.is_superuser or (perfil and perfil.rol == "administrador"))
 
     return render(
         request,
         "devoluciones/devoluciones.html",
         {
-            "devoluciones": devoluciones,
+            "devoluciones": page_obj.object_list,
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "q": q,
             "q": q,
             "estado_reposicion": estado_reposicion,
             "tipo": tipo,
