@@ -81,11 +81,24 @@ def listar_clientes(request):
     if vendedor_id is not None:
         clientes = clientes.filter(creado_por_id=vendedor_id)
 
+    # PAGINACIÓN
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    page = request.GET.get("page", 1)
+    paginator = Paginator(clientes, 10)  # 10 clientes por página
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     return render(
         request,
         "clientes/clientes.html",
         {
-            "clientes": clientes,
+            "clientes": page_obj.object_list,
+            "page_obj": page_obj,
+            "paginator": paginator,
             "q": q,
             "estado": estado,
             "vendedor": str(vendedor_id) if vendedor_id is not None else "",
