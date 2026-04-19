@@ -149,8 +149,20 @@ def reportes_inicio(request):
         or 0
     )
 
-    pedidos = list(pedidos)
-    pedido_ids = [p.id for p in pedidos]
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+    # Paginación
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(pedidos, 10)  # 10 por página, puedes ajustar
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    pedidos_page = page_obj.object_list
+    pedido_ids = [p.id for p in pedidos_page]
     devuelto_monto_por_pedido = defaultdict(lambda: Decimal("0.00"))
     devolucion_reciente_por_pedido = {}
 
@@ -182,7 +194,7 @@ def reportes_inicio(request):
         iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
         return f"{nombres} {iniciales}".strip()
 
-    for p in pedidos:
+    for p in pedidos_page:
         monto_devuelto = devuelto_monto_por_pedido.get(p.id, Decimal("0.00"))
         p.total_devuelto_monto = monto_devuelto
         p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
@@ -232,7 +244,9 @@ def reportes_inicio(request):
         request,
         "reportes/reportes.html",
         {
-            "pedidos": pedidos,
+            "pedidos": pedidos_page,
+            "page_obj": page_obj,
+            "paginator": paginator,
             "q": filtros["q"],
             "estado": filtros["estado"],
             "desde": filtros["desde"],
