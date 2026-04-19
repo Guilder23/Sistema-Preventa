@@ -61,11 +61,24 @@ def listar_productos(request):
         )
     )
 
+    # PAGINACIÓN
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    page = request.GET.get("page", 1)
+    paginator = Paginator(productos, 10)  # 10 productos por página
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     return render(
         request,
         "productos/productos.html",
         {
-            "productos": productos,
+            "productos": page_obj.object_list,
+            "page_obj": page_obj,
+            "paginator": paginator,
             "q": q,
             "estado": estado,
             "stock": stock,
