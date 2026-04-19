@@ -252,11 +252,24 @@ def listar_pedidos(request):
                 }
             )
 
+    # PAGINACIÓN
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    page = request.GET.get("page", 1)
+    paginator = Paginator(pedidos, 10)  # 10 pedidos por página
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     return render(
         request,
         "pedidos/pedidos.html",
         {
-            "pedidos": pedidos,
+            "pedidos": page_obj.object_list,
+            "page_obj": page_obj,
+            "paginator": paginator,
             "q": q,
             "estado": estado,
             "rol_usuario": rol_usuario,
