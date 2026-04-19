@@ -6,7 +6,6 @@
 {% block estilos_extra %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <link rel="stylesheet" href="{% static 'css/clientes/mapa.css' %}">
-<link rel="stylesheet" href="{% static 'css/pedidos/mapa_repartidor.css' %}">
 {% endblock %}
 
 {% block contenido %}
@@ -20,38 +19,34 @@
 
     <div class="card card-tabla">
         <div class="card-body">
-            <div class="mapa-repartidor-shell" aria-label="Mapa de pedidos pendientes">
-                <div class="mapa-repartidor-topbar" role="search">
-                    <div class="topbar-row">
-                        <div class="topbar-search" id="repartidorSearchWrap">
-                            <i class="fas fa-search topbar-search-icon" aria-hidden="true"></i>
-                            <input
-                                type="search"
-                                id="repartidorBuscar"
-                                class="topbar-search-input"
-                                placeholder="Buscar cliente, CI/NIT o dirección"
-                                autocomplete="off"
-                            >
-                        </div>
-
-                        <button type="button" class="topbar-btn" id="btnRepartidorFiltro" aria-label="Filtros">
-                            <i class="fas fa-filter"></i>
-                        </button>
+            <div class="mapa-clientes-topbar mb-2" role="search">
+                <div class="topbar-row">
+                    <div class="topbar-search" id="repartidorSearchWrap">
+                        <i class="fas fa-search topbar-search-icon" aria-hidden="true"></i>
+                        <input
+                            type="search"
+                            id="repartidorBuscar"
+                            class="topbar-search-input"
+                            placeholder="Buscar cliente, CI/NIT o dirección"
+                            autocomplete="off"
+                        >
                     </div>
-
-                    <div class="topbar-filters" id="repartidorFiltros" hidden>
-                        <select id="repartidorEstado" class="topbar-select" aria-label="Filtrar por estado">
-                            <option value="">Todos</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="vendido">Vendido</option>
-                            <option value="no_entregado">No entregado</option>
-                            <option value="anulado">Anulado</option>
-                        </select>
-                    </div>
+                    <button type="button" class="topbar-btn" id="btnRepartidorFiltro" aria-label="Filtros">
+                        <i class="fas fa-filter"></i>
+                    </button>
                 </div>
-
-                <div id="mapaPedidos" class="mapa-clientes mapa-repartidor-mapa"></div>
-
+                <div class="topbar-filters" id="repartidorFiltros" hidden>
+                    <select id="repartidorEstado" class="topbar-select" aria-label="Filtrar por estado">
+                        <option value="">Todos</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="vendido">Vendido</option>
+                        <option value="no_entregado">No entregado</option>
+                        <option value="anulado">Anulado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mapa-repartidor-shell" aria-label="Mapa de pedidos pendientes">
+                <div id="mapaPedidos" class="mapa-clientes mapa-repartidor-mapa" data-url="{% url 'pedidos_mapa_puntos' %}"></div>
                 <div class="mapa-repartidor-bottom" id="repartidorBottom" hidden>
                     <div class="bottom-card">
                         <div class="bottom-media" id="repartidorFotoWrap">
@@ -84,8 +79,5 @@
 
 {% block scripts_extra %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>
-  window.PEDIDOS_MAPA_PUNTOS_URL = "{% url 'pedidos_mapa_puntos' %}";
-</script>
 <script src="{% static 'js/pedidos/mapa.js' %}"></script>
 {% endblock %}
