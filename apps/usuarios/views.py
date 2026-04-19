@@ -132,7 +132,7 @@ def listar_usuarios(request):
 
     # PAGINACIÓN (igual que clientes)
     page = request.GET.get("page", 1)
-    paginator = Paginator(usuarios, 5)  # 10 usuarios por página
+    paginator = Paginator(usuarios, 10)  # 10 usuarios por página
     try:
         page_obj = paginator.page(page)
     except PageNotAnInteger:

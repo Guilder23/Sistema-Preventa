@@ -157,7 +157,7 @@
 </div>
 
 <!-- Controles de paginación -->
-{% if page_obj %}
+{% if paginator.num_pages > 1 %}
 <nav aria-label="Paginación de productos" class="mt-3">
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
