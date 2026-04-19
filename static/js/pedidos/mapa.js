@@ -1,3 +1,6 @@
+// Configuración de URL de puntos (Django la inyecta en un atributo data-url del div del mapa)
+var PEDIDOS_MAPA_PUNTOS_URL = null;
+
 (function () {
   function setInfo(text) {
     var el = document.getElementById('mapaPedidosInfo');
@@ -35,6 +38,7 @@
     var mapEl = document.getElementById('mapaPedidos');
     if (!mapEl) return;
 
+
     var map = L.map('mapaPedidos', { zoomControl: true });
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -45,7 +49,9 @@
 
     map.setView([-17.7833, -63.1821], 12);
 
-    var url = window.PEDIDOS_MAPA_PUNTOS_URL;
+    // Obtener la URL de puntos desde el atributo data-url
+    PEDIDOS_MAPA_PUNTOS_URL = mapEl.getAttribute('data-url');
+    var url = PEDIDOS_MAPA_PUNTOS_URL;
     if (!url) {
       setInfo('No se configuró la URL de puntos.');
       return;
@@ -71,17 +77,11 @@
     var imgViewerImg = el('imgViewerImg');
     var imgViewerClose = el('imgViewerClose');
 
-    function toggleFiltros() {
-      if (!filtrosWrap) return;
-      var isHidden = filtrosWrap.hasAttribute('hidden');
-      setHidden(filtrosWrap, !isHidden);
-    }
 
-    // Buscador siempre visible (sin colapsar)
-
-    if (btnFiltro) {
+    // Mostrar/ocultar filtros (igual que clientes)
+    if (btnFiltro && filtrosWrap) {
       btnFiltro.addEventListener('click', function () {
-        toggleFiltros();
+        filtrosWrap.hidden = !filtrosWrap.hidden;
       });
     }
 
@@ -211,6 +211,38 @@
         hideBottom();
         return;
       }
+      // Quitar selección previa
+      Object.keys(markersByPedido).forEach(function (pid) {
+        var marker = markersByPedido[pid];
+        if (marker && marker._path) {
+          marker._path.classList.remove('selected-marker');
+          // Restaurar color según estado
+          var punto = allPuntos.find(function (p) { return String(p.pedido_id) === String(pid); });
+          var color = punto ? markerColorByEstado(normText(punto.estado)) : marker.options.fillColor;
+          marker.setStyle && marker.setStyle({
+            stroke: true,
+            color: '#fff',
+            weight: 2,
+            fillColor: color,
+            fillOpacity: 0.9,
+            radius: 9
+          });
+        }
+      });
+      // Resaltar el marcador seleccionado
+      var markerSel = markersByPedido[String(pedidoId)];
+      if (markerSel && markerSel._path) {
+        markerSel._path.classList.add('selected-marker');
+        // Aplicar estilos extra para asegurar visibilidad en todos los navegadores
+        markerSel.setStyle && markerSel.setStyle({
+          stroke: true,
+          color: '#222',
+          weight: 4,
+          fillColor: '#007bff',
+          fillOpacity: 1,
+          radius: 12
+        });
+      }
       showBottom(p);
     }
 
@@ -252,6 +284,13 @@
         marker.on('click', function () {
           selectPedido(p.pedido_id);
         });
+
+        // Si este es el seleccionado, resáltalo
+        setTimeout(function () {
+          if (selectedPedidoId && String(p.pedido_id) === String(selectedPedidoId) && marker._path) {
+            marker._path.classList.add('selected-marker');
+          }
+        }, 0);
 
         markersByPedido[String(p.pedido_id)] = marker;
         bounds.push([p.lat, p.lng]);

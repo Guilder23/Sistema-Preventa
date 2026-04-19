@@ -1,3 +1,140 @@
+/* Visor de imagen ampliada */
+.img-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+}
+.img-viewer-img {
+    max-width: min(980px, 100%);
+    max-height: min(92vh, 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.15);
+}
+.img-viewer-close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+}
+.bottom-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+/* Tarjeta inferior para detalles (como pedidos) */
+/* Aumenta z-index para que la tarjeta inferior no quede solapada por el mapa ni controles, pero sí por el visor de imagen */
+.mapa-repartidor-bottom {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 1200;
+}
+.bottom-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid var(--color-borde, #e0e0e0);
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.bottom-media {
+    width: 112px;
+    height: 112px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.05);
+    position: relative;
+    cursor: pointer;
+}
+.bottom-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+.bottom-media-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.7);
+}
+.bottom-body {
+    min-width: 0;
+}
+.bottom-title {
+    font-weight: 800;
+    color: #222;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.bottom-sub {
+    margin-top: 2px;
+    color: #666;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.2;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.bottom-meta {
+    margin-top: 6px;
+    color: #888;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.bottom-close {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    background: rgba(255,255,255,0.9);
+    color: #222;
+}
+@media (max-width: 768px) {
+    .mapa-repartidor-bottom {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+    .bottom-card {
+        grid-template-columns: 120px 1fr;
+    }
+    .bottom-media {
+        width: 120px;
+        height: 120px;
+    }
+}
 /* Barra superior moderna y responsiva para mapa de clientes */
 .mapa-clientes-shell {
     position: relative;
@@ -93,7 +230,123 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.10);
 }
 @media (max-width: 600px) {
-    .mapa-clientes-topbar { padding: 0.3rem; }
+    .page-header {
+            margin-bottom: 0.50rem !important;
+            margin-top: 0.50rem !important;
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+    }
+    .page-header-content {
+        padding: 0.12rem 0.3rem 0.04rem 0.3rem !important;
+    }
+    .page-title {
+        font-size: 0.87rem !important;
+        margin-bottom: 0 !important;
+        font-weight: 700 !important;
+    }
+    .page-subtitle {
+        font-size: 0.74rem !important;
+        margin-bottom: 0 !important;
+        margin-top: 0 !important;
+        font-weight: 400 !important;
+    }
+    /* Estilo para resaltar el punto seleccionado en el mapa (siempre, no solo móvil) */
+    .leaflet-interactive.selected-marker {
+        stroke: #222 !important;
+        stroke-width: 4px !important;
+        fill: #007bff !important;
+        fill-opacity: 1 !important;
+        filter: drop-shadow(0 0 6px #007bff88);
+    }
+    .page-header {
+        margin-bottom: 0.1rem !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    .page-header-content {
+        padding: 0.08rem 0.2rem 0.02rem 0.2rem !important;
+    }
+    .page-title {
+        font-size: 0.98rem !important;
+        margin-bottom: 0 !important;
+        font-weight: 700 !important;
+    }
+    .page-subtitle {
+        font-size: 0.82rem !important;
+        margin-bottom: 0 !important;
+        margin-top: 0 !important;
+        font-weight: 400 !important;
+    }
+    .container-fluid {
+        padding-top: 0 !important;
+    }
+    .mapa-clientes {
+        min-height: 380px;
+        height: calc(100vh - 110px);
+    }
+    .page-header {
+        margin-bottom: 0.3rem !important;
+    }
+    .page-header-content {
+        padding: 0.3rem 0.5rem 0.1rem 0.5rem !important;
+    }
+    .page-title {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.1rem !important;
+    }
+    .page-subtitle {
+        font-size: 0.92rem !important;
+        margin-bottom: 0 !important;
+    }
+    .mapa-clientes-topbar {
+        padding: 0.05rem 0.05rem 0 0.05rem !important;
+        gap: 0.2rem !important;
+    }
+    .topbar-row {
+        gap: 0.2rem !important;
+    }
+    .topbar-search {
+        min-height: 2.1rem !important;
+        padding: 0 0.2rem !important;
+    }
+    .topbar-search-input {
+        height: 2rem !important;
+        font-size: 0.93rem !important;
+        padding-left: 1.5rem !important;
+    }
+    .topbar-search-icon {
+        font-size: 1rem !important;
+        left: 0.5rem !important;
+    }
+    .topbar-btn {
+        padding: 0.2rem 0.5rem !important;
+        font-size: 1rem !important;
+        height: 2rem !important;
+        min-width: 2rem !important;
+    }
+    .topbar-filters {
+        padding: 0.2rem 0.3rem !important;
+        gap: 0.2rem !important;
+        border-radius: 1rem !important;
+    }
+    .topbar-select {
+        font-size: 0.93rem !important;
+        padding: 0.2rem 0.7rem 0.2rem 0.5rem !important;
+        border-radius: 1rem !important;
+    }
+    .container-fluid,
+    .card.card-tabla,
+    .card.card-tabla .card-body {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+    .mapa-clientes-topbar { padding: 0.1rem 0.1rem 0 0.1rem; }
     .topbar-row {
         flex-direction: row !important;
         gap: 0.5rem;
@@ -115,8 +368,34 @@
         align-items: center;
         justify-content: center;
     }
-    .topbar-filters { flex-direction: column; gap: 0.5rem; padding: 0.5rem; }
+    .topbar-filters { flex-direction: column; gap: 0.5rem; padding: 0.3rem; }
     .topbar-search-input, .topbar-select { font-size: 0.98rem; }
+    .mapa-clientes {
+        border-radius: 0 !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+        min-height: 320px;
+        height: calc(100vh - 180px);
+    }
+    .mapa-repartidor-bottom {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0.2rem !important;
+        padding: 0 0.1rem;
+    }
+    .bottom-card {
+        border-radius: 0.7rem !important;
+        margin: 0 auto;
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
+        padding: 8px 6px;
+        gap: 8px;
+    }
+    .bottom-media {
+        width: 90px;
+        height: 90px;
+    }
 }
 /* Clientes - Mapa */
 
