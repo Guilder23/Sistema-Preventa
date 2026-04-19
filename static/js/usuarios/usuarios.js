@@ -2,23 +2,53 @@
    USUARIOS.JS - Orquestador Principal
    ============================================================================ */
 
-document.addEventListener('DOMContentLoaded', function() {
-    inicializarBusquedaFrontend();
-    inicializarFiltrosFrontend();
-    
-    // Inicializar modales
-    if (typeof inicializarModalCrear === 'function') {
-        inicializarModalCrear();
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.getElementById('buscar');
+    const estadoSelect = document.getElementById('estado');
+    const rolSelect = document.getElementById('rolFiltro');
+    if (!input && !estadoSelect && !rolSelect) return;
+
+    function applyFilters() {
+        const buscar = (input && input.value ? input.value : '').trim();
+        const estado = (estadoSelect && estadoSelect.value ? estadoSelect.value : '').trim();
+        const rol = (rolSelect && rolSelect.value ? rolSelect.value : '').trim();
+        const url = new URL(window.location.href);
+        if (buscar) url.searchParams.set('buscar', buscar);
+        else url.searchParams.delete('buscar');
+        if (estado) url.searchParams.set('estado', estado);
+        else url.searchParams.delete('estado');
+        if (rol) url.searchParams.set('rol', rol);
+        else url.searchParams.delete('rol');
+        window.location.href = url.toString();
     }
-    if (typeof inicializarModalVer === 'function') {
-        inicializarModalVer();
+
+    let t;
+    if (input) {
+        input.addEventListener('input', function () {
+            clearTimeout(t);
+            t = setTimeout(applyFilters, 250);
+        });
     }
-    if (typeof inicializarModalEditar === 'function') {
-        inicializarModalEditar();
+
+    if (estadoSelect) {
+        estadoSelect.addEventListener('change', function () {
+            clearTimeout(t);
+            applyFilters();
+        });
     }
-    if (typeof inicializarModalEliminar === 'function') {
-        inicializarModalEliminar();
+
+    if (rolSelect) {
+        rolSelect.addEventListener('change', function () {
+            clearTimeout(t);
+            applyFilters();
+        });
     }
+
+    // Mantener compatibilidad con modales existentes
+    if (typeof inicializarModalCrear === 'function') inicializarModalCrear();
+    if (typeof inicializarModalVer === 'function') inicializarModalVer();
+    if (typeof inicializarModalEditar === 'function') inicializarModalEditar();
+    if (typeof inicializarModalEliminar === 'function') inicializarModalEliminar();
 });
 
 /**

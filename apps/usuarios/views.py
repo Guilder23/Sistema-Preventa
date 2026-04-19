@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from .decorators import role_required
 from .models import PerfilUsuario
@@ -129,6 +130,16 @@ def listar_usuarios(request):
     if rol:
         usuarios = usuarios.filter(perfil__rol=rol)
 
+    # PAGINACIÓN (igual que clientes)
+    page = request.GET.get("page", 1)
+    paginator = Paginator(usuarios, 5)  # 10 usuarios por página
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     supervisores = (
         User.objects.select_related("perfil")
         .filter(perfil__rol="supervisor", is_active=True, perfil__activo=True)
@@ -145,7 +156,9 @@ def listar_usuarios(request):
         request,
         "usuarios/usuarios.html",
         {
-            "usuarios": usuarios,
+            "usuarios": page_obj.object_list,
+            "page_obj": page_obj,
+            "paginator": paginator,
             "buscar": buscar,
             "estado": estado,
             "rol": rol,
