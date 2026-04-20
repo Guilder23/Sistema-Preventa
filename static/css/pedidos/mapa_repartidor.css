@@ -1,0 +1,290 @@
+/* Pedidos - Mapa (Repartidor) */
+
+.mapa-repartidor-shell {
+    position: relative;
+}
+
+.mapa-repartidor-topbar {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    z-index: 800; /* arriba del mapa/tiles */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none; /* habilitamos click solo en controles */
+}
+
+.topbar-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.mapa-repartidor-topbar > * {
+    pointer-events: auto;
+}
+
+.topbar-btn {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--color-borde);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    border-radius: 12px;
+}
+
+.topbar-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--color-borde);
+    background: var(--color-superficie);
+    border-radius: 14px;
+    padding: 10px 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.topbar-search-icon {
+    opacity: 0.8;
+}
+
+.topbar-search-input {
+    width: 100%;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--color-texto);
+    font-weight: 600;
+}
+
+.topbar-filters {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid var(--color-borde);
+    background: var(--color-superficie);
+    border-radius: 14px;
+    padding: 10px 12px;
+}
+
+.topbar-select {
+    width: 100%;
+    border: 1px solid var(--color-borde);
+    background: transparent;
+    color: var(--color-texto);
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-weight: 600;
+}
+
+.mapa-repartidor-bottom {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 800;
+}
+
+.bottom-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid var(--color-borde);
+    background: var(--color-superficie);
+}
+
+.bottom-media {
+    width: 112px;
+    height: 112px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.05);
+    position: relative;
+    cursor: pointer;
+}
+
+.bottom-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.bottom-media-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-texto-secundario);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.bottom-body {
+    min-width: 0;
+}
+
+.bottom-title {
+    font-weight: 800;
+    color: var(--color-texto);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bottom-sub {
+    margin-top: 2px;
+    color: var(--color-texto-secundario);
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.2;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.bottom-meta {
+    margin-top: 6px;
+    color: var(--color-texto-secundario);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.bottom-close {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: 1px solid var(--color-borde);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+}
+
+/* En móvil, el mapa debe ocupar casi toda la pantalla (estilo app) */
+@media (max-width: 768px) {
+    .mapa-clientes {
+        height: calc(100vh - 180px);
+        min-height: 520px;
+    }
+
+    .mapa-repartidor-topbar {
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        gap: 6px;
+    }
+
+    .topbar-row {
+        gap: 6px;
+    }
+
+    .topbar-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+    }
+
+    .topbar-search {
+        border-radius: 12px;
+        padding: 8px 10px;
+    }
+
+    .topbar-search-input {
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .bottom-card {
+        grid-template-columns: 120px 1fr;
+    }
+
+    .bottom-media {
+        width: 120px;
+        height: 120px;
+    }
+
+    .topbar-filters {
+        border-radius: 12px;
+        padding: 8px 10px;
+    }
+
+    .topbar-select {
+        padding: 7px 10px;
+        font-size: 13px;
+    }
+
+    .page-header {
+        display: none;
+    }
+
+    .card.card-tabla {
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .card.card-tabla .card-body {
+        padding: 0;
+    }
+
+    .mapa-clientes {
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+    }
+}
+
+/* Visor de imagen (PC y móvil) */
+.img-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+}
+
+.img-viewer-img {
+    max-width: min(980px, 100%);
+    max-height: min(92vh, 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.img-viewer-close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+}
+
+/* Modo oscuro: fuerza superficies para evitar zonas blancas */
+html[data-theme="dark"] .topbar-btn,
+html[data-theme="dark"] .topbar-search,
+html[data-theme="dark"] .topbar-filters,
+html[data-theme="dark"] .bottom-card,
+html[data-theme="dark"] .bottom-close {
+    background: var(--color-superficie) !important;
+}

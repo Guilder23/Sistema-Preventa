@@ -38,8 +38,8 @@
                             <thead>
                                 <tr>
                                     <th style="width: 36%;">Producto</th>
-                                    <th style="width: 12%;">Stock</th>
-                                    <th style="width: 14%;">Precio (Bs)</th>
+                                    <th style="width: 12%;" class="col-stock">Stock</th>
+                                    <th style="width: 14%;" class="col-precio">Precio (Bs)</th>
                                     <th style="width: 14%;">Cantidad</th>
                                     <th style="width: 14%;">Subtotal (Bs)</th>
                                     <th style="width: 10%;" class="text-center">Acción</th>
@@ -66,10 +66,10 @@
                                     required
                                 >
                             </td>
-                            <td>
+                            <td class="col-stock">
                                 <input type="text" class="form-control form-control-sm item-stock" value="0" readonly>
                             </td>
-                            <td>
+                            <td class="col-precio">
                                 <input type="text" class="form-control form-control-sm item-precio" value="0.00" readonly>
                             </td>
                             <td>

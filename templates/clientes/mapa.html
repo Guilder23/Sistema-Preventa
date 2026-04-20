@@ -19,8 +19,41 @@
 
     <div class="card card-tabla">
         <div class="card-body">
-            <div id="mapaClientes" class="mapa-clientes" aria-label="Mapa de clientes"></div>
-            <small class="text-muted d-block mt-2" id="mapaClientesInfo"></small>
+            <div class="mapa-clientes-topbar mb-2" role="search">
+                <div class="topbar-row">
+                    <div class="topbar-search" id="clientesSearchWrap">
+                        <i class="fas fa-search topbar-search-icon" aria-hidden="true"></i>
+                        <input
+                            type="search"
+                            id="buscarClienteMapa"
+                            class="topbar-search-input"
+                            placeholder="Buscar cliente, CI/NIT o teléfono"
+                            autocomplete="off"
+                            value="{{ q|default:'' }}"
+                        >
+                    </div>
+                    <button type="button" class="topbar-btn" id="btnClientesFiltro" aria-label="Filtros">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </div>
+                <div class="topbar-filters" id="clientesFiltros" hidden>
+                    <select id="estadoClienteMapa" class="topbar-select" aria-label="Filtrar por estado">
+                        <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
+                        <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+                        <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+                    </select>
+                    <select id="vendedorClienteMapa" class="topbar-select" aria-label="Filtrar por preventista">
+                        <option value="" {% if not vendedor %}selected{% endif %}>Todos los preventistas</option>
+                        {% for u in vendedores %}
+                            <option value="{{ u.id }}" {% if vendedor == u.id|stringformat:'s' %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="mapa-clientes-shell" aria-label="Mapa de clientes">
+                <div id="mapaClientes" class="mapa-clientes" data-url="{% url 'clientes_mapa_puntos' %}"></div>
+                <small class="text-muted d-block mt-2" id="mapaClientesInfo"></small>
+            </div>
         </div>
     </div>
 </div>
@@ -28,8 +61,5 @@
 
 {% block scripts_extra %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script>
-  window.CLIENTES_MAPA_PUNTOS_URL = "{% url 'clientes_mapa_puntos' %}";
-</script>
 <script src="{% static 'js/clientes/mapa.js' %}"></script>
 {% endblock %}

@@ -1,0 +1,24 @@
+/* ============================================================================
+   REPORTES - Devoluciones (específico)
+   - Complementa css/reportes/reportes.css
+   ============================================================================ */
+
+.report-card--info::before {
+    background: var(--color-info);
+}
+
+.report-card--info .report-card-icon {
+    background: color-mix(in srgb, var(--color-info), transparent 88%);
+    color: var(--color-info);
+    border-color: color-mix(in srgb, var(--color-info), transparent 60%);
+}
+
+/* Ajustes finos para tablas de esta vista */
+.reporte-devoluciones-tabla {
+    font-size: 0.85rem;
+}
+
+.reporte-devoluciones-tabla th,
+.reporte-devoluciones-tabla td {
+    white-space: nowrap;
+}

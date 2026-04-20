@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.dateparse import parse_date
+from django.utils import timezone
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -33,7 +34,7 @@ def _pedidos_filtrados(request, user):
     preventista_id_raw = (request.GET.get("preventista") or "").strip()
     estado_entrega = (request.GET.get("estado_entrega") or "").strip().lower()
 
-    if tipo not in {"general", "despacho"}:
+    if tipo not in {"general", "despacho", "devoluciones"}:
         tipo = "general"
 
     # Para despacho, si no se eligió estado, se asume pendiente.
@@ -121,6 +122,11 @@ def reportes_inicio(request):
     from apps.pedidos.models import Pedido, DevolucionItem, DevolucionPedido
 
     pedidos, filtros, preventistas = _pedidos_filtrados(request, request.user)
+
+    # Si el tipo de reporte es "devoluciones", mostramos una vista diferente
+    if filtros.get("tipo") == "devoluciones":
+        return _reporte_devoluciones_inicio(request, filtros)
+
     pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
 
     resumen = pedidos.aggregate(total_monto=Sum("total"))
@@ -143,8 +149,20 @@ def reportes_inicio(request):
         or 0
     )
 
-    pedidos = list(pedidos)
-    pedido_ids = [p.id for p in pedidos]
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+    # Paginación
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(pedidos, 10)  # 10 por página, puedes ajustar
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    pedidos_page = page_obj.object_list
+    pedido_ids = [p.id for p in pedidos_page]
     devuelto_monto_por_pedido = defaultdict(lambda: Decimal("0.00"))
     devolucion_reciente_por_pedido = {}
 
@@ -176,7 +194,7 @@ def reportes_inicio(request):
         iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
         return f"{nombres} {iniciales}".strip()
 
-    for p in pedidos:
+    for p in pedidos_page:
         monto_devuelto = devuelto_monto_por_pedido.get(p.id, Decimal("0.00"))
         p.total_devuelto_monto = monto_devuelto
         p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
@@ -226,7 +244,9 @@ def reportes_inicio(request):
         request,
         "reportes/reportes.html",
         {
-            "pedidos": pedidos,
+            "pedidos": pedidos_page,
+            "page_obj": page_obj,
+            "paginator": paginator,
             "q": filtros["q"],
             "estado": filtros["estado"],
             "desde": filtros["desde"],
@@ -247,11 +267,94 @@ def reportes_inicio(request):
     )
 
 
+def _reporte_devoluciones_inicio(request, filtros):
+    from apps.pedidos.models import DevolucionItem, DevolucionPedido
+    from apps.productos.models import Producto
+    from django.contrib.auth.models import User
+
+    # Buscamos ítems devueltos en el rango de fecha
+    items_qs = DevolucionItem.objects.select_related(
+        "devolucion__pedido__cliente",
+        "devolucion__repartidor",
+        "producto"
+    )
+
+    if filtros["desde"]:
+        items_qs = items_qs.filter(devolucion__fecha_creacion__date__gte=filtros["desde"])
+    if filtros["hasta"]:
+        items_qs = items_qs.filter(devolucion__fecha_creacion__date__lte=filtros["hasta"])
+    
+    if filtros["q"]:
+        items_qs = items_qs.filter(
+            Q(devolucion__pedido__cliente__nombres__icontains=filtros["q"]) |
+            Q(devolucion__pedido__cliente__apellidos__icontains=filtros["q"]) |
+            Q(producto__nombre__icontains=filtros["q"]) |
+            Q(devolucion__repartidor__username__icontains=filtros["q"])
+        )
+
+    # Solo devoluciones pendientes de recibir (repuesto=False)
+    # El administrador recibe lo que el repartidor trajo físicamente.
+    # Usualmente esto se filtra por repuesto=False.
+    items_pendientes = items_qs.filter(repuesto=False).order_by("-devolucion__fecha_creacion")
+
+    # Consolidado por producto para la recepción física
+    consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00")})
+    for it in items_pendientes:
+        key = it.producto_id
+        consolidado[key]["nombre"] = it.producto.nombre
+        consolidado[key]["cantidad"] += it.cantidad_devuelta
+        # Intentamos obtener el precio del detalle si existe, sino del producto
+        precio = Decimal("0.00")
+        if it.detalle_pedido:
+            precio = it.detalle_pedido.precio_unitario
+        else:
+            precio = it.producto.precio_venta or Decimal("0.00")
+        consolidado[key]["monto"] += it.cantidad_devuelta * precio
+
+    lista_consolidado = []
+    for pid, data in consolidado.items():
+        lista_consolidado.append({
+            "producto_id": pid,
+            "producto_nombre": data["nombre"],
+            "cantidad_total": data["cantidad"],
+            "monto_total": data["monto"],
+        })
+    lista_consolidado.sort(key=lambda x: x["producto_nombre"])
+
+    # Totales para las tarjetas
+    total_items = items_pendientes.count()
+    total_unidades = sum(it.cantidad_devuelta for it in items_pendientes)
+    total_monto_dev = sum(c["monto_total"] for c in lista_consolidado)
+
+    # Repartidores para el filtro (podríamos añadirlo si hace falta)
+    repartidores = User.objects.filter(perfil__rol="repartidor", is_active=True).order_by("username")
+
+    return render(
+        request,
+        "reportes/reportes_devoluciones.html",
+        {
+            "items": items_pendientes,
+            "consolidado": lista_consolidado,
+            "q": filtros["q"],
+            "desde": filtros["desde"],
+            "hasta": filtros["hasta"],
+            "tipo": filtros["tipo"],
+            "total_items": total_items,
+            "total_unidades": total_unidades,
+            "total_monto_dev": total_monto_dev,
+            "repartidores": repartidores,
+        }
+    )
+
+
 @login_required
 def pedidos_pdf(request):
     from apps.pedidos.models import DetallePedido, DevolucionItem, DevolucionPedido, Pedido
 
     pedidos, filtros, _ = _pedidos_filtrados(request, request.user)
+
+    if filtros.get("tipo") == "devoluciones":
+        return _reporte_devoluciones_pdf(request, filtros)
 
     def _fmt_money(value) -> str:
         try:
@@ -1213,4 +1316,309 @@ def pedido_pdf(request, id: int):
 
     resp = HttpResponse(pdf, content_type="application/pdf")
     resp["Content-Disposition"] = f"inline; filename=pedido_{pedido.id}.pdf"
+    return resp
+
+
+def _reporte_devoluciones_pdf(request, filtros):
+    from apps.pedidos.models import DevolucionItem
+
+    # Lógica de filtrado (igual que en la vista)
+    items_qs = DevolucionItem.objects.select_related(
+        "devolucion__pedido__cliente",
+        "devolucion__repartidor",
+        "producto",
+        "detalle_pedido",
+    )
+
+    if filtros["desde"]:
+        items_qs = items_qs.filter(devolucion__fecha_creacion__date__gte=filtros["desde"])
+    if filtros["hasta"]:
+        items_qs = items_qs.filter(devolucion__fecha_creacion__date__lte=filtros["hasta"])
+
+    if filtros["q"]:
+        items_qs = items_qs.filter(
+            Q(devolucion__pedido__cliente__nombres__icontains=filtros["q"]) |
+            Q(devolucion__pedido__cliente__apellidos__icontains=filtros["q"]) |
+            Q(producto__nombre__icontains=filtros["q"]) |
+            Q(devolucion__repartidor__username__icontains=filtros["q"])
+        )
+
+    items_pendientes = items_qs.filter(repuesto=False).order_by("-devolucion__fecha_creacion")
+
+    # Consolidado por producto
+    consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00")})
+    for it in items_pendientes:
+        key = it.producto_id
+        consolidado[key]["nombre"] = it.producto.nombre
+        consolidado[key]["cantidad"] += int(it.cantidad_devuelta or 0)
+        precio = (
+            it.detalle_pedido.precio_unitario
+            if it.detalle_pedido
+            else (getattr(it.producto, "precio_venta", None) or Decimal("0.00"))
+        )
+        consolidado[key]["monto"] += Decimal(int(it.cantidad_devuelta or 0)) * (precio or Decimal("0.00"))
+
+    def _short(text: str, max_len: int) -> str:
+        text = (text or "").strip()
+        if len(text) <= max_len:
+            return text
+        return text[: max_len - 1] + "…"
+
+    def _fmt_money(value) -> str:
+        try:
+            return f"Bs {value:.2f}"
+        except Exception:
+            return f"Bs {value}"
+
+    def _draw_header_footer(canvas, doc):
+        canvas.saveState()
+
+        page_width, page_height = A4
+        accent = colors.HexColor("#d7262b")
+        header_dark = colors.HexColor("#d7262b")
+        header_accent = colors.HexColor("#332a2a")
+
+        footer_h = 14 * mm
+        canvas.setFillColor(accent)
+        canvas.rect(0, 0, page_width, footer_h, stroke=0, fill=1)
+        canvas.setFillColor(colors.white)
+        canvas.setFont("Helvetica", 9)
+        canvas.drawString(16 * mm, 5 * mm, "Sistema Preventa")
+        canvas.drawRightString(page_width - 16 * mm, 5 * mm, "Reporte de devoluciones")
+
+        header_h = 22 * mm
+        header_y = page_height - header_h
+        canvas.setFillColor(header_dark)
+        canvas.rect(0, header_y, page_width, header_h, stroke=0, fill=1)
+
+        canvas.setFillColor(header_accent)
+        canvas.setStrokeColor(header_accent)
+        path = canvas.beginPath()
+        x1 = 78 * mm
+        x2 = 120 * mm
+        y1 = header_y - 2 * mm
+        y2 = header_y + 6 * mm
+        path.moveTo(x1, y1)
+        path.lineTo(x2, y1)
+        path.lineTo(x2 + 12 * mm, y2)
+        path.lineTo(x1 + 12 * mm, y2)
+        path.close()
+        canvas.drawPath(path, stroke=0, fill=1)
+
+        canvas.restoreState()
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        title="Reporte de devoluciones",
+        leftMargin=16 * mm,
+        rightMargin=16 * mm,
+        topMargin=28 * mm,
+        bottomMargin=18 * mm,
+    )
+
+    styles = getSampleStyleSheet()
+
+    accent = colors.HexColor("#d7262b")
+    text_grey = colors.HexColor("#333333")
+    muted = colors.HexColor("#6c757d")
+    header_bg = colors.HexColor("#e9ecef")
+    zebra = colors.HexColor("#f8f9fa")
+
+    title_style = ParagraphStyle(
+        "reporte_title_devol",
+        parent=styles["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        textColor=accent,
+        spaceAfter=2,
+    )
+    label_style = ParagraphStyle(
+        "label_devol",
+        parent=styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=9,
+        textColor=muted,
+        leading=12,
+    )
+    value_style = ParagraphStyle(
+        "value_devol",
+        parent=styles["Normal"],
+        fontName="Helvetica",
+        fontSize=10,
+        textColor=text_grey,
+        leading=13,
+    )
+    small_style = ParagraphStyle(
+        "small_devol",
+        parent=styles["Normal"],
+        fontName="Helvetica",
+        fontSize=8,
+        textColor=muted,
+        leading=11,
+    )
+
+    story = []
+
+    logo_path = settings.BASE_DIR / "static" / "img" / "logoAlmacen.png"
+    logo_flowable = None
+    if logo_path.exists():
+        logo_flowable = Image(str(logo_path), width=24 * mm, height=24 * mm)
+
+    left_header = [
+        logo_flowable or "",
+        Paragraph("<b>Distribuidora JEREMY</b>", value_style),
+        Paragraph("Reporte de devoluciones", small_style),
+    ]
+    right_header = [
+        Paragraph("REPORTE", title_style),
+        Spacer(1, 2),
+        Paragraph("<b>Generado:</b> " + request.user.get_username(), value_style),
+        Paragraph("<b>Fecha:</b> " + timezone.now().strftime("%d/%m/%Y %H:%M"), value_style),
+    ]
+    header_table = Table(
+        [[left_header, right_header]],
+        colWidths=[105 * mm, 75 * mm],
+        style=TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ]
+        ),
+    )
+    story.append(header_table)
+    story.append(Spacer(1, 10))
+
+    total_filas = items_pendientes.count()
+    total_unidades = sum(int(it.cantidad_devuelta or 0) for it in items_pendientes)
+    total_monto = sum((d["monto"] for d in consolidado.values()), Decimal("0.00"))
+
+    filtros_box = [
+        Paragraph("FILTROS APLICADOS", label_style),
+        Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
+        Paragraph("Tipo reporte: Devoluciones físicas", value_style),
+        Paragraph(f"Desde: {filtros['desde'] or '--'}", value_style),
+        Paragraph(f"Hasta: {filtros['hasta'] or '--'}", value_style),
+        Paragraph("Incluye: Solo pendientes de recepción", small_style),
+    ]
+    resumen_box = [
+        Paragraph("RESUMEN", label_style),
+        Paragraph(f"Filas devueltas: {total_filas}", value_style),
+        Paragraph(f"Total unidades: {total_unidades}", value_style),
+        Paragraph(f"Monto estimado: {_fmt_money(total_monto)}", value_style),
+    ]
+
+    info_table = Table(
+        [[filtros_box, resumen_box]],
+        colWidths=[105 * mm, 75 * mm],
+        style=TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#dee2e6")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        ),
+    )
+    story.append(info_table)
+    story.append(Spacer(1, 12))
+
+    # CONSOLIDADO
+    story.append(Paragraph("CONSOLIDADO DE PRODUCTOS A RECIBIR", label_style))
+    story.append(Spacer(1, 4))
+
+    data_cons = [["Producto", "Cant. total", "Monto est."]]
+    for _, d in sorted(consolidado.items(), key=lambda kv: (kv[1].get("nombre") or "").lower()):
+        data_cons.append(
+            [
+                _short(d.get("nombre") or "-", 45),
+                str(int(d.get("cantidad") or 0)),
+                _fmt_money(d.get("monto") or Decimal("0.00")),
+            ]
+        )
+
+    tabla_cons = Table(
+        data_cons,
+        colWidths=[105 * mm, 25 * mm, 40 * mm],
+        repeatRows=1,
+    )
+    tabla_cons.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("FONTSIZE", (0, 1), (-1, -1), 8),
+                ("ALIGN", (1, 1), (1, -1), "CENTER"),
+                ("ALIGN", (2, 1), (2, -1), "RIGHT"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
+    )
+    story.append(tabla_cons)
+    story.append(Spacer(1, 10))
+
+    # DETALLE
+    story.append(Paragraph("DETALLE POR PEDIDO Y REPARTIDOR", label_style))
+    story.append(Spacer(1, 4))
+
+    data_det = [["Ped#", "Cliente", "Producto", "Cant.", "Repartidor", "Fecha"]]
+    for it in items_pendientes:
+        cliente = it.devolucion.pedido.cliente
+        cliente_nombre = f"{cliente.nombres} {cliente.apellidos or ''}".strip()
+        data_det.append(
+            [
+                f"#{it.devolucion.pedido_id}",
+                _short(cliente_nombre, 18),
+                _short(it.producto.nombre, 26),
+                str(int(it.cantidad_devuelta or 0)),
+                _short(it.devolucion.repartidor.get_full_name() or it.devolucion.repartidor.username, 16),
+                it.devolucion.fecha_creacion.strftime("%d/%m/%Y"),
+            ]
+        )
+
+    tabla_det = Table(
+        data_det,
+        colWidths=[12 * mm, 38 * mm, 55 * mm, 12 * mm, 36 * mm, 25 * mm],
+        repeatRows=1,
+    )
+    tabla_det.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("FONTSIZE", (0, 1), (-1, -1), 7),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+                ("ALIGN", (3, 1), (3, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                ("TOPPADDING", (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ]
+        )
+    )
+    story.append(tabla_det)
+
+    doc.build(story, onFirstPage=_draw_header_footer, onLaterPages=_draw_header_footer)
+
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    resp = HttpResponse(pdf, content_type="application/pdf")
+    resp["Content-Disposition"] = "inline; filename=reporte_devoluciones.pdf"
     return resp

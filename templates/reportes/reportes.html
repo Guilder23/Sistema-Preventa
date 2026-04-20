@@ -78,9 +78,10 @@
                 </div>
                 <div class="filtro-item">
                     <label class="small text-muted">Tipo reporte</label>
-                    <select name="tipo" class="form-control filtro-tipo">
+                    <select name="tipo" class="form-control filtro-tipo" onchange="this.form.submit()">
                         <option value="general" {% if tipo == 'general' %}selected{% endif %}>General</option>
                         <option value="despacho" {% if tipo == 'despacho' %}selected{% endif %}>Despacho</option>
+                        <option value="devoluciones" {% if tipo == 'devoluciones' %}selected{% endif %}>Devoluciones Físicas</option>
                     </select>
                 </div>
                 <div class="filtro-item">
@@ -143,7 +144,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for p in pedidos %}
+                        {% for p in page_obj.object_list %}
                         <tr>
                             <td>{{ p.id }}</td>
                             <td>{{ p.cliente_corto }}</td>
@@ -172,6 +173,37 @@
             </div>
         </div>
     </div>
+
+    {# Paginación estilo pedidos #}
+    {% if page_obj %}
+    <nav aria-label="Paginación de reportes" class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+            {% endif %}
+
+            {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
 </div>
 {% endblock %}
 

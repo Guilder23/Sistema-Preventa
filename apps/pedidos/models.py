@@ -40,6 +40,7 @@ class Pedido(models.Model):
     observacion = models.TextField(blank=True, null=True)
     ticket_impreso = models.BooleanField(default=False)
     ticket_compartido = models.BooleanField(default=False)
+    stock_descontado = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-fecha"]

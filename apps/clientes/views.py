@@ -81,11 +81,24 @@ def listar_clientes(request):
     if vendedor_id is not None:
         clientes = clientes.filter(creado_por_id=vendedor_id)
 
+    # PAGINACIÓN
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    page = request.GET.get("page", 1)
+    paginator = Paginator(clientes, 10)  # 10 clientes por página
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
     return render(
         request,
         "clientes/clientes.html",
         {
-            "clientes": clientes,
+            "clientes": page_obj.object_list,
+            "page_obj": page_obj,
+            "paginator": paginator,
             "q": q,
             "estado": estado,
             "vendedor": str(vendedor_id) if vendedor_id is not None else "",
@@ -95,21 +108,93 @@ def listar_clientes(request):
 
 
 @role_required("administrador", "supervisor", "preventista")
+@role_required("administrador", "supervisor", "preventista")
 def clientes_mapa(request):
-    return render(request, "clientes/mapa.html")
+    q = (request.GET.get("q") or "").strip()
+    estado = (request.GET.get("estado") or "").strip().lower()
+    vendedor_raw = (request.GET.get("vendedor") or "").strip()
+
+    clientes_base = _clientes_qs_para_usuario(request.user)
+    vendedor_ids = (
+        clientes_base.exclude(creado_por__isnull=True)
+        .values_list("creado_por_id", flat=True)
+        .distinct()
+    )
+    vendedores = User.objects.filter(id__in=vendedor_ids).order_by("username")
+
+    # Normalizar estado
+    if estado not in {"activo", "inactivo"}:
+        estado = ""
+
+    # Validar vendedor
+    vendedor_id = None
+    if vendedor_raw:
+        try:
+            vendedor_id = int(vendedor_raw)
+        except ValueError:
+            vendedor_id = None
+        else:
+            if vendedor_id not in set(vendedor_ids):
+                vendedor_id = None
+
+    return render(
+        request,
+        "clientes/mapa.html",
+        {
+            "q": q,
+            "estado": estado,
+            "vendedor": str(vendedor_id) if vendedor_id is not None else "",
+            "vendedores": vendedores,
+        },
+    )
 
 
 @role_required("administrador", "supervisor", "preventista")
 def clientes_mapa_puntos(request):
-    qs = (
-        _clientes_qs_para_usuario(request.user)
-        .filter(activo=True, latitud__isnull=False, longitud__isnull=False)
-        .order_by("nombres", "apellidos")
+    q = (request.GET.get("q") or "").strip()
+    estado = (request.GET.get("estado") or "").strip().lower()
+    vendedor_raw = (request.GET.get("vendedor") or "").strip()
+
+    clientes_base = _clientes_qs_para_usuario(request.user)
+    vendedor_ids = (
+        clientes_base.exclude(creado_por__isnull=True)
+        .values_list("creado_por_id", flat=True)
+        .distinct()
     )
+
+    # Normalizar estado
+    if estado not in {"activo", "inactivo"}:
+        estado = ""
+
+    # Validar vendedor
+    vendedor_id = None
+    if vendedor_raw:
+        try:
+            vendedor_id = int(vendedor_raw)
+        except ValueError:
+            vendedor_id = None
+        else:
+            if vendedor_id not in set(vendedor_ids):
+                vendedor_id = None
+
+    qs = clientes_base.filter(latitud__isnull=False, longitud__isnull=False)
+    if q:
+        qs = qs.filter(
+            Q(nombres__icontains=q)
+            | Q(apellidos__icontains=q)
+            | Q(ci_nit__icontains=q)
+            | Q(telefono__icontains=q)
+        )
+    if estado == "activo":
+        qs = qs.filter(activo=True)
+    elif estado == "inactivo":
+        qs = qs.filter(activo=False)
+    if vendedor_id is not None:
+        qs = qs.filter(creado_por_id=vendedor_id)
+    qs = qs.order_by("nombres", "apellidos")
 
     puntos = []
     for c in qs:
-        # JsonResponse no serializa Decimal; convertimos a float.
         puntos.append(
             {
                 "id": c.id,
