@@ -243,7 +243,7 @@ def listar_pedidos(request):
 
         productos_data = []
         for p in productos:
-            label = f"{p.codigo} - {p.nombre}" if p.codigo else p.nombre
+            label = p.nombre  # Solo el nombre, sin el código
             productos_data.append(
                 {
                     "id": p.id,
