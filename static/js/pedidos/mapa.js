@@ -63,6 +63,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
     var searchWrap = el('repartidorSearchWrap');
     var filtrosWrap = el('repartidorFiltros');
     var estadoSelect = el('repartidorEstado');
+    var fechaInput = el('repartidorFecha');
     var btnFiltro = el('btnRepartidorFiltro');
 
     var bottom = el('repartidorBottom');
@@ -182,8 +183,10 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
     function matchesFilters(p) {
       var q = normText(searchInput && searchInput.value);
       var estado = (estadoSelect && estadoSelect.value) ? estadoSelect.value : '';
+      var fecha = (fechaInput && fechaInput.value) ? fechaInput.value : '';
 
       if (estado && normText(p.estado) !== estado) return false;
+      if (fecha && p.fecha_iso !== fecha) return false;
 
       if (!q) return true;
 
@@ -327,6 +330,11 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       }
       if (estadoSelect) {
         estadoSelect.addEventListener('change', function () {
+          render();
+        });
+      }
+      if (fechaInput) {
+        fechaInput.addEventListener('change', function () {
           render();
         });
       }
