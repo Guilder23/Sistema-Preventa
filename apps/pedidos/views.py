@@ -610,6 +610,7 @@ def pedidos_mapa_puntos(request):
                 "foto_url": c.foto_tienda.url if getattr(c, "foto_tienda", None) else "",
                 "descripcion": getattr(c, "descripcion", "") or "",
                 "fecha": p.fecha.strftime("%d/%m/%Y %H:%M"),
+                "fecha_iso": p.fecha.date().isoformat(),
                 "total": str(p.total),
                 "estado_str": p.get_estado_display(),
                 "estado": p.estado,
