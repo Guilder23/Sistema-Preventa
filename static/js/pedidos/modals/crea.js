@@ -351,7 +351,28 @@
             form.addEventListener('submit', function (e) {
                 const okCliente = acCliente ? acCliente.validateExact() : true;
                 let okProductos = true;
+                let okFecha = true;
                 const errores = [];
+
+                // Validar fecha de entrega estimada
+                const fechaEntregaEl = document.getElementById('pedidoFechaEntrega');
+                if (!fechaEntregaEl || !fechaEntregaEl.value) {
+                    okFecha = false;
+                    errores.push('Ingresa una fecha de entrega estimada.');
+                } else {
+                    const fechaIngresada = new Date(fechaEntregaEl.value);
+                    const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
+                    fechaIngresada.setHours(0, 0, 0, 0);
+                    
+                    if (fechaIngresada < hoy) {
+                        okFecha = false;
+                        errores.push('La fecha de entrega no puede ser menor a hoy.');
+                        fechaEntregaEl.classList.add('is-invalid');
+                    } else {
+                        fechaEntregaEl.classList.remove('is-invalid');
+                    }
+                }
 
                 if (!okCliente) {
                     errores.push('Cliente inválido o no seleccionado.');
@@ -401,7 +422,7 @@
                     }
                 });
 
-                if (!okCliente || !okProductos) {
+                if (!okCliente || !okProductos || !okFecha) {
                     e.preventDefault();
                     setInlineError(errores.join(' | '));
                 }

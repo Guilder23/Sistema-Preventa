@@ -22,6 +22,20 @@
                     $('#verPedidoCliente').text(data.cliente || '—');
                     $('#verPedidoPreventista').text(data.preventista || '—');
                     $('#verPedidoFecha').text(data.fecha || '—');
+                    // Fecha de entrega estimada (data.fecha_entrega_estimada viene en ISO yyyy-mm-dd)
+                    if (data.fecha_entrega_estimada) {
+                        try {
+                            const d = new Date(data.fecha_entrega_estimada);
+                            const dd = ('0' + d.getDate()).slice(-2);
+                            const mm = ('0' + (d.getMonth() + 1)).slice(-2);
+                            const yyyy = d.getFullYear();
+                            $('#verPedidoFechaEntrega').text(`${dd}/${mm}/${yyyy}`);
+                        } catch (e) {
+                            $('#verPedidoFechaEntrega').text(data.fecha_entrega_estimada || '—');
+                        }
+                    } else {
+                        $('#verPedidoFechaEntrega').text('—');
+                    }
                     $('#verPedidoEstado').text(estadoLabel(data.estado));
                     $('#verPedidoTotal').text(data.total || '0.00');
                     $('#verPedidoTotalNeto').text(data.total_neto || data.total || '0.00');

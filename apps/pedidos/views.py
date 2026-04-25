@@ -288,14 +288,32 @@ def listar_pedidos(request):
 @role_required("administrador", "supervisor", "preventista")
 @require_http_methods(["POST"])
 def crear_pedido(request):
+    from django.utils.dateparse import parse_date
+    
     cliente_id = (request.POST.get("cliente_id") or "").strip()
     observacion = (request.POST.get("observacion") or "").strip()
+    fecha_entrega_estimada_raw = (request.POST.get("fecha_entrega_estimada") or "").strip()
 
     producto_ids = request.POST.getlist("producto_id[]")
     cantidades = request.POST.getlist("cantidad[]")
 
     if not cliente_id:
         messages.error(request, "Selecciona un cliente")
+        return redirect("listar_pedidos")
+
+    # Validar fecha de entrega estimada
+    if not fecha_entrega_estimada_raw:
+        messages.error(request, "Ingresa una fecha de entrega estimada")
+        return redirect("listar_pedidos")
+    
+    fecha_entrega_estimada = parse_date(fecha_entrega_estimada_raw)
+    if not fecha_entrega_estimada:
+        messages.error(request, "Formato de fecha inválido")
+        return redirect("listar_pedidos")
+    
+    hoy = date.today()
+    if fecha_entrega_estimada < hoy:
+        messages.error(request, "La fecha de entrega no puede ser menor a hoy")
         return redirect("listar_pedidos")
 
     cliente = get_object_or_404(_clientes_para_usuario(request.user), id=cliente_id)
@@ -350,6 +368,7 @@ def crear_pedido(request):
             preventista=preventista_asignado,
             registrado_por=request.user,
             observacion=observacion or None,
+            fecha_entrega_estimada=fecha_entrega_estimada,
         )
 
         total = Decimal("0.00")
@@ -422,6 +441,7 @@ def obtener_pedido(request, id: int):
             "cliente": f"{pedido.cliente.nombres} {pedido.cliente.apellidos or ''}".strip(),
             "preventista": pedido.preventista.get_full_name() or pedido.preventista.username,
             "fecha": pedido.fecha.strftime("%d/%m/%Y %H:%M"),
+            "fecha_entrega_estimada": pedido.fecha_entrega_estimada.isoformat() if pedido.fecha_entrega_estimada else "",
             "estado": pedido.estado,
             "estado_display": pedido.get_estado_display(),
             "total": f"{(pedido.total or Decimal('0.00')):.2f}",
@@ -436,6 +456,8 @@ def obtener_pedido(request, id: int):
 @role_required("administrador", "supervisor", "preventista")
 @require_http_methods(["POST"])
 def editar_pedido(request, id: int):
+    from django.utils.dateparse import parse_date
+    
     pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
 
     if pedido.estado != Pedido.ESTADO_PENDIENTE:
@@ -443,6 +465,23 @@ def editar_pedido(request, id: int):
         return redirect("listar_pedidos")
 
     observacion = (request.POST.get("observacion") or "").strip()
+    fecha_entrega_estimada_raw = (request.POST.get("fecha_entrega_estimada") or "").strip()
+    
+    # Validar fecha de entrega estimada
+    if not fecha_entrega_estimada_raw:
+        messages.error(request, "Ingresa una fecha de entrega estimada")
+        return redirect("listar_pedidos")
+    
+    fecha_entrega_estimada = parse_date(fecha_entrega_estimada_raw)
+    if not fecha_entrega_estimada:
+        messages.error(request, "Formato de fecha inválido")
+        return redirect("listar_pedidos")
+    
+    hoy = date.today()
+    if fecha_entrega_estimada < hoy:
+        messages.error(request, "La fecha de entrega no puede ser menor a hoy")
+        return redirect("listar_pedidos")
+    
     producto_ids = request.POST.getlist("producto_id[]")
     cantidades = request.POST.getlist("cantidad[]")
 
@@ -505,6 +544,7 @@ def editar_pedido(request, id: int):
             _reponer_stock_por_detalles(detalles_previos)
 
         pedido.observacion = observacion or None
+        pedido.fecha_entrega_estimada = fecha_entrega_estimada
         pedido.detalles.all().delete()
 
         total = Decimal("0.00")
@@ -526,7 +566,7 @@ def editar_pedido(request, id: int):
         pedido.total = total.quantize(Decimal("0.01"))
         _descontar_stock_por_detalles(detalles_creados)
         pedido.stock_descontado = True
-        pedido.save(update_fields=["observacion", "total", "stock_descontado"])
+        pedido.save(update_fields=["observacion", "fecha_entrega_estimada", "total", "stock_descontado"])
 
     messages.success(request, "Pedido actualizado")
     return redirect("listar_pedidos")

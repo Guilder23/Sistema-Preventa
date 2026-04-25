@@ -36,6 +36,7 @@ class Pedido(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=20, choices=ESTADOS, default=ESTADO_PENDIENTE)
     fecha_vendido = models.DateTimeField(blank=True, null=True)
+    fecha_entrega_estimada = models.DateField(blank=True, null=True)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     observacion = models.TextField(blank=True, null=True)
     ticket_impreso = models.BooleanField(default=False)
