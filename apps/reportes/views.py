@@ -529,7 +529,7 @@ def pedidos_pdf(request):
     ]
 
     right_header = [
-        Paragraph("REPORTE", title_style),
+        Paragraph("REPORTE " + filtros["tipo"].upper(), title_style),
         Spacer(1, 2),
         Paragraph("<b>Generado:</b> " + request.user.get_username(), value_style),
     ]
@@ -628,7 +628,6 @@ def pedidos_pdf(request):
             return text
         return text[: max_len - 1] + "…"
 
-    data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "F. vendido", "Est. ent.", "Dev.", "Bruto", "Real"]]
     total_monto = 0
     total_monto_neto = Decimal("0.00")
     for p in pedidos:
@@ -636,110 +635,114 @@ def pedidos_pdf(request):
         total_neto = (p.total or Decimal("0.00")) - monto_devuelto_por_pedido.get(p.id, Decimal("0.00"))
         total_monto_neto += total_neto
 
-        creado_por_cliente = getattr(p.cliente, "creado_por", None)
-        cliente_reg_por = (creado_por_cliente.get_full_name() or creado_por_cliente.username) if creado_por_cliente else "-"
-        registrador = getattr(p, "registrado_por", None)
-        pedido_reg_por = (
-            (registrador.get_full_name() or registrador.username)
-            if registrador
-            else (p.preventista.get_full_name() or p.preventista.username)
-        )
-        devol = devolucion_reciente_por_pedido.get(p.id)
-        repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
+    if filtros["tipo"] == "general":
+        data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "F. vendido", "Est. ent.", "Dev.", "Bruto", "Real"]]
+        for p in pedidos:
+            creado_por_cliente = getattr(p.cliente, "creado_por", None)
+            cliente_reg_por = (creado_por_cliente.get_full_name() or creado_por_cliente.username) if creado_por_cliente else "-"
+            registrador = getattr(p, "registrado_por", None)
+            pedido_reg_por = (
+                (registrador.get_full_name() or registrador.username)
+                if registrador
+                else (p.preventista.get_full_name() or p.preventista.username)
+            )
+            devol = devolucion_reciente_por_pedido.get(p.id)
+            repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
 
-        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
-            estado_entrega = "No entregado"
-        elif p.estado == Pedido.ESTADO_VENDIDO and devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
-            estado_entrega = "Entregado parcial"
-        elif p.estado == Pedido.ESTADO_VENDIDO:
-            estado_entrega = "Entregado completo"
-        elif p.estado == Pedido.ESTADO_PENDIENTE:
-            estado_entrega = "Pendiente"
-        else:
-            estado_entrega = "-"
+            if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+                estado_entrega = "No entregado"
+            elif p.estado == Pedido.ESTADO_VENDIDO and devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+                estado_entrega = "Entregado parcial"
+            elif p.estado == Pedido.ESTADO_VENDIDO:
+                estado_entrega = "Entregado completo"
+            elif p.estado == Pedido.ESTADO_PENDIENTE:
+                estado_entrega = "Pendiente"
+            else:
+                estado_entrega = "-"
 
-        data.append(
-            [
-                str(p.id),
-                _short(_cliente_corto(p.cliente), 11),
-                _short(cliente_reg_por, 11),
-                _short(pedido_reg_por, 11),
-                _short(repartidor, 10),
-                p.fecha.strftime("%d/%m/%Y %H:%M"),
-                p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-",
-                p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
-                _short(estado_entrega, 14),
-                str(devueltos_por_pedido.get(p.id, 0)),
-                _fmt_money(p.total),
-                _fmt_money(total_neto),
-            ]
-        )
+            total_neto_p = (p.total or Decimal("0.00")) - monto_devuelto_por_pedido.get(p.id, Decimal("0.00"))
+            data.append(
+                [
+                    str(p.id),
+                    _short(_cliente_corto(p.cliente), 11),
+                    _short(cliente_reg_por, 11),
+                    _short(pedido_reg_por, 11),
+                    _short(repartidor, 10),
+                    p.fecha.strftime("%d/%m/%Y %H:%M"),
+                    p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-",
+                    p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
+                    _short(estado_entrega, 14),
+                    str(devueltos_por_pedido.get(p.id, 0)),
+                    _fmt_money(p.total),
+                    _fmt_money(total_neto_p),
+                ]
+            )
 
         table = Table(
-        data,
-        colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
-        repeatRows=1,
-    )
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), header_bg),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 7),
-                ("FONTSIZE", (0, 1), (-1, -1), 6),
-                ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                    ("ALIGN", (5, 1), (7, -1), "CENTER"),
-                ("ALIGN", (8, 1), (8, -1), "CENTER"),
-                ("ALIGN", (9, 1), (10, -1), "RIGHT"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 2),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-                ("TOPPADDING", (0, 0), (-1, -1), 1),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-            ]
+            data,
+            colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
+            repeatRows=1,
         )
-    )
-    story.append(table)
-    story.append(Spacer(1, 8))
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 7),
+                    ("FONTSIZE", (0, 1), (-1, -1), 6),
+                    ("ALIGN", (0, 0), (0, -1), "CENTER"),
+                    ("ALIGN", (5, 1), (7, -1), "CENTER"),
+                    ("ALIGN", (8, 1), (8, -1), "CENTER"),
+                    ("ALIGN", (9, 1), (10, -1), "RIGHT"),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                    ("TOPPADDING", (0, 0), (-1, -1), 1),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                ]
+            )
+        )
+        story.append(table)
+        story.append(Spacer(1, 8))
 
-    totals_data = [
-        ["Subtotal vendidos", _fmt_money(subtotal_vendidos)],
-        ["Subtotal pendientes", _fmt_money(subtotal_pendientes)],
-        ["Subtotal anulados", _fmt_money(subtotal_anulados)],
-        ["TOTAL BRUTO", _fmt_money(total_monto)],
-        ["TOTAL REAL", _fmt_money(total_monto_neto)],
-    ]
-    totals_table = Table(
-        totals_data,
-        colWidths=[35 * mm, 40 * mm],
-        style=TableStyle(
-            [
-                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
-                ("TEXTCOLOR", (0, 0), (-1, 0), muted),
-                ("LINEABOVE", (0, 3), (-1, 3), 0.7, colors.HexColor("#cfd4da")),
-                ("FONTNAME", (0, 3), (-1, 4), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 3), (-1, 4), 10),
-                ("TEXTCOLOR", (0, 3), (-1, 4), accent),
-            ]
-        ),
-    )
-    totals_wrap = Table(
-        [["", totals_table]],
-        colWidths=[105 * mm, 75 * mm],
-        style=TableStyle(
-            [
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]
-        ),
-    )
-    story.append(totals_wrap)
+        totals_data = [
+            ["Subtotal vendidos", _fmt_money(subtotal_vendidos)],
+            ["Subtotal pendientes", _fmt_money(subtotal_pendientes)],
+            ["Subtotal anulados", _fmt_money(subtotal_anulados)],
+            ["TOTAL BRUTO", _fmt_money(total_monto)],
+            ["TOTAL REAL", _fmt_money(total_monto_neto)],
+        ]
+        totals_table = Table(
+            totals_data,
+            colWidths=[35 * mm, 40 * mm],
+            style=TableStyle(
+                [
+                    ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 9),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), muted),
+                    ("LINEABOVE", (0, 3), (-1, 3), 0.7, colors.HexColor("#cfd4da")),
+                    ("FONTNAME", (0, 3), (-1, 4), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 3), (-1, 4), 10),
+                    ("TEXTCOLOR", (0, 3), (-1, 4), accent),
+                ]
+            ),
+        )
+        totals_wrap = Table(
+            [["", totals_table]],
+            colWidths=[105 * mm, 75 * mm],
+            style=TableStyle(
+                [
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            ),
+        )
+        story.append(totals_wrap)
 
     # Sección de despacho: consolidado + detalle de productos por pedido.
     if filtros["tipo"] == "despacho" and pedidos.exists():
