@@ -53,7 +53,7 @@
 }
 
 #modalEditarPedido .item-cantidad-wrap .item-cantidad {
-    min-width: 74px;
+    min-width: 35px;
     text-align: center;
 }
 

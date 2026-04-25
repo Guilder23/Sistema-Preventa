@@ -36,31 +36,33 @@
 }
 
 #modalCrearPedido .item-producto-buscar {
-	min-width: 220px;
+	min-width: 240px;
+	width: 100%;
+	font-size: 1.1em;
+	padding: 4px 6px;
 }
 
 #modalCrearPedido .item-cantidad {
-	min-width: 90px;
+	min-width: 40px;
+	max-width: 50px;
+	text-align: center;
+	font-size: 1.1em;
+	padding: 4px 6px;
 }
 
 #modalCrearPedido .item-cantidad-wrap {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 2px;
 }
 
 #modalCrearPedido .item-cantidad-wrap .item-cantidad {
-	min-width: 74px;
+	min-width: 35px;
 	text-align: center;
 }
 
 #modalCrearPedido .item-cantidad-wrap .btn {
-	width: 30px;
-	height: 30px;
-	padding: 0;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
+	display: none;
 }
 
 /* Evita que el dropdown del autocomplete se recorte dentro de la tabla */
@@ -166,7 +168,7 @@
 	#modalCrearPedido #tablaItemsPedido tbody tr {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 2px;
 	}
 
 	#modalCrearPedido #tablaItemsPedido tbody td {
@@ -175,23 +177,23 @@
 
 	/* Producto */
 	#modalCrearPedido #tablaItemsPedido tbody td:nth-child(1) {
-		flex: 1 1 auto;
+		flex: 2 1 60%;
 		min-width: 0;
 	}
 
 	/* Cantidad */
 	#modalCrearPedido #tablaItemsPedido tbody td:nth-child(4) {
-		flex: 0 0 96px;
+		flex: 0 0 80px;
 	}
 
 	/* Subtotal */
 	#modalCrearPedido #tablaItemsPedido tbody td:nth-child(5) {
-		flex: 0 0 76px;
+		flex: 0 0 70px;
 	}
 
 	/* Acción */
 	#modalCrearPedido #tablaItemsPedido tbody td:nth-child(6) {
-		flex: 0 0 34px;
+		flex: 0 0 24px;
 		padding-left: 0;
 		padding-right: 0;
 	}
@@ -199,26 +201,30 @@
 	#modalCrearPedido .table td,
 	#modalCrearPedido .table th {
 		padding: 0.35rem;
-		font-size: 12px;
+		font-size: 13px;
 	}
 
 	#modalCrearPedido .item-producto-buscar {
 		min-width: 0;
 		width: 100%;
+		font-size: 1.1em;
+		padding: 4px 6px;
 	}
 
 	#modalCrearPedido .item-cantidad {
 		min-width: 0;
+		max-width: 50px;
+		text-align: center;
+		font-size: 1.1em;
+		padding: 4px 6px;
 	}
 
 	#modalCrearPedido .item-cantidad-wrap {
-		gap: 4px;
+		gap: 2px;
 	}
 
 	#modalCrearPedido .item-cantidad-wrap .btn {
-		width: 24px;
-		height: 24px;
-		padding: 0;
+		display: none;
 	}
 
 	#modalCrearPedido .item-cantidad-wrap .item-cantidad {
