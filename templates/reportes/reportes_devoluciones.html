@@ -57,32 +57,56 @@
 
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form method="get" class="reportes-filtros-grid reportes-filtros-grid--devoluciones" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
-                <div class="filtro-item filtro-item--buscar">
-                    <label class="small text-muted">Buscar</label>
-                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, Producto, Repartidor" autocomplete="off">
-                </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Tipo reporte</label>
-                    <select name="tipo" class="form-control filtro-tipo">
-                        <option value="general">Pedidos General</option>
-                        <option value="despacho">Guía de Despacho</option>
-                        <option value="devoluciones" selected>Devoluciones Físicas</option>
-                    </select>
-                </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Desde</label>
-                    <input type="date" name="desde" value="{{ desde }}" class="form-control">
-                </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Hasta</label>
-                    <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
-                </div>
-                <div class="filtro-item filtro-item--pdf">
-                    <label class="small text-muted d-block">PDF</label>
-                    <a class="btn btn-danger btn-icon-only" id="btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
-                        <i class="fas fa-file-pdf"></i>
-                    </a>
+            {# Pestañas #}
+            <div class="reportes-tabs mb-3" id="reportesTabs" data-tab="{{ tipo|default:'devoluciones' }}">
+                <button type="button" class="reportes-tab-btn {% if tipo == 'general' or not tipo %}active{% endif %}" data-tab="general">
+                    <i class="fas fa-chart-bar"></i> General
+                </button>
+                <button type="button" class="reportes-tab-btn {% if tipo == 'despacho' %}active{% endif %}" data-tab="despacho">
+                    <i class="fas fa-truck"></i> Despacho
+                </button>
+                <button type="button" class="reportes-tab-btn {% if tipo == 'devoluciones' %}active{% endif %}" data-tab="devoluciones">
+                    <i class="fas fa-undo"></i> Devoluciones
+                </button>
+            </div>
+
+            {# Filtros #}
+            <form method="get" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
+                <input type="hidden" name="tipo" value="{{ tipo|default:'devoluciones' }}">
+                
+                {# ===== DEVOLUCIONES ===== #}
+                <div class="reportes-filtros-grupo filtro-grupo-devoluciones" style="display: {% if tipo == 'devoluciones' %}block{% else %}none{% endif %};">
+                    <div class="reportes-filtros-grid reportes-filtros-grid--devoluciones">
+                        <div class="filtro-item filtro-item--buscar">
+                            <label class="small text-muted">Buscar</label>
+                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, producto, repartidor" autocomplete="off">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Repartidor</label>
+                            <select name="repartidor" class="form-control">
+                                <option value="">Todos</option>
+                                {% for u in repartidores %}
+                                    <option value="{{ u.id }}" {% if repartidor == u.id|stringformat:'s' %}selected{% endif %}>
+                                        {{ u.get_full_name|default:u.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Desde</label>
+                            <input type="date" name="desde" value="{{ desde }}" class="form-control">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Hasta</label>
+                            <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
+                        </div>
+                        <div class="filtro-item filtro-item--pdf">
+                            <label class="small text-muted d-block">PDF</label>
+                            <a class="btn btn-danger btn-icon-only" id="btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -167,5 +191,6 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{% static 'js/reportes/tabs.js' %}"></script>
 <script src="{% static 'js/reportes/reportes_devoluciones.js' %}"></script>
 {% endblock %}

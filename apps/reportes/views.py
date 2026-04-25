@@ -34,6 +34,7 @@ def _pedidos_filtrados(request, user):
     hasta_entrega_raw = (request.GET.get("hasta_entrega") or "").strip()
     tipo = (request.GET.get("tipo") or "general").strip().lower()
     preventista_id_raw = (request.GET.get("preventista") or "").strip()
+    repartidor_id_raw = (request.GET.get("repartidor") or "").strip()
     estado_entrega = (request.GET.get("estado_entrega") or "").strip().lower()
 
     if tipo not in {"general", "despacho", "devoluciones"}:
@@ -49,6 +50,13 @@ def _pedidos_filtrados(request, user):
     # Opciones de preventista dentro del alcance del usuario.
     preventista_ids = pedidos_base.values_list("preventista_id", flat=True).distinct()
     preventistas = User.objects.filter(id__in=preventista_ids).order_by("username")
+
+    # Repartidores para el filtro
+    repartidores = User.objects.filter(perfil__rol="repartidor", is_active=True).order_by("username")
+
+    # Registradores (quienes registraron pedidos) para filtro en General
+    registrador_ids = pedidos_base.values_list("registrado_por_id", flat=True).distinct()
+    registradores = User.objects.filter(id__in=[r for r in registrador_ids if r]).order_by("username")
 
     if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
         estado = ""
@@ -97,6 +105,21 @@ def _pedidos_filtrados(request, user):
             pedidos = pedidos.filter(preventista_id=preventista_id_int)
             preventista_id = str(preventista_id_int)
 
+    # Filtrar por repartidor si se especifica (por devoluciones)
+    repartidor_id = ""
+    if repartidor_id_raw:
+        try:
+            repartidor_id_int = int(repartidor_id_raw)
+        except ValueError:
+            repartidor_id_int = None
+        if repartidor_id_int is not None:
+            # Obtener IDs de pedidos que tienen devoluciones de este repartidor
+            pedido_ids_con_repartidor = DevolucionPedido.objects.filter(
+                repartidor_id=repartidor_id_int
+            ).values_list("pedido_id", flat=True).distinct()
+            pedidos = pedidos.filter(id__in=pedido_ids_con_repartidor)
+            repartidor_id = str(repartidor_id_int)
+
     fecha_desde = parse_date(desde) if desde else None
     fecha_hasta = parse_date(hasta) if hasta else None
     fecha_desde_entrega = parse_date(desde_entrega_raw) if desde_entrega_raw else None
@@ -130,16 +153,18 @@ def _pedidos_filtrados(request, user):
         "hasta_entrega": hasta_entrega_raw,
         "tipo": tipo,
         "preventista": preventista_id,
+        "repartidor": repartidor_id,
+        "registrador": "",
         "estado_entrega": estado_entrega,
     }
-    return pedidos, filtros, preventistas
+    return pedidos, filtros, preventistas, repartidores, registradores
 
 
 @login_required
 def reportes_inicio(request):
     from apps.pedidos.models import Pedido, DevolucionItem, DevolucionPedido
 
-    pedidos, filtros, preventistas = _pedidos_filtrados(request, request.user)
+    pedidos, filtros, preventistas, repartidores, registradores = _pedidos_filtrados(request, request.user)
 
     # Si el tipo de reporte es "devoluciones", mostramos una vista diferente
     if filtros.get("tipo") == "devoluciones":
@@ -274,8 +299,12 @@ def reportes_inicio(request):
             "hasta_entrega": filtros.get("hasta_entrega", ""),
             "tipo": filtros["tipo"],
             "preventista": filtros["preventista"],
+            "repartidor": filtros.get("repartidor", ""),
             "estado_entrega": filtros["estado_entrega"],
             "preventistas": preventistas,
+            "repartidores": repartidores,
+            "registradores": registradores,
+            "registrador": filtros.get("registrador", ""),
             "total_pedidos": total_pedidos,
             "total_monto": total_monto,
             "total_vendidos": total_vendidos,
@@ -372,7 +401,7 @@ def _reporte_devoluciones_inicio(request, filtros):
 def pedidos_pdf(request):
     from apps.pedidos.models import DetallePedido, DevolucionItem, DevolucionPedido, Pedido
 
-    pedidos, filtros, _ = _pedidos_filtrados(request, request.user)
+    pedidos, filtros, preventistas, repartidores, registradores = _pedidos_filtrados(request, request.user)
 
     if filtros.get("tipo") == "devoluciones":
         return _reporte_devoluciones_pdf(request, filtros)
