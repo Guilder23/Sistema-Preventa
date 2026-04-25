@@ -83,7 +83,9 @@
                         <th style="width: 8%;">#</th>
                         <th style="width: 28%;">Cliente</th>
                         <th style="width: 18%;">Preventista</th>
-                        <th style="width: 16%;">Fecha</th>
+                        <th style="width: 12%">Fecha pedido</th>
+                        <th style="width: 12%">Fecha entrega</th>
+                        <th style="width: 12%">Fecha vendido</th>
                         <th style="width: 10%;">Total Bruto</th>
                         <th style="width: 10%;">Total Real</th>
                         <th style="width: 10%;" class="text-center">Estado</th>
@@ -101,7 +103,9 @@
                         <td>
                             <small class="text-muted">{{ p.preventista.get_full_name|default:p.preventista.username }}</small>
                         </td>
-                        <td><small class="text-muted">{{ p.fecha|date:'d/m/Y H:i' }}</small></td>
+                        <td><small class="text-muted">{{ p.fecha_pedido_display }}</small></td>
+                        <td><small class="text-muted">{{ p.fecha_entrega_display }}</small></td>
+                        <td><small class="text-muted">{{ p.fecha_vendido_display }}</small></td>
                         <td class="font-weight-bold">Bs {{ p.total|floatformat:2 }}</td>
                         <td class="font-weight-bold">Bs {{ p.total_neto|floatformat:2 }}</td>
                         <td class="text-center">
@@ -197,7 +201,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="text-center py-4">
+                        <td colspan="10" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay pedidos registrados</p>
                         </td>

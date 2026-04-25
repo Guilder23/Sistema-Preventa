@@ -523,7 +523,7 @@ def pedidos_pdf(request):
         logo_flowable = Image(str(logo_path), width=24 * mm, height=24 * mm)
 
     left_header = [
-        logo_flowable or "",
+        logo_flowable or Spacer(1, 1),
         Paragraph("<b>Distribuidora JEREMY</b>", value_style),
         Paragraph("Reporte de pedidos", small_style),
     ]
@@ -1140,7 +1140,7 @@ def pedido_pdf(request, id: int):
         logo_flowable = Image(str(logo_path), width=24 * mm, height=24 * mm)
 
     left_header = [
-        logo_flowable or "",
+        logo_flowable or Spacer(1, 1),
         Paragraph("<b>Distribuidora JEREMY</b>", value_style),
         Paragraph("Pedidos y preventa", small_style),
     ]
@@ -1151,7 +1151,7 @@ def pedido_pdf(request, id: int):
         Spacer(1, 2),
         Paragraph(f"<b>Número:</b> {pedido.id}", value_style),
         Paragraph(f"<b>Fecha pedido:</b> {pedido.fecha.strftime('%d/%m/%Y %H:%M')}", value_style),
-        Paragraph(f"<b>Entrega estimada:</b> {pedido.fecha_entrega_estimada.strftime('%d/%m/%Y')}", value_style) if pedido.fecha_entrega_estimada else "",
+        Paragraph(f"<b>Entrega estimada:</b> {pedido.fecha_entrega_estimada.strftime('%d/%m/%Y')}", value_style) if pedido.fecha_entrega_estimada else Spacer(1, 1),
         Paragraph(f"<b>Fecha venta:</b> {fecha_venta}", value_style),
         Paragraph(f"<b>Estado:</b> {pedido.get_estado_display()}", value_style),
     ]
@@ -1519,7 +1519,7 @@ def _reporte_devoluciones_pdf(request, filtros):
         logo_flowable = Image(str(logo_path), width=24 * mm, height=24 * mm)
 
     left_header = [
-        logo_flowable or "",
+        logo_flowable or Spacer(1, 1),
         Paragraph("<b>Distribuidora JEREMY</b>", value_style),
         Paragraph("Reporte de devoluciones", small_style),
     ]

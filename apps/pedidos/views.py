@@ -225,6 +225,10 @@ def listar_pedidos(request):
         monto_devuelto = devuelto_monto_por_pedido.get(p.id, Decimal("0.00"))
         p.total_devuelto_monto = monto_devuelto
         p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
+        # Fechas formateadas para la vista
+        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
+        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-"
+        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if getattr(p, 'fecha_vendido', None) else "-"
 
     perfil = getattr(request.user, "perfil", None)
     if perfil and perfil.rol == "repartidor":
@@ -442,6 +446,7 @@ def obtener_pedido(request, id: int):
             "preventista": pedido.preventista.get_full_name() or pedido.preventista.username,
             "fecha": pedido.fecha.strftime("%d/%m/%Y %H:%M"),
             "fecha_entrega_estimada": pedido.fecha_entrega_estimada.isoformat() if pedido.fecha_entrega_estimada else "",
+            "fecha_vendido": pedido.fecha_vendido.isoformat() if getattr(pedido, 'fecha_vendido', None) else "",
             "estado": pedido.estado,
             "estado_display": pedido.get_estado_display(),
             "total": f"{(pedido.total or Decimal('0.00')):.2f}",
