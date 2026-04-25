@@ -316,6 +316,8 @@
                 $('#editarPedidoId').val(data.id);
                 $('#editarPedidoCliente').val(data.cliente || '');
                 $('#editarPedidoObs').val(data.observacion || '');
+                    // Rellenar fecha de entrega estimada
+                    $('#editarPedidoFechaEntrega').val(data.fecha_entrega_estimada || '');
 
                 const body = document.getElementById('itemsPedidoEditarBody');
                 if (body) body.innerHTML = '';
@@ -388,6 +390,27 @@
             form.addEventListener('submit', function (e) {
                 let ok = true;
                 const errores = [];
+                
+                // Validar fecha de entrega estimada
+                const fechaEntregaEl = document.getElementById('editarPedidoFechaEntrega');
+                if (!fechaEntregaEl || !fechaEntregaEl.value) {
+                    ok = false;
+                    errores.push('Ingresa una fecha de entrega estimada.');
+                } else {
+                    const fechaIngresada = new Date(fechaEntregaEl.value);
+                    const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
+                    fechaIngresada.setHours(0, 0, 0, 0);
+                    
+                    if (fechaIngresada < hoy) {
+                        ok = false;
+                        errores.push('La fecha de entrega no puede ser menor a hoy.');
+                        fechaEntregaEl.classList.add('is-invalid');
+                    } else {
+                        fechaEntregaEl.classList.remove('is-invalid');
+                    }
+                }
+                
                 let fila = 0;
                 document.querySelectorAll('#itemsPedidoEditarBody tr').forEach((tr) => {
                     fila += 1;

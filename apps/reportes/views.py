@@ -1100,6 +1100,7 @@ def pedido_pdf(request, id: int):
         Spacer(1, 2),
         Paragraph(f"<b>Número:</b> {pedido.id}", value_style),
         Paragraph(f"<b>Fecha pedido:</b> {pedido.fecha.strftime('%d/%m/%Y %H:%M')}", value_style),
+        Paragraph(f"<b>Entrega estimada:</b> {pedido.fecha_entrega_estimada.strftime('%d/%m/%Y')}", value_style) if pedido.fecha_entrega_estimada else "",
         Paragraph(f"<b>Fecha venta:</b> {fecha_venta}", value_style),
         Paragraph(f"<b>Estado:</b> {pedido.get_estado_display()}", value_style),
     ]
