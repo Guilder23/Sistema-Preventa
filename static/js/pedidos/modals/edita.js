@@ -316,24 +316,8 @@
                 $('#editarPedidoId').val(data.id);
                 $('#editarPedidoCliente').val(data.cliente || '');
                 $('#editarPedidoObs').val(data.observacion || '');
-                    // Rellenar fechas
-                    $('#editarPedidoFecha').val(data.fecha || '');
-                    $('#editarPedidoFechaEntrega').val(data.fecha_entrega_estimada || '');
-                    if (data.fecha_vendido) {
-                        try {
-                            const dv = new Date(data.fecha_vendido);
-                            const ddv = ('0' + dv.getDate()).slice(-2);
-                            const mmv = ('0' + (dv.getMonth() + 1)).slice(-2);
-                            const yyyyv = dv.getFullYear();
-                            const hh = ('0' + dv.getHours()).slice(-2);
-                            const min = ('0' + dv.getMinutes()).slice(-2);
-                            $('#editarPedidoFechaVendido').val(`${ddv}/${mmv}/${yyyyv} ${hh}:${min}`);
-                        } catch (e) {
-                            $('#editarPedidoFechaVendido').val(data.fecha_vendido || '');
-                        }
-                    } else {
-                        $('#editarPedidoFechaVendido').val('');
-                    }
+                // Rellenar fecha de entrega estimada
+                $('#editarPedidoFechaEntrega').val(data.fecha_entrega_estimada || '');
 
                 const body = document.getElementById('itemsPedidoEditarBody');
                 if (body) body.innerHTML = '';
