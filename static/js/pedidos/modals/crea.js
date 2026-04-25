@@ -434,18 +434,6 @@
             if (body && body.children.length === 0) {
                 agregarFila();
             }
-            // Mostrar fecha pedido actual
-            const ahora = new Date();
-            const dd = ('0' + ahora.getDate()).slice(-2);
-            const mm = ('0' + (ahora.getMonth() + 1)).slice(-2);
-            const yyyy = ahora.getFullYear();
-            const hh = ('0' + ahora.getHours()).slice(-2);
-            const min = ('0' + ahora.getMinutes()).slice(-2);
-            const formatted = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-            const pedidoFechaEl = document.getElementById('pedidoFechaPedido');
-            if (pedidoFechaEl) pedidoFechaEl.value = formatted;
-            const pedidoVendidoEl = document.getElementById('pedidoFechaVendido');
-            if (pedidoVendidoEl) pedidoVendidoEl.value = '';
         });
 
         $('#modalCrearPedido').on('hidden.bs.modal', function () {
