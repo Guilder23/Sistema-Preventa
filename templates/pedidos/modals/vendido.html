@@ -11,6 +11,11 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <p>¿Deseas marcar como <strong>vendido</strong> el pedido <strong id="vendidoPedidoLabel"></strong>?</p>
+                    <div class="small text-muted">
+                        <div>Fecha pedido: <span id="vendidoPedidoFecha">—</span></div>
+                        <div>Fecha entrega estimada: <span id="vendidoPedidoFechaEntrega">—</span></div>
+                        <div>Fecha vendido: <span id="vendidoPedidoFechaVendido">—</span></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>

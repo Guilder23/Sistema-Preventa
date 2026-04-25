@@ -36,6 +36,22 @@
                     } else {
                         $('#verPedidoFechaEntrega').text('—');
                     }
+                    // Fecha vendido (si existe)
+                    if (data.fecha_vendido) {
+                        try {
+                            const dv = new Date(data.fecha_vendido);
+                            const ddv = ('0' + dv.getDate()).slice(-2);
+                            const mmv = ('0' + (dv.getMonth() + 1)).slice(-2);
+                            const yyyyv = dv.getFullYear();
+                            const hh = ('0' + dv.getHours()).slice(-2);
+                            const min = ('0' + dv.getMinutes()).slice(-2);
+                            $('#verPedidoFechaVendido').text(`${ddv}/${mmv}/${yyyyv} ${hh}:${min}`);
+                        } catch (e) {
+                            $('#verPedidoFechaVendido').text(data.fecha_vendido || '—');
+                        }
+                    } else {
+                        $('#verPedidoFechaVendido').text('—');
+                    }
                     $('#verPedidoEstado').text(estadoLabel(data.estado));
                     $('#verPedidoTotal').text(data.total || '0.00');
                     $('#verPedidoTotalNeto').text(data.total_neto || data.total || '0.00');

@@ -73,6 +73,23 @@
                 dataType: 'json',
                 success: function (data) {
                     renderDetalles(data.detalles || []);
+                    // rellenar fechas
+                    $('#entregaPedidoFecha').text(data.fecha || '—');
+                    if (data.fecha_vendido) {
+                        try {
+                            const dv = new Date(data.fecha_vendido);
+                            const ddv = ('0' + dv.getDate()).slice(-2);
+                            const mmv = ('0' + (dv.getMonth() + 1)).slice(-2);
+                            const yyyyv = dv.getFullYear();
+                            const hh = ('0' + dv.getHours()).slice(-2);
+                            const min = ('0' + dv.getMinutes()).slice(-2);
+                            $('#entregaPedidoFechaVendido').text(`${ddv}/${mmv}/${yyyyv} ${hh}:${min}`);
+                        } catch (e) {
+                            $('#entregaPedidoFechaVendido').text(data.fecha_vendido || '—');
+                        }
+                    } else {
+                        $('#entregaPedidoFechaVendido').text('—');
+                    }
                     toggleModo('entregado_completo');
                     $('#modalRegistrarEntrega').modal('show');
                 },
