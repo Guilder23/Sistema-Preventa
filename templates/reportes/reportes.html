@@ -83,6 +83,15 @@
                         <option value="despacho" {% if tipo == 'despacho' %}selected{% endif %}>Despacho</option>
                         <option value="devoluciones" {% if tipo == 'devoluciones' %}selected{% endif %}>Devoluciones Físicas</option>
                     </select>
+
+                </div>
+                <div class="filtro-item">
+                    <label class="small text-muted">Desde entrega</label>
+                    <input type="date" name="desde_entrega" value="{{ desde_entrega }}" class="form-control">
+                </div>
+                <div class="filtro-item">
+                    <label class="small text-muted">Hasta entrega</label>
+                    <input type="date" name="hasta_entrega" value="{{ hasta_entrega }}" class="form-control">
                 </div>
                 <div class="filtro-item">
                     <label class="small text-muted">Estado entrega</label>
@@ -136,6 +145,7 @@
                             <th>Repartidor</th>
                             <th>F. pedido</th>
                             <th>F. entrega</th>
+                            <th>F. vendido</th>
                             <th>Estado</th>
                             <th>Estado entrega</th>
                             <th>Total bruto</th>
@@ -153,6 +163,7 @@
                             <td>{{ p.repartidor_nombre }}</td>
                             <td>{{ p.fecha_pedido_display }}</td>
                             <td>{{ p.fecha_entrega_display }}</td>
+                            <td>{{ p.fecha_vendido_display }}</td>
                             <td><span class="estado-badge estado-badge--{{ p.estado_key }}">{{ p.get_estado_display }}</span></td>
                             <td><span class="estado-badge estado-badge-entrega estado-badge--{{ p.estado_entrega_key }}">{{ p.estado_entrega }}</span></td>
                             <td>Bs {{ p.total|floatformat:2 }}</td>
@@ -180,7 +191,7 @@
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ page_obj.previous_page_number }}">Anterior</a>
                 </li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">Anterior</span></li>
@@ -190,13 +201,13 @@
                 {% if page_obj.number == num %}
                     <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                 {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item"><a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ num }}">{{ num }}</a></li>
+                    <li class="page-item"><a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ num }}">{{ num }}</a></li>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ page_obj.next_page_number }}">Siguiente</a>
                 </li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">Siguiente</span></li>

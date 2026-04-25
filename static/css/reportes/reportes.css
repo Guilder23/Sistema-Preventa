@@ -143,9 +143,12 @@
 
 .reportes-filtros-grid {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 1.1fr 1.2fr 1fr 1fr auto;
-    gap: 0.45rem 0.55rem;
+    /* Forzar una sola fila en pantallas amplias: 10 columnas compactas */
+    grid-template-columns: repeat(10, minmax(110px, 1fr));
+    gap: 0.35rem 0.45rem;
     align-items: end;
+    column-gap: 0.45rem;
+    row-gap: 0.25rem;
 }
 
 .filtro-item label {
@@ -154,9 +157,10 @@
 }
 
 .filtro-item .form-control {
-    height: 34px;
-    padding-top: 0.22rem;
-    padding-bottom: 0.22rem;
+    height: 30px;
+    padding-top: 0.12rem;
+    padding-bottom: 0.12rem;
+    font-size: 0.85rem;
 }
 
 .filtro-tipo {
@@ -233,11 +237,11 @@
 
 @media (max-width: 1200px) {
     .reportes-filtros-grid {
-        grid-template-columns: repeat(4, minmax(160px, 1fr));
+        grid-template-columns: repeat(6, minmax(140px, 1fr));
     }
 
     .reportes-filtros-grid--devoluciones {
-        grid-template-columns: repeat(3, minmax(160px, 1fr));
+        grid-template-columns: repeat(4, minmax(140px, 1fr));
     }
 }
 

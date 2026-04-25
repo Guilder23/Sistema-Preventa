@@ -30,6 +30,8 @@ def _pedidos_filtrados(request, user):
     estado = (request.GET.get("estado") or "").strip().lower()
     desde = (request.GET.get("desde") or "").strip()
     hasta = (request.GET.get("hasta") or "").strip()
+    desde_entrega_raw = (request.GET.get("desde_entrega") or "").strip()
+    hasta_entrega_raw = (request.GET.get("hasta_entrega") or "").strip()
     tipo = (request.GET.get("tipo") or "general").strip().lower()
     preventista_id_raw = (request.GET.get("preventista") or "").strip()
     estado_entrega = (request.GET.get("estado_entrega") or "").strip().lower()
@@ -97,11 +99,25 @@ def _pedidos_filtrados(request, user):
 
     fecha_desde = parse_date(desde) if desde else None
     fecha_hasta = parse_date(hasta) if hasta else None
+    fecha_desde_entrega = parse_date(desde_entrega_raw) if desde_entrega_raw else None
+    fecha_hasta_entrega = parse_date(hasta_entrega_raw) if hasta_entrega_raw else None
 
-    if fecha_desde:
-        pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
-    if fecha_hasta:
-        pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
+    # Filtrado por fechas: si se proporcionan fechas de entrega explícitas, las priorizamos.
+    if fecha_desde_entrega:
+        pedidos = pedidos.filter(fecha_entrega_estimada__gte=fecha_desde_entrega)
+    elif fecha_desde:
+        if tipo == 'despacho':
+            pedidos = pedidos.filter(fecha_entrega_estimada__gte=fecha_desde)
+        else:
+            pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
+
+    if fecha_hasta_entrega:
+        pedidos = pedidos.filter(fecha_entrega_estimada__lte=fecha_hasta_entrega)
+    elif fecha_hasta:
+        if tipo == 'despacho':
+            pedidos = pedidos.filter(fecha_entrega_estimada__lte=fecha_hasta)
+        else:
+            pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
 
     pedidos = pedidos.order_by("-fecha")
 
@@ -110,6 +126,8 @@ def _pedidos_filtrados(request, user):
         "estado": estado,
         "desde": desde,
         "hasta": hasta,
+        "desde_entrega": desde_entrega_raw,
+        "hasta_entrega": hasta_entrega_raw,
         "tipo": tipo,
         "preventista": preventista_id,
         "estado_entrega": estado_entrega,
@@ -215,7 +233,8 @@ def reportes_inicio(request):
             else (p.preventista.get_full_name() or p.preventista.username)
         )
         p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
-        p.fecha_entrega_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-"
 
         devol = devolucion_reciente_por_pedido.get(p.id)
         if devol and devol.repartidor:
@@ -251,6 +270,8 @@ def reportes_inicio(request):
             "estado": filtros["estado"],
             "desde": filtros["desde"],
             "hasta": filtros["hasta"],
+            "desde_entrega": filtros.get("desde_entrega", ""),
+            "hasta_entrega": filtros.get("hasta_entrega", ""),
             "tipo": filtros["tipo"],
             "preventista": filtros["preventista"],
             "estado_entrega": filtros["estado_entrega"],
@@ -578,7 +599,7 @@ def pedidos_pdf(request):
             return text
         return text[: max_len - 1] + "…"
 
-    data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "Est. ent.", "Dev.", "Bruto", "Real"]]
+    data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "F. vendido", "Est. ent.", "Dev.", "Bruto", "Real"]]
     total_monto = 0
     total_monto_neto = Decimal("0.00")
     for p in pedidos:
@@ -616,6 +637,7 @@ def pedidos_pdf(request):
                 _short(pedido_reg_por, 11),
                 _short(repartidor, 10),
                 p.fecha.strftime("%d/%m/%Y %H:%M"),
+                p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-",
                 p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
                 _short(estado_entrega, 14),
                 str(devueltos_por_pedido.get(p.id, 0)),
@@ -624,9 +646,9 @@ def pedidos_pdf(request):
             ]
         )
 
-    table = Table(
+        table = Table(
         data,
-        colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
+        colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
         repeatRows=1,
     )
     table.setStyle(
@@ -638,7 +660,7 @@ def pedidos_pdf(request):
                 ("FONTSIZE", (0, 0), (-1, 0), 7),
                 ("FONTSIZE", (0, 1), (-1, -1), 6),
                 ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                ("ALIGN", (5, 1), (6, -1), "CENTER"),
+                    ("ALIGN", (5, 1), (7, -1), "CENTER"),
                 ("ALIGN", (8, 1), (8, -1), "CENTER"),
                 ("ALIGN", (9, 1), (10, -1), "RIGHT"),
                 ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
