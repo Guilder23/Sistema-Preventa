@@ -594,6 +594,16 @@ def pedidos_mapa_puntos(request):
         .order_by("-fecha")
     )
 
+    # Filtrado opcional por fecha de entrega registrada (igualdad)
+    fecha = (request.GET.get("fecha") or "").strip()
+    if fecha:
+        try:
+            fecha_dt = date.fromisoformat(fecha)
+            pedidos = pedidos.filter(fecha_entrega_estimada=fecha_dt)
+        except Exception:
+            # formato inválido -> ignorar
+            pass
+
     puntos = []
     for p in pedidos:
         c = p.cliente
@@ -610,7 +620,8 @@ def pedidos_mapa_puntos(request):
                 "foto_url": c.foto_tienda.url if getattr(c, "foto_tienda", None) else "",
                 "descripcion": getattr(c, "descripcion", "") or "",
                 "fecha": p.fecha.strftime("%d/%m/%Y %H:%M"),
-                "fecha_iso": p.fecha.date().isoformat(),
+                "fecha_entrega": p.fecha_entrega_estimada.strftime("%d/%m/%Y") if p.fecha_entrega_estimada else "-",
+                "fecha_iso": p.fecha_entrega_estimada.isoformat() if p.fecha_entrega_estimada else "",
                 "total": str(p.total),
                 "estado_str": p.get_estado_display(),
                 "estado": p.estado,

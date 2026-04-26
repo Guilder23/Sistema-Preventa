@@ -147,7 +147,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       if (p.ci_nit) popup += '<br><small>CI/NIT: ' + escapeHtml(p.ci_nit) + '</small>';
       if (p.telefono) popup += '<br><small>Tel: ' + escapeHtml(p.telefono) + '</small>';
       if (p.direccion) popup += '<br><small>' + escapeHtml(p.direccion) + '</small>';
-      if (p.fecha) popup += '<br><small><b>Fecha:</b> ' + escapeHtml(p.fecha) + '</small>';
+      if (p.fecha_entrega) popup += '<br><small><b>F. Entrega:</b> ' + escapeHtml(p.fecha_entrega) + '</small>';
       if (p.total) popup += '<br><small><b>Total:</b> Bs ' + escapeHtml(p.total) + '</small>';
       return popup;
     }
@@ -160,7 +160,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
 
       var meta = [];
       if (p.estado_str) meta.push('Estado: ' + safeText(p.estado_str));
-      if (p.telefono) meta.push('Tel: ' + safeText(p.telefono));
+      if (p.fecha_entrega) meta.push('Entrega: ' + safeText(p.fecha_entrega));
       if (p.total) meta.push('Total: Bs ' + safeText(p.total));
       bottomMeta.textContent = meta.join(' • ');
 
@@ -186,6 +186,8 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       var fecha = (fechaInput && fechaInput.value) ? fechaInput.value : '';
 
       if (estado && normText(p.estado) !== estado) return false;
+      // Filtrado por fecha de entrega registrada (fecha_iso: YYYY-MM-DD)
+      if (fecha && !p.fecha_iso) return false; // excluir sin fecha de entrega
       if (fecha && p.fecha_iso !== fecha) return false;
 
       if (!q) return true;
@@ -335,7 +337,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       }
       if (fechaInput) {
         fechaInput.addEventListener('change', function () {
-          render();
+          loadPoints();
         });
       }
     }
@@ -362,26 +364,41 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       });
     }
 
-    fetch(url, {
-      credentials: 'same-origin',
-      headers: { 'Accept': 'application/json' },
-    })
-      .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        allPuntos = (data && data.puntos) ? data.puntos : [];
-        if (!allPuntos.length) {
-          setInfo('No hay pedidos pendientes con ubicación registrada.');
-          return;
-        }
+    function buildUrlWithParams() {
+      var u = url;
+      var params = [];
+      if (fechaInput && fechaInput.value) params.push('fecha=' + encodeURIComponent(fechaInput.value));
+      if (params.length) u += (u.indexOf('?') === -1 ? '?' : '&') + params.join('&');
+      return u;
+    }
 
-        render();
+    function loadPoints() {
+      setInfo('Cargando pedidos...');
+      fetch(buildUrlWithParams(), {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
       })
-      .catch(function () {
-        setInfo('No se pudo cargar el mapa de pedidos.');
-      });
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          allPuntos = (data && data.puntos) ? data.puntos : [];
+          if (!allPuntos.length) {
+            setInfo('No hay pedidos pendientes con ubicación registrada.');
+            render();
+            return;
+          }
+
+          render();
+        })
+        .catch(function () {
+          setInfo('No se pudo cargar el mapa de pedidos.');
+        });
+    }
+
+    // Cargar inicialmente
+    loadPoints();
   }
 
   if (document.readyState === 'loading') {
