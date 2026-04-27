@@ -37,8 +37,20 @@
         <section class="ticket-block ticket-summary">
             <div class="ticket-row">
                 <span>Fecha</span>
-                <strong>{{ pedido.fecha|date:'d/m/Y H:i' }}</strong>
+                <strong>
+                    {% if pedido.fecha_vendido %}
+                        {{ pedido.fecha_vendido|date:'d/m/Y H:i' }}
+                    {% else %}
+                        {{ pedido.fecha|date:'d/m/Y H:i' }}
+                    {% endif %}
+                </strong>
             </div>
+            {% if pedido.fecha_entrega_estimada %}
+            <div class="ticket-row">
+                <span>Entrega estimada</span>
+                <strong>{{ pedido.fecha_entrega_estimada|date:'d/m/Y' }}</strong>
+            </div>
+            {% endif %}
             <div class="ticket-row">
                 <span>Estado</span>
                 <strong>{{ estado_display }}</strong>

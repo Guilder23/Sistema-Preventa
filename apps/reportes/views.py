@@ -30,8 +30,11 @@ def _pedidos_filtrados(request, user):
     estado = (request.GET.get("estado") or "").strip().lower()
     desde = (request.GET.get("desde") or "").strip()
     hasta = (request.GET.get("hasta") or "").strip()
+    desde_entrega_raw = (request.GET.get("desde_entrega") or "").strip()
+    hasta_entrega_raw = (request.GET.get("hasta_entrega") or "").strip()
     tipo = (request.GET.get("tipo") or "general").strip().lower()
     preventista_id_raw = (request.GET.get("preventista") or "").strip()
+    repartidor_id_raw = (request.GET.get("repartidor") or "").strip()
     estado_entrega = (request.GET.get("estado_entrega") or "").strip().lower()
 
     if tipo not in {"general", "despacho", "devoluciones"}:
@@ -47,6 +50,13 @@ def _pedidos_filtrados(request, user):
     # Opciones de preventista dentro del alcance del usuario.
     preventista_ids = pedidos_base.values_list("preventista_id", flat=True).distinct()
     preventistas = User.objects.filter(id__in=preventista_ids).order_by("username")
+
+    # Repartidores para el filtro
+    repartidores = User.objects.filter(perfil__rol="repartidor", is_active=True).order_by("username")
+
+    # Registradores (quienes registraron pedidos) para filtro en General
+    registrador_ids = pedidos_base.values_list("registrado_por_id", flat=True).distinct()
+    registradores = User.objects.filter(id__in=[r for r in registrador_ids if r]).order_by("username")
 
     if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
         estado = ""
@@ -95,13 +105,42 @@ def _pedidos_filtrados(request, user):
             pedidos = pedidos.filter(preventista_id=preventista_id_int)
             preventista_id = str(preventista_id_int)
 
+    # Filtrar por repartidor si se especifica (por devoluciones)
+    repartidor_id = ""
+    if repartidor_id_raw:
+        try:
+            repartidor_id_int = int(repartidor_id_raw)
+        except ValueError:
+            repartidor_id_int = None
+        if repartidor_id_int is not None:
+            # Obtener IDs de pedidos que tienen devoluciones de este repartidor
+            pedido_ids_con_repartidor = DevolucionPedido.objects.filter(
+                repartidor_id=repartidor_id_int
+            ).values_list("pedido_id", flat=True).distinct()
+            pedidos = pedidos.filter(id__in=pedido_ids_con_repartidor)
+            repartidor_id = str(repartidor_id_int)
+
     fecha_desde = parse_date(desde) if desde else None
     fecha_hasta = parse_date(hasta) if hasta else None
+    fecha_desde_entrega = parse_date(desde_entrega_raw) if desde_entrega_raw else None
+    fecha_hasta_entrega = parse_date(hasta_entrega_raw) if hasta_entrega_raw else None
 
-    if fecha_desde:
-        pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
-    if fecha_hasta:
-        pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
+    # Filtrado por fechas: si se proporcionan fechas de entrega explícitas, las priorizamos.
+    if fecha_desde_entrega:
+        pedidos = pedidos.filter(fecha_entrega_estimada__gte=fecha_desde_entrega)
+    elif fecha_desde:
+        if tipo == 'despacho':
+            pedidos = pedidos.filter(fecha_entrega_estimada__gte=fecha_desde)
+        else:
+            pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
+
+    if fecha_hasta_entrega:
+        pedidos = pedidos.filter(fecha_entrega_estimada__lte=fecha_hasta_entrega)
+    elif fecha_hasta:
+        if tipo == 'despacho':
+            pedidos = pedidos.filter(fecha_entrega_estimada__lte=fecha_hasta)
+        else:
+            pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
 
     pedidos = pedidos.order_by("-fecha")
 
@@ -110,18 +149,22 @@ def _pedidos_filtrados(request, user):
         "estado": estado,
         "desde": desde,
         "hasta": hasta,
+        "desde_entrega": desde_entrega_raw,
+        "hasta_entrega": hasta_entrega_raw,
         "tipo": tipo,
         "preventista": preventista_id,
+        "repartidor": repartidor_id,
+        "registrador": "",
         "estado_entrega": estado_entrega,
     }
-    return pedidos, filtros, preventistas
+    return pedidos, filtros, preventistas, repartidores, registradores
 
 
 @login_required
 def reportes_inicio(request):
     from apps.pedidos.models import Pedido, DevolucionItem, DevolucionPedido
 
-    pedidos, filtros, preventistas = _pedidos_filtrados(request, request.user)
+    pedidos, filtros, preventistas, repartidores, registradores = _pedidos_filtrados(request, request.user)
 
     # Si el tipo de reporte es "devoluciones", mostramos una vista diferente
     if filtros.get("tipo") == "devoluciones":
@@ -215,7 +258,8 @@ def reportes_inicio(request):
             else (p.preventista.get_full_name() or p.preventista.username)
         )
         p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
-        p.fecha_entrega_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-"
 
         devol = devolucion_reciente_por_pedido.get(p.id)
         if devol and devol.repartidor:
@@ -251,10 +295,16 @@ def reportes_inicio(request):
             "estado": filtros["estado"],
             "desde": filtros["desde"],
             "hasta": filtros["hasta"],
+            "desde_entrega": filtros.get("desde_entrega", ""),
+            "hasta_entrega": filtros.get("hasta_entrega", ""),
             "tipo": filtros["tipo"],
             "preventista": filtros["preventista"],
+            "repartidor": filtros.get("repartidor", ""),
             "estado_entrega": filtros["estado_entrega"],
             "preventistas": preventistas,
+            "repartidores": repartidores,
+            "registradores": registradores,
+            "registrador": filtros.get("registrador", ""),
             "total_pedidos": total_pedidos,
             "total_monto": total_monto,
             "total_vendidos": total_vendidos,
@@ -351,7 +401,7 @@ def _reporte_devoluciones_inicio(request, filtros):
 def pedidos_pdf(request):
     from apps.pedidos.models import DetallePedido, DevolucionItem, DevolucionPedido, Pedido
 
-    pedidos, filtros, _ = _pedidos_filtrados(request, request.user)
+    pedidos, filtros, preventistas, repartidores, registradores = _pedidos_filtrados(request, request.user)
 
     if filtros.get("tipo") == "devoluciones":
         return _reporte_devoluciones_pdf(request, filtros)
@@ -473,13 +523,13 @@ def pedidos_pdf(request):
         logo_flowable = Image(str(logo_path), width=24 * mm, height=24 * mm)
 
     left_header = [
-        logo_flowable or "",
+        logo_flowable or Spacer(1, 1),
         Paragraph("<b>Distribuidora JEREMY</b>", value_style),
         Paragraph("Reporte de pedidos", small_style),
     ]
 
     right_header = [
-        Paragraph("REPORTE", title_style),
+        Paragraph("REPORTE " + filtros["tipo"].upper(), title_style),
         Spacer(1, 2),
         Paragraph("<b>Generado:</b> " + request.user.get_username(), value_style),
     ]
@@ -578,7 +628,6 @@ def pedidos_pdf(request):
             return text
         return text[: max_len - 1] + "…"
 
-    data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "Est. ent.", "Dev.", "Bruto", "Real"]]
     total_monto = 0
     total_monto_neto = Decimal("0.00")
     for p in pedidos:
@@ -586,109 +635,114 @@ def pedidos_pdf(request):
         total_neto = (p.total or Decimal("0.00")) - monto_devuelto_por_pedido.get(p.id, Decimal("0.00"))
         total_monto_neto += total_neto
 
-        creado_por_cliente = getattr(p.cliente, "creado_por", None)
-        cliente_reg_por = (creado_por_cliente.get_full_name() or creado_por_cliente.username) if creado_por_cliente else "-"
-        registrador = getattr(p, "registrado_por", None)
-        pedido_reg_por = (
-            (registrador.get_full_name() or registrador.username)
-            if registrador
-            else (p.preventista.get_full_name() or p.preventista.username)
+    if filtros["tipo"] == "general":
+        data = [["#", "Cliente", "Cli. por", "Ped. por", "Repart.", "F. pedido", "F. entrega", "F. vendido", "Est. ent.", "Dev.", "Bruto", "Real"]]
+        for p in pedidos:
+            creado_por_cliente = getattr(p.cliente, "creado_por", None)
+            cliente_reg_por = (creado_por_cliente.get_full_name() or creado_por_cliente.username) if creado_por_cliente else "-"
+            registrador = getattr(p, "registrado_por", None)
+            pedido_reg_por = (
+                (registrador.get_full_name() or registrador.username)
+                if registrador
+                else (p.preventista.get_full_name() or p.preventista.username)
+            )
+            devol = devolucion_reciente_por_pedido.get(p.id)
+            repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
+
+            if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+                estado_entrega = "No entregado"
+            elif p.estado == Pedido.ESTADO_VENDIDO and devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+                estado_entrega = "Entregado parcial"
+            elif p.estado == Pedido.ESTADO_VENDIDO:
+                estado_entrega = "Entregado completo"
+            elif p.estado == Pedido.ESTADO_PENDIENTE:
+                estado_entrega = "Pendiente"
+            else:
+                estado_entrega = "-"
+
+            total_neto_p = (p.total or Decimal("0.00")) - monto_devuelto_por_pedido.get(p.id, Decimal("0.00"))
+            data.append(
+                [
+                    str(p.id),
+                    _short(_cliente_corto(p.cliente), 11),
+                    _short(cliente_reg_por, 11),
+                    _short(pedido_reg_por, 11),
+                    _short(repartidor, 10),
+                    p.fecha.strftime("%d/%m/%Y %H:%M"),
+                    p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-",
+                    p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
+                    _short(estado_entrega, 14),
+                    str(devueltos_por_pedido.get(p.id, 0)),
+                    _fmt_money(p.total),
+                    _fmt_money(total_neto_p),
+                ]
+            )
+
+        table = Table(
+            data,
+            colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
+            repeatRows=1,
         )
-        devol = devolucion_reciente_por_pedido.get(p.id)
-        repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
-
-        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
-            estado_entrega = "No entregado"
-        elif p.estado == Pedido.ESTADO_VENDIDO and devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
-            estado_entrega = "Entregado parcial"
-        elif p.estado == Pedido.ESTADO_VENDIDO:
-            estado_entrega = "Entregado completo"
-        elif p.estado == Pedido.ESTADO_PENDIENTE:
-            estado_entrega = "Pendiente"
-        else:
-            estado_entrega = "-"
-
-        data.append(
-            [
-                str(p.id),
-                _short(_cliente_corto(p.cliente), 11),
-                _short(cliente_reg_por, 11),
-                _short(pedido_reg_por, 11),
-                _short(repartidor, 10),
-                p.fecha.strftime("%d/%m/%Y %H:%M"),
-                p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
-                _short(estado_entrega, 14),
-                str(devueltos_por_pedido.get(p.id, 0)),
-                _fmt_money(p.total),
-                _fmt_money(total_neto),
-            ]
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 7),
+                    ("FONTSIZE", (0, 1), (-1, -1), 6),
+                    ("ALIGN", (0, 0), (0, -1), "CENTER"),
+                    ("ALIGN", (5, 1), (7, -1), "CENTER"),
+                    ("ALIGN", (8, 1), (8, -1), "CENTER"),
+                    ("ALIGN", (9, 1), (10, -1), "RIGHT"),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 2),
+                    ("TOPPADDING", (0, 0), (-1, -1), 1),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                ]
+            )
         )
+        story.append(table)
+        story.append(Spacer(1, 8))
 
-    table = Table(
-        data,
-        colWidths=[6 * mm, 19 * mm, 16 * mm, 16 * mm, 14 * mm, 18 * mm, 18 * mm, 17 * mm, 7 * mm, 16 * mm, 16 * mm],
-        repeatRows=1,
-    )
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, 0), header_bg),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 7),
-                ("FONTSIZE", (0, 1), (-1, -1), 6),
-                ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                ("ALIGN", (5, 1), (6, -1), "CENTER"),
-                ("ALIGN", (8, 1), (8, -1), "CENTER"),
-                ("ALIGN", (9, 1), (10, -1), "RIGHT"),
-                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 2),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-                ("TOPPADDING", (0, 0), (-1, -1), 1),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-            ]
+        totals_data = [
+            ["Subtotal vendidos", _fmt_money(subtotal_vendidos)],
+            ["Subtotal pendientes", _fmt_money(subtotal_pendientes)],
+            ["Subtotal anulados", _fmt_money(subtotal_anulados)],
+            ["TOTAL BRUTO", _fmt_money(total_monto)],
+            ["TOTAL REAL", _fmt_money(total_monto_neto)],
+        ]
+        totals_table = Table(
+            totals_data,
+            colWidths=[35 * mm, 40 * mm],
+            style=TableStyle(
+                [
+                    ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica"),
+                    ("FONTSIZE", (0, 0), (-1, 0), 9),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), muted),
+                    ("LINEABOVE", (0, 3), (-1, 3), 0.7, colors.HexColor("#cfd4da")),
+                    ("FONTNAME", (0, 3), (-1, 4), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 3), (-1, 4), 10),
+                    ("TEXTCOLOR", (0, 3), (-1, 4), accent),
+                ]
+            ),
         )
-    )
-    story.append(table)
-    story.append(Spacer(1, 8))
-
-    totals_data = [
-        ["Subtotal vendidos", _fmt_money(subtotal_vendidos)],
-        ["Subtotal pendientes", _fmt_money(subtotal_pendientes)],
-        ["Subtotal anulados", _fmt_money(subtotal_anulados)],
-        ["TOTAL BRUTO", _fmt_money(total_monto)],
-        ["TOTAL REAL", _fmt_money(total_monto_neto)],
-    ]
-    totals_table = Table(
-        totals_data,
-        colWidths=[35 * mm, 40 * mm],
-        style=TableStyle(
-            [
-                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica"),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
-                ("TEXTCOLOR", (0, 0), (-1, 0), muted),
-                ("LINEABOVE", (0, 3), (-1, 3), 0.7, colors.HexColor("#cfd4da")),
-                ("FONTNAME", (0, 3), (-1, 4), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 3), (-1, 4), 10),
-                ("TEXTCOLOR", (0, 3), (-1, 4), accent),
-            ]
-        ),
-    )
-    totals_wrap = Table(
-        [["", totals_table]],
-        colWidths=[105 * mm, 75 * mm],
-        style=TableStyle(
-            [
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ]
-        ),
-    )
-    story.append(totals_wrap)
+        totals_wrap = Table(
+            [["", totals_table]],
+            colWidths=[105 * mm, 75 * mm],
+            style=TableStyle(
+                [
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ]
+            ),
+        )
+        story.append(totals_wrap)
 
     # Sección de despacho: consolidado + detalle de productos por pedido.
     if filtros["tipo"] == "despacho" and pedidos.exists():
@@ -1089,7 +1143,7 @@ def pedido_pdf(request, id: int):
         logo_flowable = Image(str(logo_path), width=24 * mm, height=24 * mm)
 
     left_header = [
-        logo_flowable or "",
+        logo_flowable or Spacer(1, 1),
         Paragraph("<b>Distribuidora JEREMY</b>", value_style),
         Paragraph("Pedidos y preventa", small_style),
     ]
@@ -1100,6 +1154,7 @@ def pedido_pdf(request, id: int):
         Spacer(1, 2),
         Paragraph(f"<b>Número:</b> {pedido.id}", value_style),
         Paragraph(f"<b>Fecha pedido:</b> {pedido.fecha.strftime('%d/%m/%Y %H:%M')}", value_style),
+        Paragraph(f"<b>Entrega estimada:</b> {pedido.fecha_entrega_estimada.strftime('%d/%m/%Y')}", value_style) if pedido.fecha_entrega_estimada else Spacer(1, 1),
         Paragraph(f"<b>Fecha venta:</b> {fecha_venta}", value_style),
         Paragraph(f"<b>Estado:</b> {pedido.get_estado_display()}", value_style),
     ]
@@ -1467,7 +1522,7 @@ def _reporte_devoluciones_pdf(request, filtros):
         logo_flowable = Image(str(logo_path), width=24 * mm, height=24 * mm)
 
     left_header = [
-        logo_flowable or "",
+        logo_flowable or Spacer(1, 1),
         Paragraph("<b>Distribuidora JEREMY</b>", value_style),
         Paragraph("Reporte de devoluciones", small_style),
     ]

@@ -10,6 +10,7 @@
                 <div class="modal-body">
                     <div class="alert alert-danger d-none" id="pedidoCrearError" role="alert"></div>
                     <div class="row">
+                        
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Cliente <span class="text-danger">*</span></label>
@@ -30,6 +31,19 @@
                             <div class="form-group">
                                 <label>Observación</label>
                                 <input type="text" class="form-control" name="observacion" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Fecha de Entrega Estimada <span class="text-danger">*</span></label>
+                                <input 
+                                    type="date" 
+                                    class="form-control" 
+                                    name="fecha_entrega_estimada" 
+                                    id="pedidoFechaEntrega"
+                                    required
+                                >
+                                <small class="text-muted d-block mt-1">No puede ser una fecha menor a hoy</small>
                             </div>
                         </div>
                     </div>
@@ -64,39 +78,34 @@
 
                     <template id="tplItemPedido">
                         <tr>
-                            <td>
+                            <td style="padding-right: 2px; padding-left: 2px;">
                                 <input type="hidden" class="item-producto-id" name="producto_id[]" required>
                                 <input
                                     type="text"
                                     class="form-control form-control-sm item-producto-buscar"
-                                    placeholder="Buscar producto..."
+                                    placeholder="Buscar producto por nombre..."
                                     list="dlProductosPedidos"
                                     autocomplete="off"
                                     required
+                                    style="font-size:1.1em; padding:4px 6px;"
                                 >
                             </td>
-                            <td class="col-stock">
-                                <input type="text" class="form-control form-control-sm item-stock" value="0" readonly>
+                            <td class="col-stock" style="padding-right: 2px; padding-left: 2px;">
+                                <input type="text" class="form-control form-control-sm item-stock" value="0" readonly style="padding:4px 6px;">
                             </td>
-                            <td class="col-precio">
-                                <input type="text" class="form-control form-control-sm item-precio" value="0.00" readonly>
+                            <td class="col-precio" style="padding-right: 2px; padding-left: 2px;">
+                                <input type="text" class="form-control form-control-sm item-precio" value="0.00" readonly style="padding:4px 6px;">
                             </td>
-                            <td>
-                                <div class="item-cantidad-wrap">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm btn-cant-menos" title="Restar">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <input type="number" min="1" class="form-control form-control-sm item-cantidad" name="cantidad[]" value="1" required>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm btn-cant-mas" title="Sumar">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
+                            <td style="padding-right: 2px; padding-left: 2px;">
+                                <div class="item-cantidad-wrap justify-content-center" style="gap:8px;">
+                                    <input type="number" min="1" class="form-control form-control-sm item-cantidad" name="cantidad[]" value="1" required style="max-width:50px; text-align:center; padding:4px 6px;">
                                 </div>
                             </td>
-                            <td>
-                                <input type="text" class="form-control form-control-sm item-subtotal" value="0.00" readonly>
+                            <td style="padding-right: 2px; padding-left: 2px;">
+                                <input type="text" class="form-control form-control-sm item-subtotal" value="0.00" readonly style="padding:4px 6px;">
                             </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-outline-danger btn-sm btn-quitar-item" title="Quitar">
+                            <td class="text-center" style="padding-right: 2px; padding-left: 2px;">
+                                <button type="button" class="btn btn-outline-danger btn-xs btn-quitar-item" title="Quitar" style="padding:2px 6px; font-size:14px;">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </td>
@@ -118,3 +127,16 @@
 {{ productos_data|json_script:"productos-data-pedidos" }}
 
 <datalist id="dlProductosPedidos"></datalist>
+
+<script>
+(function() {
+    const fechaEntregaEl = document.getElementById('pedidoFechaEntrega');
+    if (fechaEntregaEl) {
+        const hoy = new Date();
+        const año = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const día = String(hoy.getDate()).padStart(2, '0');
+        fechaEntregaEl.min = `${año}-${mes}-${día}`;
+    }
+})();
+</script>

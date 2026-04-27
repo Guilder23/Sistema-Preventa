@@ -1,4 +1,42 @@
 /* ============================================================================
+   REPORTES - Pestañas
+   ============================================================================ */
+
+.reportes-tabs {
+    display: inline-flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
+    background: var(--color-blanco);
+}
+
+.reportes-tab-btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: transparent;
+    color: var(--color-texto-secundario);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.reportes-tab-btn:hover {
+    background: color-mix(in srgb, var(--color-acento), transparent 88%);
+    color: var(--color-acento);
+}
+
+.reportes-tab-btn.active {
+    background: var(--color-acento);
+    color: var(--color-blanco);
+}
+
+/* ============================================================================
    REPORTES - Cards y filtros
    ============================================================================ */
 
@@ -143,9 +181,27 @@
 
 .reportes-filtros-grid {
     display: grid;
-    grid-template-columns: 1.6fr 1fr 1fr 1.1fr 1.2fr 1fr 1fr auto;
-    gap: 0.45rem 0.55rem;
+    /* Forzar una sola fila en pantallas amplias: 10 columnas compactas */
+    grid-template-columns: repeat(10, minmax(110px, 1fr));
+    gap: 0.35rem 0.45rem;
     align-items: end;
+    column-gap: 0.45rem;
+    row-gap: 0.25rem;
+}
+
+/* Variante para General: Buscador ancho + 5 filtros + PDF */
+.reportes-filtros-grid--general {
+    grid-template-columns: 2.5fr 1fr 1.2fr 1fr 1fr auto;
+}
+
+/* Variante para Despacho: Buscador ancho + 4 filtros específicos + Repartidor + PDF */
+.reportes-filtros-grid--despacho {
+    grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr auto;
+}
+
+/* Variante para Devoluciones: Buscador ancho + Repartidor + Desde + Hasta + PDF */
+.reportes-filtros-grid--devoluciones {
+    grid-template-columns: 2.5fr 1fr 1fr 1fr auto;
 }
 
 .filtro-item label {
@@ -154,23 +210,10 @@
 }
 
 .filtro-item .form-control {
-    height: 34px;
-    padding-top: 0.22rem;
-    padding-bottom: 0.22rem;
-}
-
-.filtro-tipo {
-    background: color-mix(in srgb, var(--color-peligro), white 92%);
-    border-color: color-mix(in srgb, var(--color-peligro), transparent 55%);
-}
-
-.filtro-tipo:focus {
-    border-color: color-mix(in srgb, var(--color-peligro), transparent 35%);
-    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--color-peligro), transparent 82%);
-}
-
-.reportes-filtros-grid--devoluciones {
-    grid-template-columns: 1.6fr 1.2fr 1fr 1fr auto;
+    height: 30px;
+    padding-top: 0.12rem;
+    padding-bottom: 0.12rem;
+    font-size: 0.85rem;
 }
 
 .btn-icon-only {
@@ -232,21 +275,19 @@
 }
 
 @media (max-width: 1200px) {
-    .reportes-filtros-grid {
-        grid-template-columns: repeat(4, minmax(160px, 1fr));
-    }
-
+    .reportes-filtros-grid,
+    .reportes-filtros-grid--general,
+    .reportes-filtros-grid--despacho,
     .reportes-filtros-grid--devoluciones {
-        grid-template-columns: repeat(3, minmax(160px, 1fr));
+        grid-template-columns: repeat(3, minmax(140px, 1fr)) !important;
     }
 }
 
 @media (max-width: 768px) {
-    .reportes-filtros-grid {
-        grid-template-columns: repeat(2, minmax(140px, 1fr));
-    }
-
+    .reportes-filtros-grid,
+    .reportes-filtros-grid--general,
+    .reportes-filtros-grid--despacho,
     .reportes-filtros-grid--devoluciones {
-        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        grid-template-columns: repeat(2, minmax(120px, 1fr)) !important;
     }
 }

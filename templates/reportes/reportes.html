@@ -61,63 +61,135 @@
 
     <div class="card shadow-sm mb-3">
         <div class="card-body">
-            <form method="get" class="reportes-filtros-grid" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
-                <div class="filtro-item filtro-item--buscar">
-                    <label class="small text-muted">Buscar</label>
-                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, usuario" autocomplete="off">
+            {# Pestañas #}
+            <div class="reportes-tabs mb-3" id="reportesTabs" data-tab="{{ tipo|default:'general' }}">
+                <button type="button" class="reportes-tab-btn {% if tipo == 'general' or not tipo %}active{% endif %}" data-tab="general">
+                    <i class="fas fa-chart-bar"></i> General
+                </button>
+                <button type="button" class="reportes-tab-btn {% if tipo == 'despacho' %}active{% endif %}" data-tab="despacho">
+                    <i class="fas fa-truck"></i> Despacho
+                </button>
+                <button type="button" class="reportes-tab-btn {% if tipo == 'devoluciones' %}active{% endif %}" data-tab="devoluciones">
+                    <i class="fas fa-undo"></i> Devoluciones
+                </button>
+            </div>
+
+            {# Filtros #}
+            <form method="get" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
+                <input type="hidden" name="tipo" value="{{ tipo|default:'general' }}">
+                
+                {# ===== GENERAL ===== #}
+                <div class="reportes-filtros-grupo filtro-grupo-general" style="display: {% if tipo == 'general' or not tipo %}block{% else %}none{% endif %};">
+                    <div class="reportes-filtros-grid reportes-filtros-grid--general">
+                        <div class="filtro-item filtro-item--buscar">
+                            <label class="small text-muted">Buscar</label>
+                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, usuario" autocomplete="off">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Estado</label>
+                            <select name="estado" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                <option value="vendido" {% if estado == 'vendido' %}selected{% endif %}>Vendido</option>
+                                <option value="no_entregado" {% if estado == 'no_entregado' %}selected{% endif %}>No entregado</option>
+                                <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
+                            </select>
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Preventista</label>
+                            <select name="preventista" class="form-control">
+                                <option value="">Todos</option>
+                                {% for u in preventistas %}
+                                    <option value="{{ u.id }}" {% if preventista == u.id|stringformat:'s' %}selected{% endif %}>
+                                        {{ u.get_full_name|default:u.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Desde</label>
+                            <input type="date" name="desde" value="{{ desde }}" class="form-control">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Hasta</label>
+                            <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
+                        </div>
+                        <div class="filtro-item filtro-item--pdf">
+                            <label class="small text-muted d-block">PDF</label>
+                            <a class="btn btn-danger btn-icon-only btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Estado</label>
-                    <select name="estado" class="form-control">
-                        <option value="">Todos</option>
-                        <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
-                        <option value="vendido" {% if estado == 'vendido' %}selected{% endif %}>Vendido</option>
-                        <option value="no_entregado" {% if estado == 'no_entregado' %}selected{% endif %}>No entregado</option>
-                        <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
-                    </select>
+
+                {# ===== DESPACHO ===== #}
+                <div class="reportes-filtros-grupo filtro-grupo-despacho" style="display: {% if tipo == 'despacho' %}block{% else %}none{% endif %};">
+                    <div class="reportes-filtros-grid reportes-filtros-grid--despacho">
+                        <div class="filtro-item filtro-item--buscar">
+                            <label class="small text-muted">Buscar</label>
+                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, repartidor" autocomplete="off">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Desde entrega</label>
+                            <input type="date" name="desde_entrega" value="{{ desde_entrega }}" class="form-control">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Hasta entrega</label>
+                            <input type="date" name="hasta_entrega" value="{{ hasta_entrega }}" class="form-control">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Estado entrega</label>
+                            <select name="estado_entrega" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="pendiente" {% if estado_entrega == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                <option value="entregado_completo" {% if estado_entrega == 'entregado_completo' %}selected{% endif %}>Entregado completo</option>
+                                <option value="entregado_parcial" {% if estado_entrega == 'entregado_parcial' %}selected{% endif %}>Entregado parcial</option>
+                                <option value="no_entregado" {% if estado_entrega == 'no_entregado' %}selected{% endif %}>No entregado</option>
+                            </select>
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Repartidor</label>
+                            <select name="repartidor" class="form-control">
+                                <option value="">Todos</option>
+                                {% for u in repartidores %}
+                                    <option value="{{ u.id }}" {% if repartidor == u.id|stringformat:'s' %}selected{% endif %}>
+                                        {{ u.get_full_name|default:u.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filtro-item filtro-item--pdf">
+                            <label class="small text-muted d-block">PDF</label>
+                            <a class="btn btn-danger btn-icon-only btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Tipo reporte</label>
-                    <select name="tipo" class="form-control filtro-tipo" onchange="this.form.submit()">
-                        <option value="general" {% if tipo == 'general' %}selected{% endif %}>General</option>
-                        <option value="despacho" {% if tipo == 'despacho' %}selected{% endif %}>Despacho</option>
-                        <option value="devoluciones" {% if tipo == 'devoluciones' %}selected{% endif %}>Devoluciones Físicas</option>
-                    </select>
-                </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Estado entrega</label>
-                    <select name="estado_entrega" class="form-control">
-                        <option value="">Todos</option>
-                        <option value="pendiente" {% if estado_entrega == 'pendiente' %}selected{% endif %}>Pendiente</option>
-                        <option value="entregado_completo" {% if estado_entrega == 'entregado_completo' %}selected{% endif %}>Entregado completo</option>
-                        <option value="entregado_parcial" {% if estado_entrega == 'entregado_parcial' %}selected{% endif %}>Entregado parcial</option>
-                        <option value="no_entregado" {% if estado_entrega == 'no_entregado' %}selected{% endif %}>No entregado</option>
-                    </select>
-                </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Preventista</label>
-                    <select name="preventista" class="form-control">
-                        <option value="">Todos</option>
-                        {% for u in preventistas %}
-                            <option value="{{ u.id }}" {% if preventista == u.id|stringformat:'s' %}selected{% endif %}>
-                                {{ u.get_full_name|default:u.username }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Desde</label>
-                    <input type="date" name="desde" value="{{ desde }}" class="form-control">
-                </div>
-                <div class="filtro-item">
-                    <label class="small text-muted">Hasta</label>
-                    <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
-                </div>
-                <div class="filtro-item filtro-item--pdf">
-                    <label class="small text-muted d-block">PDF</label>
-                    <a class="btn btn-danger btn-icon-only" id="btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
-                        <i class="fas fa-file-pdf"></i>
-                    </a>
+
+                {# ===== DEVOLUCIONES ===== #}
+                <div class="reportes-filtros-grupo filtro-grupo-devoluciones" style="display: {% if tipo == 'devoluciones' %}block{% else %}none{% endif %};">
+                    <div class="reportes-filtros-grid reportes-filtros-grid--devoluciones">
+                        <div class="filtro-item filtro-item--buscar">
+                            <label class="small text-muted">Buscar</label>
+                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, producto, repartidor" autocomplete="off">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Desde</label>
+                            <input type="date" name="desde" value="{{ desde }}" class="form-control">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Hasta</label>
+                            <input type="date" name="hasta" value="{{ hasta }}" class="form-control">
+                        </div>
+                        <div class="filtro-item filtro-item--pdf">
+                            <label class="small text-muted d-block">PDF</label>
+                            <a class="btn btn-danger btn-icon-only btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -136,6 +208,7 @@
                             <th>Repartidor</th>
                             <th>F. pedido</th>
                             <th>F. entrega</th>
+                            <th>F. vendido</th>
                             <th>Estado</th>
                             <th>Estado entrega</th>
                             <th>Total bruto</th>
@@ -153,6 +226,7 @@
                             <td>{{ p.repartidor_nombre }}</td>
                             <td>{{ p.fecha_pedido_display }}</td>
                             <td>{{ p.fecha_entrega_display }}</td>
+                            <td>{{ p.fecha_vendido_display }}</td>
                             <td><span class="estado-badge estado-badge--{{ p.estado_key }}">{{ p.get_estado_display }}</span></td>
                             <td><span class="estado-badge estado-badge-entrega estado-badge--{{ p.estado_entrega_key }}">{{ p.estado_entrega }}</span></td>
                             <td>Bs {{ p.total|floatformat:2 }}</td>
@@ -180,7 +254,7 @@
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ page_obj.previous_page_number }}">Anterior</a>
                 </li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">Anterior</span></li>
@@ -190,13 +264,13 @@
                 {% if page_obj.number == num %}
                     <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                 {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item"><a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ num }}">{{ num }}</a></li>
+                    <li class="page-item"><a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ num }}">{{ num }}</a></li>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ page_obj.next_page_number }}">Siguiente</a>
                 </li>
             {% else %}
                 <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
@@ -208,5 +282,6 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{% static 'js/reportes/tabs.js' %}"></script>
 <script src="{% static 'js/reportes/reportes.js' %}"></script>
 {% endblock %}

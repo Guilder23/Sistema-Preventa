@@ -11,6 +11,7 @@
                 <div class="modal-body">
                     <div class="alert alert-danger d-none" id="pedidoEditarError" role="alert"></div>
                     <div class="row">
+                        
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Cliente</label>
@@ -22,6 +23,19 @@
                             <div class="form-group">
                                 <label>Observación</label>
                                 <input type="text" class="form-control" name="observacion" id="editarPedidoObs" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Fecha de Entrega Estimada <span class="text-danger">*</span></label>
+                                <input 
+                                    type="date" 
+                                    class="form-control" 
+                                    name="fecha_entrega_estimada" 
+                                    id="editarPedidoFechaEntrega"
+                                    required
+                                >
+                                <small class="text-muted d-block mt-1">No puede ser una fecha menor a hoy</small>
                             </div>
                         </div>
                     </div>
@@ -104,3 +118,16 @@
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    const fechaEntregaEl = document.getElementById('editarPedidoFechaEntrega');
+    if (fechaEntregaEl) {
+        const hoy = new Date();
+        const año = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        const día = String(hoy.getDate()).padStart(2, '0');
+        fechaEntregaEl.min = `${año}-${mes}-${día}`;
+    }
+})();
+</script>
