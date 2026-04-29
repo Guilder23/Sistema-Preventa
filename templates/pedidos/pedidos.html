@@ -36,7 +36,7 @@
                 </button>
             </div>
             <div class="row align-items-center">
-                <div class="col-md-3">
+                <div class="col-md-3 mb-2 mb-md-0">
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
@@ -44,7 +44,7 @@
                         <input type="text" class="form-control form-control-sm border-left-0" id="buscarPedido" placeholder="Buscar por cliente o CI/NIT..." value="{{ q }}">
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 mb-2 mb-md-0">
                     <select class="form-control form-control-sm" id="estadoPedido" name="estado">
                         <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
                         <option value="pendiente" {% if estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
@@ -53,7 +53,7 @@
                         <option value="anulado" {% if estado == 'anulado' %}selected{% endif %}>Anulado</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 mb-2 mb-md-0">
                     <select class="form-control form-control-sm" id="rolPedido" name="rol">
                         <option value="" {% if not rol_usuario %}selected{% endif %}>Todos los roles</option>
                         <option value="administrador" {% if rol_usuario == 'administrador' %}selected{% endif %}>Administrador</option>
@@ -62,10 +62,10 @@
                         <option value="repartidor" {% if rol_usuario == 'repartidor' %}selected{% endif %}>Repartidor</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 mb-2 mb-md-0">
                     <input type="date" class="form-control form-control-sm" id="fechaDesdePedido" name="fecha_desde" value="{{ fecha_desde }}" title="Fecha desde">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 mb-2 mb-md-0">
                     <input type="date" class="form-control form-control-sm" id="fechaHastaPedido" name="fecha_hasta" value="{{ fecha_hasta }}" title="Fecha hasta">
                 </div>
                 <div class="col-md-1 text-right">
@@ -212,14 +212,6 @@
         </div>
     </div>
 
-    {% if user.is_superuser or user.perfil.rol == 'administrador' or user.perfil.rol == 'supervisor' or user.perfil.rol == 'preventista' %}
-        {% include 'pedidos/modals/crea.html' %}
-        {% include 'pedidos/modals/edita.html' %}
-    {% endif %}
-    {% include 'pedidos/modals/ver.html' %}
-    {% include 'pedidos/modals/anula.html' %}
-    </div>
-
     <!-- Controles de paginación -->
     {% if paginator.num_pages > 1 %}
     <nav aria-label="Paginación de pedidos" class="mt-3">
@@ -250,6 +242,13 @@
         </ul>
     </nav>
     {% endif %}
+
+    {% if user.is_superuser or user.perfil.rol == 'administrador' or user.perfil.rol == 'supervisor' or user.perfil.rol == 'preventista' %}
+        {% include 'pedidos/modals/crea.html' %}
+        {% include 'pedidos/modals/edita.html' %}
+    {% endif %}
+    {% include 'pedidos/modals/ver.html' %}
+    {% include 'pedidos/modals/anula.html' %}
     {% include 'pedidos/modals/vendido.html' %}
     {% include 'pedidos/modals/entrega.html' %}
 </div>

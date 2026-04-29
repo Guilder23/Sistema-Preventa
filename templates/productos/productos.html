@@ -29,7 +29,7 @@
     <div class="card card-filtros">
         <div class="card-body py-3">
             <div class="row align-items-center">
-                <div class="col-md-4">
+                <div class="col-md-4 mb-2 mb-md-0">
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
@@ -37,14 +37,14 @@
                         <input type="text" class="form-control form-control-sm border-left-0" id="buscarProducto" placeholder="Buscar por código o nombre..." value="{{ q }}">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-2 mb-md-0">
                     <select class="form-control form-control-sm" id="estadoProducto" name="estado">
                         <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
                         <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
                         <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-2 mb-md-0">
                     <select class="form-control form-control-sm" id="stockProducto" name="stock">
                         <option value="" {% if not stock %}selected{% endif %}>Todo el stock</option>
                         <option value="verde" {% if stock == 'verde' %}selected{% endif %}>Stock alto</option>
@@ -149,43 +149,42 @@
         </div>
     </div>
 
+    <!-- Controles de paginación -->
+    {% if paginator.num_pages > 1 %}
+    <nav aria-label="Paginación de productos" class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&stock={{ stock }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+            {% endif %}
+
+            {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?q={{ q }}&estado={{ estado }}&stock={{ stock }}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&estado={{ estado }}&stock={{ stock }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
     {% include 'productos/modals/crea.html' %}
     {% include 'productos/modals/edita.html' %}
     {% include 'productos/modals/ver.html' %}
     {% include 'productos/modals/inventario.html' %}
     {% include 'productos/modals/elimina.html' %}
-</div>
-
-<!-- Controles de paginación -->
-{% if paginator.num_pages > 1 %}
-<nav aria-label="Paginación de productos" class="mt-3">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?q={{ q }}&estado={{ estado }}&stock={{ stock }}&page={{ page_obj.previous_page_number }}">Anterior</a>
-            </li>
-        {% else %}
-            <li class="page-item disabled"><span class="page-link">Anterior</span></li>
-        {% endif %}
-
-        {% for num in paginator.page_range %}
-            {% if page_obj.number == num %}
-                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <li class="page-item"><a class="page-link" href="?q={{ q }}&estado={{ estado }}&stock={{ stock }}&page={{ num }}">{{ num }}</a></li>
-            {% endif %}
-        {% endfor %}
-
-        {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?q={{ q }}&estado={{ estado }}&stock={{ stock }}&page={{ page_obj.next_page_number }}">Siguiente</a>
-            </li>
-        {% else %}
-            <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
 </div>
 {% endblock %}
 

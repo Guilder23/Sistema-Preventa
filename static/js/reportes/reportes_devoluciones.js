@@ -46,22 +46,62 @@
             updatePdfLink();
             return;
         }
+
+        // Guardar información de foco usando el ID del elemento
+        var activeInput = document.activeElement;
+        if (activeInput && activeInput.name === 'q') {
+            sessionStorage.setItem('reportSearchFocusIdDevoluciones', activeInput.id);
+        }
+
         window.location.href = window.location.pathname + next;
+    }
+
+    // Restaurar foco con un pequeño retraso
+    function restoreFocus() {
+        var focusId = sessionStorage.getItem('reportSearchFocusIdDevoluciones');
+        if (focusId) {
+            setTimeout(function() {
+                var el = document.getElementById(focusId);
+                if (el) {
+                    el.focus();
+                    var val = el.value;
+                    el.value = '';
+                    el.value = val;
+                }
+                sessionStorage.removeItem('reportSearchFocusIdDevoluciones');
+            }, 150);
+        }
+    }
+
+    // Ejecutar restauración al cargar
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restoreFocus);
+    } else {
+        restoreFocus();
     }
 
     function debounceApply() {
         if (debounceTimer) {
             window.clearTimeout(debounceTimer);
         }
-        debounceTimer = window.setTimeout(applyFilters, 350);
+        debounceTimer = window.setTimeout(applyFilters, 1000);
         updatePdfLink();
     }
 
     inputs.forEach(function (el) {
         if (el.tagName === "SELECT" || el.type === "date") {
-            el.addEventListener("change", debounceApply);
+            el.addEventListener("change", function() {
+                clearTimeout(debounceTimer);
+                applyFilters();
+            });
         } else {
             el.addEventListener("input", debounceApply);
+            el.addEventListener("keypress", function (e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(debounceTimer);
+                    applyFilters();
+                }
+            });
         }
     });
 

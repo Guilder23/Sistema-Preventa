@@ -551,6 +551,15 @@ def _reporte_devoluciones_inicio(request, filtros):
             Q(devolucion__repartidor__last_name__icontains=filtros["q"])
         )
 
+    # Filtrar por repartidor si se proporciona
+    repartidor_id = filtros.get("repartidor")
+    if repartidor_id:
+        try:
+            repartidor_id_int = int(repartidor_id)
+            items_qs = items_qs.filter(devolucion__repartidor_id=repartidor_id_int)
+        except ValueError:
+            pass
+
     # Solo devoluciones pendientes de recibir (repuesto=False)
     # El administrador recibe lo que el repartidor trajo físicamente.
     # Usualmente esto se filtra por repuesto=False.
@@ -595,6 +604,7 @@ def _reporte_devoluciones_inicio(request, filtros):
             "items": items_pendientes,
             "consolidado": lista_consolidado,
             "q": filtros["q"],
+            "repartidor": filtros.get("repartidor", ""),
             "desde": filtros["desde"],
             "hasta": filtros["hasta"],
             "tipo": filtros["tipo"],
