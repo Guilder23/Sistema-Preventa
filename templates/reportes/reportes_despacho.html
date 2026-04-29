@@ -1,0 +1,292 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Reporte de Despacho{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/reportes.css' %}">
+<link rel="stylesheet" href="{% static 'css/reportes/reportes_despacho.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-truck"></i> Reporte de Despacho</h1>
+            <p class="page-subtitle">Preparacion de carga y seguimiento de pedidos para reparto</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--primary">
+                <div class="report-card-icon"><i class="fas fa-clipboard-list"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Pedidos</div>
+                    <div class="report-card-value">{{ total_pedidos }}</div>
+                    <div class="report-card-sub">Monto: Bs {{ total_monto|floatformat:2 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--warning">
+                <div class="report-card-icon"><i class="fas fa-clock"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Pendientes</div>
+                    <div class="report-card-value">{{ total_pendientes }}</div>
+                    <div class="report-card-sub">Por entregar</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--success">
+                <div class="report-card-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Entregados</div>
+                    <div class="report-card-value">{{ total_entregados }}</div>
+                    <div class="report-card-sub">Completos y parciales</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="report-card report-card--info reporte-card--despacho">
+                <div class="report-card-icon"><i class="fas fa-boxes"></i></div>
+                <div class="report-card-body">
+                    <div class="report-card-label">Unidades</div>
+                    <div class="report-card-value">{{ total_unidades }}</div>
+                    <div class="report-card-sub">Carga consolidada</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="reportes-tabs mb-3" id="reportesTabs" data-tab="{{ tipo|default:'despacho' }}">
+                <button type="button" class="reportes-tab-btn {% if tipo == 'general' or not tipo %}active{% endif %}" data-tab="general">
+                    <i class="fas fa-chart-bar"></i> General
+                </button>
+                <button type="button" class="reportes-tab-btn {% if tipo == 'despacho' %}active{% endif %}" data-tab="despacho">
+                    <i class="fas fa-truck"></i> Despacho
+                </button>
+                <button type="button" class="reportes-tab-btn {% if tipo == 'devoluciones' %}active{% endif %}" data-tab="devoluciones">
+                    <i class="fas fa-undo"></i> Devoluciones
+                </button>
+            </div>
+
+            <form method="get" id="filtro-reportes" data-pdf-url="{% url 'reporte_pedidos_pdf' %}">
+                <input type="hidden" name="tipo" value="{{ tipo|default:'despacho' }}">
+
+                <div class="reportes-filtros-grupo filtro-grupo-despacho">
+                    <div class="reportes-filtros-grid reportes-filtros-grid--despacho">
+                        <div class="filtro-item filtro-item--buscar">
+                            <label class="small text-muted">Buscar</label>
+                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, preventista, repartidor" autocomplete="off">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Desde entrega</label>
+                            <input type="date" name="desde_entrega" value="{{ desde_entrega }}" class="form-control">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Hasta entrega</label>
+                            <input type="date" name="hasta_entrega" value="{{ hasta_entrega }}" class="form-control">
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Estado entrega</label>
+                            <select name="estado_entrega" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="pendiente" {% if estado_entrega == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                <option value="entregado_completo" {% if estado_entrega == 'entregado_completo' %}selected{% endif %}>Entregado completo</option>
+                                <option value="entregado_parcial" {% if estado_entrega == 'entregado_parcial' %}selected{% endif %}>Entregado parcial</option>
+                                <option value="no_entregado" {% if estado_entrega == 'no_entregado' %}selected{% endif %}>No entregado</option>
+                            </select>
+                        </div>
+                        <div class="filtro-item">
+                            <label class="small text-muted">Repartidor</label>
+                            <select name="repartidor" class="form-control">
+                                <option value="">Todos</option>
+                                {% for u in repartidores %}
+                                    <option value="{{ u.id }}" {% if repartidor == u.id|stringformat:'s' %}selected{% endif %}>
+                                        {{ u.get_full_name|default:u.username }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filtro-item filtro-item--pdf">
+                            <label class="small text-muted d-block">PDF</label>
+                            <a class="btn btn-danger btn-icon-only btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="card-title mb-0"><i class="fas fa-route"></i> Pedidos para Despacho</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 tabla-reportes-compacta tabla-despacho-pedidos">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Cliente</th>
+                            <th>Preventista</th>
+                            <th>Repartidor</th>
+                            <th>F. pedido</th>
+                            <th>F. entrega</th>
+                            <th>F. vendido</th>
+                            <th>Estado entrega</th>
+                            <th>Total</th>
+                            <th class="text-center">PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in page_obj.object_list %}
+                        <tr>
+                            <td>{{ p.id }}</td>
+                            <td>{{ p.cliente_corto }}</td>
+                            <td>{{ p.preventista_nombre }}</td>
+                            <td>{{ p.repartidor_nombre }}</td>
+                            <td>{{ p.fecha_pedido_display }}</td>
+                            <td>{{ p.fecha_entrega_display }}</td>
+                            <td>{{ p.fecha_vendido_display }}</td>
+                            <td><span class="estado-badge estado-badge-entrega estado-badge--{{ p.estado_entrega_key }}">{{ p.estado_entrega }}</span></td>
+                            <td>Bs {{ p.total|floatformat:2 }}</td>
+                            <td class="text-center">
+                                <a class="btn btn-danger btn-sm" href="{% url 'reporte_pedido_pdf' p.id %}" target="_blank" rel="noopener">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">No hay pedidos para mostrar.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if page_obj %}
+    <nav aria-label="Paginacion de despacho" class="mt-3 mb-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&repartidor={{ repartidor }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+            {% endif %}
+
+            {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item"><a class="page-link" href="?q={{ q }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&repartidor={{ repartidor }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ q }}&tipo={{ tipo }}&estado_entrega={{ estado_entrega }}&repartidor={{ repartidor }}&desde_entrega={{ desde_entrega }}&hasta_entrega={{ hasta_entrega }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-dolly"></i> Consolidado de Carga</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 reporte-despacho-tabla">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-center">Clientes</th>
+                                    <th class="text-right">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in consolidado %}
+                                <tr>
+                                    <td><strong>{{ item.producto_nombre }}</strong></td>
+                                    <td class="text-center">{{ item.cantidad_total }}</td>
+                                    <td class="text-center">{{ item.clientes_total }}</td>
+                                    <td class="text-right">Bs {{ item.monto_total|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">No hay productos para cargar.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-box-open"></i> Detalle de Productos por Pedido</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 reporte-despacho-tabla">
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Preventista</th>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-right">Precio</th>
+                                    <th class="text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in detalle_productos %}
+                                <tr>
+                                    <td>#{{ item.pedido_id }}</td>
+                                    <td>{{ item.cliente_nombre }}</td>
+                                    <td>{{ item.preventista_nombre }}</td>
+                                    <td>{{ item.producto_nombre }}</td>
+                                    <td class="text-center">{{ item.cantidad }}</td>
+                                    <td class="text-right">Bs {{ item.precio_unitario|floatformat:2 }}</td>
+                                    <td class="text-right">Bs {{ item.subtotal|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No hay detalle de productos disponible.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/reportes/tabs.js' %}"></script>
+<script src="{% static 'js/reportes/reportes_despacho.js' %}"></script>
+{% endblock %}

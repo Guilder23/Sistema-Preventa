@@ -21,6 +21,22 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
+def _display_user_name(user):
+    if not user:
+        return "-"
+    return user.get_full_name() or user.username
+
+
+def _pedido_repartidor_nombre(pedido, devolucion=None):
+    if devolucion and getattr(devolucion, "repartidor", None):
+        return _display_user_name(devolucion.repartidor)
+
+    preventista = getattr(pedido, "preventista", None)
+    perfil = getattr(preventista, "perfil", None) if preventista else None
+    repartidor_asignado = getattr(perfil, "repartidor", None) if perfil else None
+    return _display_user_name(repartidor_asignado)
+
+
 @login_required
 def _pedidos_filtrados(request, user):
     from apps.pedidos.models import DevolucionPedido, Pedido
@@ -44,7 +60,12 @@ def _pedidos_filtrados(request, user):
     if tipo == "despacho" and not estado:
         estado = Pedido.ESTADO_PENDIENTE
 
-    pedidos = _pedido_qs_para_usuario(user).select_related("cliente", "preventista")
+    pedidos = _pedido_qs_para_usuario(user).select_related(
+        "cliente",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+    )
     pedidos_base = pedidos
 
     # Opciones de preventista dentro del alcance del usuario.
@@ -58,16 +79,32 @@ def _pedidos_filtrados(request, user):
     registrador_ids = pedidos_base.values_list("registrado_por_id", flat=True).distinct()
     registradores = User.objects.filter(id__in=[r for r in registrador_ids if r]).order_by("username")
 
-    if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
+    if estado not in {
+        Pedido.ESTADO_PENDIENTE,
+        Pedido.ESTADO_VENDIDO,
+        Pedido.ESTADO_ANULADO,
+        Pedido.ESTADO_NO_ENTREGADO,
+    }:
         estado = ""
 
     if q:
+        pedido_ids_con_repartidor_q = DevolucionPedido.objects.filter(
+            Q(repartidor__username__icontains=q)
+            | Q(repartidor__first_name__icontains=q)
+            | Q(repartidor__last_name__icontains=q)
+        ).values_list("pedido_id", flat=True).distinct()
         pedidos = pedidos.filter(
             Q(cliente__nombres__icontains=q)
             | Q(cliente__apellidos__icontains=q)
             | Q(cliente__ci_nit__icontains=q)
             | Q(preventista__username__icontains=q)
-        )
+            | Q(preventista__first_name__icontains=q)
+            | Q(preventista__last_name__icontains=q)
+            | Q(preventista__perfil__repartidor__username__icontains=q)
+            | Q(preventista__perfil__repartidor__first_name__icontains=q)
+            | Q(preventista__perfil__repartidor__last_name__icontains=q)
+            | Q(id__in=pedido_ids_con_repartidor_q)
+        ).distinct()
 
     if estado:
         pedidos = pedidos.filter(estado=estado)
@@ -105,7 +142,8 @@ def _pedidos_filtrados(request, user):
             pedidos = pedidos.filter(preventista_id=preventista_id_int)
             preventista_id = str(preventista_id_int)
 
-    # Filtrar por repartidor si se especifica (por devoluciones)
+    # Filtrar por repartidor, considerando tanto el asignado al preventista
+    # como el que figure en devoluciones para pedidos ya gestionados.
     repartidor_id = ""
     if repartidor_id_raw:
         try:
@@ -113,11 +151,13 @@ def _pedidos_filtrados(request, user):
         except ValueError:
             repartidor_id_int = None
         if repartidor_id_int is not None:
-            # Obtener IDs de pedidos que tienen devoluciones de este repartidor
             pedido_ids_con_repartidor = DevolucionPedido.objects.filter(
                 repartidor_id=repartidor_id_int
             ).values_list("pedido_id", flat=True).distinct()
-            pedidos = pedidos.filter(id__in=pedido_ids_con_repartidor)
+            pedidos = pedidos.filter(
+                Q(preventista__perfil__repartidor_id=repartidor_id_int)
+                | Q(id__in=pedido_ids_con_repartidor)
+            ).distinct()
             repartidor_id = str(repartidor_id_int)
 
     fecha_desde = parse_date(desde) if desde else None
@@ -169,8 +209,23 @@ def reportes_inicio(request):
     # Si el tipo de reporte es "devoluciones", mostramos una vista diferente
     if filtros.get("tipo") == "devoluciones":
         return _reporte_devoluciones_inicio(request, filtros)
+    if filtros.get("tipo") == "despacho":
+        return _reporte_despacho_inicio(
+            request,
+            pedidos,
+            filtros,
+            preventistas,
+            repartidores,
+            registradores,
+        )
 
-    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
+    pedidos = pedidos.select_related(
+        "cliente__creado_por",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+        "registrado_por",
+    )
 
     resumen = pedidos.aggregate(total_monto=Sum("total"))
     total_pedidos = pedidos.count()
@@ -262,10 +317,7 @@ def reportes_inicio(request):
         p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-"
 
         devol = devolucion_reciente_por_pedido.get(p.id)
-        if devol and devol.repartidor:
-            p.repartidor_nombre = devol.repartidor.get_full_name() or devol.repartidor.username
-        else:
-            p.repartidor_nombre = "-"
+        p.repartidor_nombre = _pedido_repartidor_nombre(p, devol)
 
         if p.estado == Pedido.ESTADO_NO_ENTREGADO:
             p.estado_entrega = "No entregado"
@@ -317,6 +369,156 @@ def reportes_inicio(request):
     )
 
 
+def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidores, registradores):
+    from apps.pedidos.models import DetallePedido, DevolucionPedido, Pedido
+    from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+
+    pedidos = pedidos.select_related(
+        "cliente",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+        "registrado_por",
+    )
+    total_pedidos = pedidos.count()
+    total_monto = pedidos.aggregate(total=Sum("total")).get("total") or Decimal("0.00")
+    total_pendientes = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE).count()
+    total_no_entregados = pedidos.filter(estado=Pedido.ESTADO_NO_ENTREGADO).count()
+    total_entregados = pedidos.filter(estado=Pedido.ESTADO_VENDIDO).count()
+
+    pedido_ids = list(pedidos.values_list("id", flat=True))
+    detalles = (
+        DetallePedido.objects.select_related("pedido", "pedido__cliente", "pedido__preventista", "producto")
+        .filter(pedido_id__in=pedido_ids)
+        .order_by("producto__nombre", "pedido_id")
+    )
+
+    consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set(), "precio_unitario": Decimal("0.00")})
+    detalle_productos = []
+    total_unidades = 0
+
+    for d in detalles:
+        cantidad = int(d.cantidad or 0)
+        subtotal = d.subtotal or Decimal("0.00")
+        total_unidades += cantidad
+
+        item = consolidado[d.producto_id]
+        item["nombre"] = d.producto.nombre
+        item["cantidad"] += cantidad
+        item["monto"] += subtotal
+        item["clientes"].add(d.pedido.cliente_id)
+        item["precio_unitario"] = d.precio_unitario or Decimal("0.00")
+
+        detalle_productos.append(
+            {
+                "pedido_id": d.pedido_id,
+                "cliente_nombre": f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
+                "preventista_nombre": d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
+                "producto_nombre": d.producto.nombre,
+                "cantidad": cantidad,
+                "precio_unitario": d.precio_unitario or Decimal("0.00"),
+                "subtotal": subtotal,
+            }
+        )
+
+    lista_consolidado = []
+    for _, item in sorted(consolidado.items(), key=lambda kv: kv[1].get("nombre", "")):
+        lista_consolidado.append(
+            {
+                "producto_nombre": item.get("nombre", "-"),
+                "cantidad_total": item["cantidad"],
+                "clientes_total": len(item["clientes"]),
+                "monto_total": item["monto"],
+                "precio_unitario": item["precio_unitario"],
+            }
+        )
+
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(pedidos, 10)
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    pedidos_page = page_obj.object_list
+    devolucion_reciente_por_pedido = {}
+    pedidos_page_ids = [p.id for p in pedidos_page]
+    if pedidos_page_ids:
+        devoluciones = (
+            DevolucionPedido.objects.filter(pedido_id__in=pedidos_page_ids)
+            .select_related("repartidor")
+            .order_by("pedido_id", "-fecha_creacion")
+        )
+        for devolucion in devoluciones:
+            if devolucion.pedido_id not in devolucion_reciente_por_pedido:
+                devolucion_reciente_por_pedido[devolucion.pedido_id] = devolucion
+
+    def _cliente_corto(cliente):
+        nombres = (cliente.nombres or "").strip()
+        apellidos = (cliente.apellidos or "").strip()
+        if not apellidos:
+            return nombres
+        iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
+        return f"{nombres} {iniciales}".strip()
+
+    for p in pedidos_page:
+        p.cliente_corto = _cliente_corto(p.cliente)
+        p.preventista_nombre = p.preventista.get_full_name() or p.preventista.username
+        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if p.fecha_entrega_estimada else "-"
+        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
+        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+
+        devol = devolucion_reciente_por_pedido.get(p.id)
+        p.repartidor_nombre = _pedido_repartidor_nombre(p, devol)
+
+        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+            p.estado_entrega = "No entregado"
+            p.estado_entrega_key = "no_entregado"
+        elif p.estado == Pedido.ESTADO_VENDIDO:
+            if devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+                p.estado_entrega = "Entregado parcial"
+                p.estado_entrega_key = "entregado_parcial"
+            else:
+                p.estado_entrega = "Entregado completo"
+                p.estado_entrega_key = "entregado_completo"
+        elif p.estado == Pedido.ESTADO_PENDIENTE:
+            p.estado_entrega = "Pendiente"
+            p.estado_entrega_key = "pendiente"
+        else:
+            p.estado_entrega = "-"
+            p.estado_entrega_key = "otro"
+
+    return render(
+        request,
+        "reportes/reportes_despacho.html",
+        {
+            "pedidos": pedidos_page,
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "q": filtros["q"],
+            "tipo": filtros["tipo"],
+            "desde_entrega": filtros.get("desde_entrega", ""),
+            "hasta_entrega": filtros.get("hasta_entrega", ""),
+            "estado_entrega": filtros["estado_entrega"],
+            "repartidor": filtros.get("repartidor", ""),
+            "preventista": filtros["preventista"],
+            "preventistas": preventistas,
+            "repartidores": repartidores,
+            "registradores": registradores,
+            "total_pedidos": total_pedidos,
+            "total_monto": total_monto,
+            "total_pendientes": total_pendientes,
+            "total_entregados": total_entregados,
+            "total_no_entregados": total_no_entregados,
+            "total_unidades": total_unidades,
+            "consolidado": lista_consolidado,
+            "detalle_productos": detalle_productos,
+        },
+    )
+
+
 def _reporte_devoluciones_inicio(request, filtros):
     from apps.pedidos.models import DevolucionItem, DevolucionPedido
     from apps.productos.models import Producto
@@ -325,6 +527,7 @@ def _reporte_devoluciones_inicio(request, filtros):
     # Buscamos ítems devueltos en el rango de fecha
     items_qs = DevolucionItem.objects.select_related(
         "devolucion__pedido__cliente",
+        "devolucion__pedido__preventista",
         "devolucion__repartidor",
         "producto"
     )
@@ -338,8 +541,14 @@ def _reporte_devoluciones_inicio(request, filtros):
         items_qs = items_qs.filter(
             Q(devolucion__pedido__cliente__nombres__icontains=filtros["q"]) |
             Q(devolucion__pedido__cliente__apellidos__icontains=filtros["q"]) |
+            Q(devolucion__pedido__cliente__ci_nit__icontains=filtros["q"]) |
+            Q(devolucion__pedido__preventista__username__icontains=filtros["q"]) |
+            Q(devolucion__pedido__preventista__first_name__icontains=filtros["q"]) |
+            Q(devolucion__pedido__preventista__last_name__icontains=filtros["q"]) |
             Q(producto__nombre__icontains=filtros["q"]) |
-            Q(devolucion__repartidor__username__icontains=filtros["q"])
+            Q(devolucion__repartidor__username__icontains=filtros["q"]) |
+            Q(devolucion__repartidor__first_name__icontains=filtros["q"]) |
+            Q(devolucion__repartidor__last_name__icontains=filtros["q"])
         )
 
     # Solo devoluciones pendientes de recibir (repuesto=False)
@@ -547,22 +756,43 @@ def pedidos_pdf(request):
     story.append(header_table)
     story.append(Spacer(1, 10))
 
-    filtros_box = [
-        Paragraph("FILTROS APLICADOS", label_style),
-        Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
-        Paragraph(f"Tipo reporte: {filtros['tipo'].capitalize()}", value_style),
-        Paragraph(f"Estado: {filtros['estado'] or 'Todos'}", value_style),
-        Paragraph(f"Preventista: {filtros['preventista'] or 'Todos'}", value_style),
-        Paragraph(f"Desde: {filtros['desde'] or '--'}", value_style),
-        Paragraph(f"Hasta: {filtros['hasta'] or '--'}", value_style),
-    ]
-    resumen_box = [
-        Paragraph("RESUMEN", label_style),
-        Paragraph(f"Total pedidos: {pedidos.count()}", value_style),
-        Paragraph(f"Vendidos: {total_vendidos}", small_style),
-        Paragraph(f"Pendientes: {total_pendientes}", small_style),
-        Paragraph(f"Anulados: {total_anulados}", small_style),
-    ]
+    if filtros["tipo"] == "despacho":
+        filtros_box = [
+            Paragraph("FILTROS APLICADOS", label_style),
+            Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
+            Paragraph("Tipo reporte: Despacho", value_style),
+            Paragraph(f"Desde entrega: {filtros['desde_entrega'] or '--'}", value_style),
+            Paragraph(f"Hasta entrega: {filtros['hasta_entrega'] or '--'}", value_style),
+            Paragraph(f"Estado entrega: {filtros['estado_entrega'] or 'Todos'}", value_style),
+            Paragraph(f"Repartidor: {filtros['repartidor'] or 'Todos'}", value_style),
+        ]
+        resumen_box = [
+            Paragraph("RESUMEN", label_style),
+            Paragraph(f"Total pedidos: {pedidos.count()}", value_style),
+            Paragraph(f"Entregados: {total_vendidos}", small_style),
+            Paragraph(f"Pendientes: {total_pendientes}", small_style),
+            Paragraph(
+                f"No entregados: {pedidos.filter(estado=Pedido.ESTADO_NO_ENTREGADO).count()}",
+                small_style,
+            ),
+        ]
+    else:
+        filtros_box = [
+            Paragraph("FILTROS APLICADOS", label_style),
+            Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
+            Paragraph(f"Tipo reporte: {filtros['tipo'].capitalize()}", value_style),
+            Paragraph(f"Estado: {filtros['estado'] or 'Todos'}", value_style),
+            Paragraph(f"Preventista: {filtros['preventista'] or 'Todos'}", value_style),
+            Paragraph(f"Desde: {filtros['desde'] or '--'}", value_style),
+            Paragraph(f"Hasta: {filtros['hasta'] or '--'}", value_style),
+        ]
+        resumen_box = [
+            Paragraph("RESUMEN", label_style),
+            Paragraph(f"Total pedidos: {pedidos.count()}", value_style),
+            Paragraph(f"Vendidos: {total_vendidos}", small_style),
+            Paragraph(f"Pendientes: {total_pendientes}", small_style),
+            Paragraph(f"Anulados: {total_anulados}", small_style),
+        ]
 
     info_table = Table(
         [[filtros_box, resumen_box]],
@@ -582,7 +812,13 @@ def pedidos_pdf(request):
     story.append(info_table)
     story.append(Spacer(1, 12))
 
-    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
+    pedidos = pedidos.select_related(
+        "cliente__creado_por",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+        "registrado_por",
+    )
     pedido_ids = list(pedidos.values_list("id", flat=True))
     devueltos_por_pedido = {}
     monto_devuelto_por_pedido = defaultdict(lambda: Decimal("0.00"))
@@ -647,7 +883,7 @@ def pedidos_pdf(request):
                 else (p.preventista.get_full_name() or p.preventista.username)
             )
             devol = devolucion_reciente_por_pedido.get(p.id)
-            repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
+            repartidor = _pedido_repartidor_nombre(p, devol)
 
             if p.estado == Pedido.ESTADO_NO_ENTREGADO:
                 estado_entrega = "No entregado"
@@ -757,7 +993,7 @@ def pedidos_pdf(request):
             .order_by("producto__nombre", "pedido_id")
         )
 
-        consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set()})
+        consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set(), "precio_unitario": Decimal("0.00")})
         for d in detalles:
             key = d.producto_id
             item = consolidado[key]
@@ -765,12 +1001,14 @@ def pedidos_pdf(request):
             item["cantidad"] += int(d.cantidad or 0)
             item["monto"] += d.subtotal or Decimal("0.00")
             item["clientes"].add(d.pedido.cliente_id)
+            item["precio_unitario"] = d.precio_unitario or Decimal("0.00")
 
-        data_consolidado = [["Producto", "Cant. total", "Clientes", "Monto total"]]
+        data_consolidado = [["Producto", "Precio", "Cant. total", "Clientes", "Monto total"]]
         for _, item in sorted(consolidado.items(), key=lambda kv: kv[1].get("nombre", "")):
             data_consolidado.append(
                 [
                     item.get("nombre", "-"),
+                    _fmt_money(item["precio_unitario"]),
                     str(item["cantidad"]),
                     str(len(item["clientes"])),
                     _fmt_money(item["monto"]),
@@ -779,7 +1017,7 @@ def pedidos_pdf(request):
 
         tabla_consolidado = Table(
             data_consolidado,
-            colWidths=[84 * mm, 28 * mm, 28 * mm, 36 * mm],
+            colWidths=[70 * mm, 24 * mm, 26 * mm, 26 * mm, 30 * mm],
             repeatRows=1,
         )
         tabla_consolidado.setStyle(
@@ -791,51 +1029,52 @@ def pedidos_pdf(request):
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
                     ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
                     ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-                    ("ALIGN", (3, 1), (3, -1), "RIGHT"),
+                    ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+                    ("ALIGN", (4, 1), (4, -1), "RIGHT"),
                 ]
             )
         )
         story.append(tabla_consolidado)
 
-        story.append(Spacer(1, 10))
-        story.append(Paragraph("DETALLE DE PRODUCTOS POR PEDIDO", label_style))
-        story.append(Spacer(1, 4))
-
-        data_detalle = [["Pedido", "Cliente", "Preventista", "Producto", "Cant.", "Precio", "Subtotal"]]
-        for d in detalles:
-            data_detalle.append(
-                [
-                    f"#{d.pedido_id}",
-                    f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
-                    d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
-                    d.producto.nombre,
-                    str(d.cantidad),
-                    _fmt_money(d.precio_unitario),
-                    _fmt_money(d.subtotal),
-                ]
-            )
-
-        tabla_detalle = Table(
-            data_detalle,
-            colWidths=[14 * mm, 34 * mm, 30 * mm, 54 * mm, 14 * mm, 18 * mm, 20 * mm],
-            repeatRows=1,
-        )
-        tabla_detalle.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), header_bg),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("FONTSIZE", (0, 0), (-1, 0), 8),
-                    ("FONTSIZE", (0, 1), (-1, -1), 7),
-                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
-                    ("ALIGN", (4, 1), (4, -1), "CENTER"),
-                    ("ALIGN", (5, 1), (6, -1), "RIGHT"),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ]
-            )
-        )
-        story.append(tabla_detalle)
+        # story.append(Spacer(1, 10))
+        # story.append(Paragraph("DETALLE DE PRODUCTOS POR PEDIDO", label_style))
+        # story.append(Spacer(1, 4))
+        #
+        # data_detalle = [["Pedido", "Cliente", "Preventista", "Producto", "Cant.", "Precio", "Subtotal"]]
+        # for d in detalles:
+        #     data_detalle.append(
+        #         [
+        #             f"#{d.pedido_id}",
+        #             f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
+        #             d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
+        #             d.producto.nombre,
+        #             str(d.cantidad),
+        #             _fmt_money(d.precio_unitario),
+        #             _fmt_money(d.subtotal),
+        #         ]
+        #     )
+        #
+        # tabla_detalle = Table(
+        #     data_detalle,
+        #     colWidths=[14 * mm, 34 * mm, 30 * mm, 54 * mm, 14 * mm, 18 * mm, 20 * mm],
+        #     repeatRows=1,
+        # )
+        # tabla_detalle.setStyle(
+        #     TableStyle(
+        #         [
+        #             ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+        #             ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        #             ("FONTSIZE", (0, 0), (-1, 0), 8),
+        #             ("FONTSIZE", (0, 1), (-1, -1), 7),
+        #             ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+        #             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+        #             ("ALIGN", (4, 1), (4, -1), "CENTER"),
+        #             ("ALIGN", (5, 1), (6, -1), "RIGHT"),
+        #             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        #         ]
+        #     )
+        # )
+        # story.append(tabla_detalle)
 
     doc.build(story, onFirstPage=_draw_header_footer, onLaterPages=_draw_header_footer)
 
@@ -930,7 +1169,16 @@ def _pedido_qs_para_usuario(user):
     if perfil and perfil.rol == "administrador":
         return qs
     if perfil and perfil.rol == "repartidor":
-        return qs.filter(estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO])
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            repartidor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(
+            preventista_id__in=preventistas_ids,
+            estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO]
+        )
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",

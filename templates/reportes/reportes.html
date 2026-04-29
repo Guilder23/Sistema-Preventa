@@ -83,7 +83,7 @@
                     <div class="reportes-filtros-grid reportes-filtros-grid--general">
                         <div class="filtro-item filtro-item--buscar">
                             <label class="small text-muted">Buscar</label>
-                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, usuario" autocomplete="off">
+                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, preventista, repartidor" autocomplete="off">
                         </div>
                         <div class="filtro-item">
                             <label class="small text-muted">Estado</label>
@@ -123,57 +123,12 @@
                     </div>
                 </div>
 
-                {# ===== DESPACHO ===== #}
-                <div class="reportes-filtros-grupo filtro-grupo-despacho" style="display: {% if tipo == 'despacho' %}block{% else %}none{% endif %};">
-                    <div class="reportes-filtros-grid reportes-filtros-grid--despacho">
-                        <div class="filtro-item filtro-item--buscar">
-                            <label class="small text-muted">Buscar</label>
-                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, repartidor" autocomplete="off">
-                        </div>
-                        <div class="filtro-item">
-                            <label class="small text-muted">Desde entrega</label>
-                            <input type="date" name="desde_entrega" value="{{ desde_entrega }}" class="form-control">
-                        </div>
-                        <div class="filtro-item">
-                            <label class="small text-muted">Hasta entrega</label>
-                            <input type="date" name="hasta_entrega" value="{{ hasta_entrega }}" class="form-control">
-                        </div>
-                        <div class="filtro-item">
-                            <label class="small text-muted">Estado entrega</label>
-                            <select name="estado_entrega" class="form-control">
-                                <option value="">Todos</option>
-                                <option value="pendiente" {% if estado_entrega == 'pendiente' %}selected{% endif %}>Pendiente</option>
-                                <option value="entregado_completo" {% if estado_entrega == 'entregado_completo' %}selected{% endif %}>Entregado completo</option>
-                                <option value="entregado_parcial" {% if estado_entrega == 'entregado_parcial' %}selected{% endif %}>Entregado parcial</option>
-                                <option value="no_entregado" {% if estado_entrega == 'no_entregado' %}selected{% endif %}>No entregado</option>
-                            </select>
-                        </div>
-                        <div class="filtro-item">
-                            <label class="small text-muted">Repartidor</label>
-                            <select name="repartidor" class="form-control">
-                                <option value="">Todos</option>
-                                {% for u in repartidores %}
-                                    <option value="{{ u.id }}" {% if repartidor == u.id|stringformat:'s' %}selected{% endif %}>
-                                        {{ u.get_full_name|default:u.username }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="filtro-item filtro-item--pdf">
-                            <label class="small text-muted d-block">PDF</label>
-                            <a class="btn btn-danger btn-icon-only btn-pdf-reportes" href="{% url 'reporte_pedidos_pdf' %}" target="_blank" rel="noopener" title="Exportar PDF">
-                                <i class="fas fa-file-pdf"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
                 {# ===== DEVOLUCIONES ===== #}
                 <div class="reportes-filtros-grupo filtro-grupo-devoluciones" style="display: {% if tipo == 'devoluciones' %}block{% else %}none{% endif %};">
                     <div class="reportes-filtros-grid reportes-filtros-grid--devoluciones">
                         <div class="filtro-item filtro-item--buscar">
                             <label class="small text-muted">Buscar</label>
-                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, producto, repartidor" autocomplete="off">
+                            <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente, CI/NIT, preventista, repartidor, producto" autocomplete="off">
                         </div>
                         <div class="filtro-item">
                             <label class="small text-muted">Desde</label>
