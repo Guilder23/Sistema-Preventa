@@ -289,5 +289,6 @@
     .reportes-filtros-grid--despacho,
     .reportes-filtros-grid--devoluciones {
         grid-template-columns: repeat(2, minmax(120px, 1fr)) !important;
+        row-gap: 0.8rem !important;
     }
 }
