@@ -1,0 +1,39 @@
+.reporte-card--despacho::before {
+    background: #2563eb;
+}
+
+.reporte-card--despacho .report-card-icon {
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.tabla-despacho-pedidos th,
+.tabla-despacho-pedidos td,
+.reporte-despacho-tabla th,
+.reporte-despacho-tabla td {
+    white-space: nowrap;
+}
+
+.reporte-despacho-tabla th {
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.reporte-despacho-tabla td {
+    font-size: 0.84rem;
+    vertical-align: middle;
+}
+
+.reporte-despacho-tabla .text-right {
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .tabla-despacho-pedidos th,
+    .tabla-despacho-pedidos td,
+    .reporte-despacho-tabla th,
+    .reporte-despacho-tabla td {
+        font-size: 0.78rem;
+    }
+}
