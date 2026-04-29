@@ -1169,7 +1169,16 @@ def _pedido_qs_para_usuario(user):
     if perfil and perfil.rol == "administrador":
         return qs
     if perfil and perfil.rol == "repartidor":
-        return qs.filter(estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO])
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            repartidor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(
+            preventista_id__in=preventistas_ids,
+            estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO]
+        )
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",

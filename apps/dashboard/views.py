@@ -39,10 +39,20 @@ def dashboard(request):
         clientes_qs = clientes_qs.filter(creado_por=user)
     total_clientes = clientes_qs.count()
 
-    # Pedidos: admin ve todos; preventista solo los suyos
+    # Pedidos: admin ve todos; preventista solo los suyos; repartidor solo los de sus preventistas
     pedidos_qs = Pedido.objects.all()
-    if not user.is_superuser and perfil and perfil.rol == "preventista":
-        pedidos_qs = pedidos_qs.filter(preventista=user)
+    if not user.is_superuser and perfil:
+        if perfil.rol == "preventista":
+            pedidos_qs = pedidos_qs.filter(preventista=user)
+        elif perfil.rol == "repartidor":
+            from apps.usuarios.models import PerfilUsuario
+            preventistas_ids = PerfilUsuario.objects.filter(
+                rol="preventista",
+                repartidor=user,
+                activo=True,
+                usuario__is_active=True,
+            ).values_list("usuario_id", flat=True)
+            pedidos_qs = pedidos_qs.filter(preventista_id__in=preventistas_ids)
     total_pedidos = pedidos_qs.count()
 
     hoy = timezone.localdate()
