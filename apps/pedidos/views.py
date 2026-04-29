@@ -125,7 +125,16 @@ def _pedidos_qs_para_usuario(user):
     if perfil and perfil.rol == "administrador":
         return qs
     if perfil and perfil.rol == "repartidor":
-        return qs.filter(estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO])
+        preventistas_ids = PerfilUsuario.objects.filter(
+            rol="preventista",
+            repartidor=user,
+            activo=True,
+            usuario__is_active=True,
+        ).values_list("usuario_id", flat=True)
+        return qs.filter(
+            preventista_id__in=preventistas_ids,
+            estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO]
+        )
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
             rol="preventista",
@@ -584,12 +593,22 @@ def pedidos_mapa(request):
 
 @role_required("repartidor")
 def pedidos_mapa_puntos(request):
+    # Obtener preventistas asignados al repartidor
+    perfil_repartidor = getattr(request.user, "perfil", None)
+    preventistas_ids = PerfilUsuario.objects.filter(
+        rol="preventista",
+        repartidor=request.user,
+        activo=True,
+        usuario__is_active=True,
+    ).values_list("usuario_id", flat=True)
+    
     pedidos = (
         Pedido.objects.select_related("cliente")
         .filter(
             cliente__activo=True,
             cliente__latitud__isnull=False,
             cliente__longitud__isnull=False,
+            preventista_id__in=preventistas_ids,
         )
         .order_by("-fecha")
     )
