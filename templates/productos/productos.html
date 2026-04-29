@@ -29,7 +29,7 @@
     <div class="card card-filtros">
         <div class="card-body py-3">
             <div class="row align-items-center">
-                <div class="col-md-4">
+                <div class="col-md-4 mb-2 mb-md-0">
                     <div class="input-group input-group-sm">
                         <div class="input-group-prepend">
                             <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
@@ -37,14 +37,14 @@
                         <input type="text" class="form-control form-control-sm border-left-0" id="buscarProducto" placeholder="Buscar por código o nombre..." value="{{ q }}">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-2 mb-md-0">
                     <select class="form-control form-control-sm" id="estadoProducto" name="estado">
                         <option value="" {% if not estado %}selected{% endif %}>Todos los estados</option>
                         <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
                         <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-2 mb-md-0">
                     <select class="form-control form-control-sm" id="stockProducto" name="stock">
                         <option value="" {% if not stock %}selected{% endif %}>Todo el stock</option>
                         <option value="verde" {% if stock == 'verde' %}selected{% endif %}>Stock alto</option>
