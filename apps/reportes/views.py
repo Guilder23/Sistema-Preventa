@@ -393,7 +393,7 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
         .order_by("producto__nombre", "pedido_id")
     )
 
-    consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set()})
+    consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set(), "precio_unitario": Decimal("0.00")})
     detalle_productos = []
     total_unidades = 0
 
@@ -407,6 +407,7 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
         item["cantidad"] += cantidad
         item["monto"] += subtotal
         item["clientes"].add(d.pedido.cliente_id)
+        item["precio_unitario"] = d.precio_unitario or Decimal("0.00")
 
         detalle_productos.append(
             {
@@ -428,6 +429,7 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
                 "cantidad_total": item["cantidad"],
                 "clientes_total": len(item["clientes"]),
                 "monto_total": item["monto"],
+                "precio_unitario": item["precio_unitario"],
             }
         )
 
@@ -991,7 +993,7 @@ def pedidos_pdf(request):
             .order_by("producto__nombre", "pedido_id")
         )
 
-        consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set()})
+        consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set(), "precio_unitario": Decimal("0.00")})
         for d in detalles:
             key = d.producto_id
             item = consolidado[key]
@@ -999,12 +1001,14 @@ def pedidos_pdf(request):
             item["cantidad"] += int(d.cantidad or 0)
             item["monto"] += d.subtotal or Decimal("0.00")
             item["clientes"].add(d.pedido.cliente_id)
+            item["precio_unitario"] = d.precio_unitario or Decimal("0.00")
 
-        data_consolidado = [["Producto", "Cant. total", "Clientes", "Monto total"]]
+        data_consolidado = [["Producto", "Precio", "Cant. total", "Clientes", "Monto total"]]
         for _, item in sorted(consolidado.items(), key=lambda kv: kv[1].get("nombre", "")):
             data_consolidado.append(
                 [
                     item.get("nombre", "-"),
+                    _fmt_money(item["precio_unitario"]),
                     str(item["cantidad"]),
                     str(len(item["clientes"])),
                     _fmt_money(item["monto"]),
@@ -1013,7 +1017,7 @@ def pedidos_pdf(request):
 
         tabla_consolidado = Table(
             data_consolidado,
-            colWidths=[84 * mm, 28 * mm, 28 * mm, 36 * mm],
+            colWidths=[70 * mm, 24 * mm, 26 * mm, 26 * mm, 30 * mm],
             repeatRows=1,
         )
         tabla_consolidado.setStyle(
@@ -1025,51 +1029,52 @@ def pedidos_pdf(request):
                     ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
                     ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
                     ("ALIGN", (1, 1), (-1, -1), "CENTER"),
-                    ("ALIGN", (3, 1), (3, -1), "RIGHT"),
+                    ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+                    ("ALIGN", (4, 1), (4, -1), "RIGHT"),
                 ]
             )
         )
         story.append(tabla_consolidado)
 
-        story.append(Spacer(1, 10))
-        story.append(Paragraph("DETALLE DE PRODUCTOS POR PEDIDO", label_style))
-        story.append(Spacer(1, 4))
-
-        data_detalle = [["Pedido", "Cliente", "Preventista", "Producto", "Cant.", "Precio", "Subtotal"]]
-        for d in detalles:
-            data_detalle.append(
-                [
-                    f"#{d.pedido_id}",
-                    f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
-                    d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
-                    d.producto.nombre,
-                    str(d.cantidad),
-                    _fmt_money(d.precio_unitario),
-                    _fmt_money(d.subtotal),
-                ]
-            )
-
-        tabla_detalle = Table(
-            data_detalle,
-            colWidths=[14 * mm, 34 * mm, 30 * mm, 54 * mm, 14 * mm, 18 * mm, 20 * mm],
-            repeatRows=1,
-        )
-        tabla_detalle.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), header_bg),
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                    ("FONTSIZE", (0, 0), (-1, 0), 8),
-                    ("FONTSIZE", (0, 1), (-1, -1), 7),
-                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
-                    ("ALIGN", (4, 1), (4, -1), "CENTER"),
-                    ("ALIGN", (5, 1), (6, -1), "RIGHT"),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ]
-            )
-        )
-        story.append(tabla_detalle)
+        # story.append(Spacer(1, 10))
+        # story.append(Paragraph("DETALLE DE PRODUCTOS POR PEDIDO", label_style))
+        # story.append(Spacer(1, 4))
+        #
+        # data_detalle = [["Pedido", "Cliente", "Preventista", "Producto", "Cant.", "Precio", "Subtotal"]]
+        # for d in detalles:
+        #     data_detalle.append(
+        #         [
+        #             f"#{d.pedido_id}",
+        #             f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
+        #             d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
+        #             d.producto.nombre,
+        #             str(d.cantidad),
+        #             _fmt_money(d.precio_unitario),
+        #             _fmt_money(d.subtotal),
+        #         ]
+        #     )
+        #
+        # tabla_detalle = Table(
+        #     data_detalle,
+        #     colWidths=[14 * mm, 34 * mm, 30 * mm, 54 * mm, 14 * mm, 18 * mm, 20 * mm],
+        #     repeatRows=1,
+        # )
+        # tabla_detalle.setStyle(
+        #     TableStyle(
+        #         [
+        #             ("BACKGROUND", (0, 0), (-1, 0), header_bg),
+        #             ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        #             ("FONTSIZE", (0, 0), (-1, 0), 8),
+        #             ("FONTSIZE", (0, 1), (-1, -1), 7),
+        #             ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+        #             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+        #             ("ALIGN", (4, 1), (4, -1), "CENTER"),
+        #             ("ALIGN", (5, 1), (6, -1), "RIGHT"),
+        #             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        #         ]
+        #     )
+        # )
+        # story.append(tabla_detalle)
 
     doc.build(story, onFirstPage=_draw_header_footer, onLaterPages=_draw_header_footer)
 
