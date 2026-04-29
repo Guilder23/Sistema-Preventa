@@ -58,7 +58,12 @@ def _pedidos_filtrados(request, user):
     registrador_ids = pedidos_base.values_list("registrado_por_id", flat=True).distinct()
     registradores = User.objects.filter(id__in=[r for r in registrador_ids if r]).order_by("username")
 
-    if estado not in {Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_ANULADO}:
+    if estado not in {
+        Pedido.ESTADO_PENDIENTE,
+        Pedido.ESTADO_VENDIDO,
+        Pedido.ESTADO_ANULADO,
+        Pedido.ESTADO_NO_ENTREGADO,
+    }:
         estado = ""
 
     if q:
@@ -169,6 +174,15 @@ def reportes_inicio(request):
     # Si el tipo de reporte es "devoluciones", mostramos una vista diferente
     if filtros.get("tipo") == "devoluciones":
         return _reporte_devoluciones_inicio(request, filtros)
+    if filtros.get("tipo") == "despacho":
+        return _reporte_despacho_inicio(
+            request,
+            pedidos,
+            filtros,
+            preventistas,
+            repartidores,
+            registradores,
+        )
 
     pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
 
@@ -313,6 +327,151 @@ def reportes_inicio(request):
             "subtotal_vendidos": subtotal_vendidos,
             "subtotal_pendientes": subtotal_pendientes,
             "subtotal_anulados": subtotal_anulados,
+        },
+    )
+
+
+def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidores, registradores):
+    from apps.pedidos.models import DetallePedido, DevolucionPedido, Pedido
+    from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+
+    pedidos = pedidos.select_related("cliente", "preventista", "registrado_por")
+    total_pedidos = pedidos.count()
+    total_monto = pedidos.aggregate(total=Sum("total")).get("total") or Decimal("0.00")
+    total_pendientes = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE).count()
+    total_no_entregados = pedidos.filter(estado=Pedido.ESTADO_NO_ENTREGADO).count()
+    total_entregados = pedidos.filter(estado=Pedido.ESTADO_VENDIDO).count()
+
+    pedido_ids = list(pedidos.values_list("id", flat=True))
+    detalles = (
+        DetallePedido.objects.select_related("pedido", "pedido__cliente", "pedido__preventista", "producto")
+        .filter(pedido_id__in=pedido_ids)
+        .order_by("producto__nombre", "pedido_id")
+    )
+
+    consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set()})
+    detalle_productos = []
+    total_unidades = 0
+
+    for d in detalles:
+        cantidad = int(d.cantidad or 0)
+        subtotal = d.subtotal or Decimal("0.00")
+        total_unidades += cantidad
+
+        item = consolidado[d.producto_id]
+        item["nombre"] = d.producto.nombre
+        item["cantidad"] += cantidad
+        item["monto"] += subtotal
+        item["clientes"].add(d.pedido.cliente_id)
+
+        detalle_productos.append(
+            {
+                "pedido_id": d.pedido_id,
+                "cliente_nombre": f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
+                "preventista_nombre": d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
+                "producto_nombre": d.producto.nombre,
+                "cantidad": cantidad,
+                "precio_unitario": d.precio_unitario or Decimal("0.00"),
+                "subtotal": subtotal,
+            }
+        )
+
+    lista_consolidado = []
+    for _, item in sorted(consolidado.items(), key=lambda kv: kv[1].get("nombre", "")):
+        lista_consolidado.append(
+            {
+                "producto_nombre": item.get("nombre", "-"),
+                "cantidad_total": item["cantidad"],
+                "clientes_total": len(item["clientes"]),
+                "monto_total": item["monto"],
+            }
+        )
+
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(pedidos, 10)
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    pedidos_page = page_obj.object_list
+    devolucion_reciente_por_pedido = {}
+    pedidos_page_ids = [p.id for p in pedidos_page]
+    if pedidos_page_ids:
+        devoluciones = (
+            DevolucionPedido.objects.filter(pedido_id__in=pedidos_page_ids)
+            .select_related("repartidor")
+            .order_by("pedido_id", "-fecha_creacion")
+        )
+        for devolucion in devoluciones:
+            if devolucion.pedido_id not in devolucion_reciente_por_pedido:
+                devolucion_reciente_por_pedido[devolucion.pedido_id] = devolucion
+
+    def _cliente_corto(cliente):
+        nombres = (cliente.nombres or "").strip()
+        apellidos = (cliente.apellidos or "").strip()
+        if not apellidos:
+            return nombres
+        iniciales = " ".join([f"{parte[0].upper()}." for parte in apellidos.split() if parte])
+        return f"{nombres} {iniciales}".strip()
+
+    for p in pedidos_page:
+        p.cliente_corto = _cliente_corto(p.cliente)
+        p.preventista_nombre = p.preventista.get_full_name() or p.preventista.username
+        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if p.fecha_entrega_estimada else "-"
+        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
+        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+
+        devol = devolucion_reciente_por_pedido.get(p.id)
+        if devol and devol.repartidor:
+            p.repartidor_nombre = devol.repartidor.get_full_name() or devol.repartidor.username
+        else:
+            p.repartidor_nombre = "-"
+
+        if p.estado == Pedido.ESTADO_NO_ENTREGADO:
+            p.estado_entrega = "No entregado"
+            p.estado_entrega_key = "no_entregado"
+        elif p.estado == Pedido.ESTADO_VENDIDO:
+            if devol and devol.tipo == DevolucionPedido.TIPO_PARCIAL:
+                p.estado_entrega = "Entregado parcial"
+                p.estado_entrega_key = "entregado_parcial"
+            else:
+                p.estado_entrega = "Entregado completo"
+                p.estado_entrega_key = "entregado_completo"
+        elif p.estado == Pedido.ESTADO_PENDIENTE:
+            p.estado_entrega = "Pendiente"
+            p.estado_entrega_key = "pendiente"
+        else:
+            p.estado_entrega = "-"
+            p.estado_entrega_key = "otro"
+
+    return render(
+        request,
+        "reportes/reportes_despacho.html",
+        {
+            "pedidos": pedidos_page,
+            "page_obj": page_obj,
+            "paginator": paginator,
+            "q": filtros["q"],
+            "tipo": filtros["tipo"],
+            "desde_entrega": filtros.get("desde_entrega", ""),
+            "hasta_entrega": filtros.get("hasta_entrega", ""),
+            "estado_entrega": filtros["estado_entrega"],
+            "repartidor": filtros.get("repartidor", ""),
+            "preventista": filtros["preventista"],
+            "preventistas": preventistas,
+            "repartidores": repartidores,
+            "registradores": registradores,
+            "total_pedidos": total_pedidos,
+            "total_monto": total_monto,
+            "total_pendientes": total_pendientes,
+            "total_entregados": total_entregados,
+            "total_no_entregados": total_no_entregados,
+            "total_unidades": total_unidades,
+            "consolidado": lista_consolidado,
+            "detalle_productos": detalle_productos,
         },
     )
 
@@ -547,22 +706,43 @@ def pedidos_pdf(request):
     story.append(header_table)
     story.append(Spacer(1, 10))
 
-    filtros_box = [
-        Paragraph("FILTROS APLICADOS", label_style),
-        Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
-        Paragraph(f"Tipo reporte: {filtros['tipo'].capitalize()}", value_style),
-        Paragraph(f"Estado: {filtros['estado'] or 'Todos'}", value_style),
-        Paragraph(f"Preventista: {filtros['preventista'] or 'Todos'}", value_style),
-        Paragraph(f"Desde: {filtros['desde'] or '--'}", value_style),
-        Paragraph(f"Hasta: {filtros['hasta'] or '--'}", value_style),
-    ]
-    resumen_box = [
-        Paragraph("RESUMEN", label_style),
-        Paragraph(f"Total pedidos: {pedidos.count()}", value_style),
-        Paragraph(f"Vendidos: {total_vendidos}", small_style),
-        Paragraph(f"Pendientes: {total_pendientes}", small_style),
-        Paragraph(f"Anulados: {total_anulados}", small_style),
-    ]
+    if filtros["tipo"] == "despacho":
+        filtros_box = [
+            Paragraph("FILTROS APLICADOS", label_style),
+            Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
+            Paragraph("Tipo reporte: Despacho", value_style),
+            Paragraph(f"Desde entrega: {filtros['desde_entrega'] or '--'}", value_style),
+            Paragraph(f"Hasta entrega: {filtros['hasta_entrega'] or '--'}", value_style),
+            Paragraph(f"Estado entrega: {filtros['estado_entrega'] or 'Todos'}", value_style),
+            Paragraph(f"Repartidor: {filtros['repartidor'] or 'Todos'}", value_style),
+        ]
+        resumen_box = [
+            Paragraph("RESUMEN", label_style),
+            Paragraph(f"Total pedidos: {pedidos.count()}", value_style),
+            Paragraph(f"Entregados: {total_vendidos}", small_style),
+            Paragraph(f"Pendientes: {total_pendientes}", small_style),
+            Paragraph(
+                f"No entregados: {pedidos.filter(estado=Pedido.ESTADO_NO_ENTREGADO).count()}",
+                small_style,
+            ),
+        ]
+    else:
+        filtros_box = [
+            Paragraph("FILTROS APLICADOS", label_style),
+            Paragraph(f"Buscar: {filtros['q'] or 'Todos'}", value_style),
+            Paragraph(f"Tipo reporte: {filtros['tipo'].capitalize()}", value_style),
+            Paragraph(f"Estado: {filtros['estado'] or 'Todos'}", value_style),
+            Paragraph(f"Preventista: {filtros['preventista'] or 'Todos'}", value_style),
+            Paragraph(f"Desde: {filtros['desde'] or '--'}", value_style),
+            Paragraph(f"Hasta: {filtros['hasta'] or '--'}", value_style),
+        ]
+        resumen_box = [
+            Paragraph("RESUMEN", label_style),
+            Paragraph(f"Total pedidos: {pedidos.count()}", value_style),
+            Paragraph(f"Vendidos: {total_vendidos}", small_style),
+            Paragraph(f"Pendientes: {total_pendientes}", small_style),
+            Paragraph(f"Anulados: {total_anulados}", small_style),
+        ]
 
     info_table = Table(
         [[filtros_box, resumen_box]],
