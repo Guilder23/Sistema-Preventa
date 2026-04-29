@@ -3,7 +3,7 @@
 
     function getFilterValues() {
         return {
-            q: (document.getElementById('q')?.value || '').trim(),
+            q: (document.getElementById('q_devoluciones_lista')?.value || '').trim(),
             estado_reposicion: (document.getElementById('estado_reposicion')?.value || '').trim(),
             tipo: (document.getElementById('tipo')?.value || '').trim(),
             repartidor: (document.getElementById('repartidor')?.value || '').trim(),
@@ -24,7 +24,30 @@
             }
         });
 
+        // Guardar foco si estamos en el buscador
+        var activeInput = document.activeElement;
+        if (activeInput && activeInput.name === 'q') {
+            sessionStorage.setItem('devolucionesSearchFocusId', activeInput.id);
+        }
+
         window.location.href = url.toString();
+    }
+
+    // Restaurar foco con un pequeño retraso
+    function restoreFocus() {
+        var focusId = sessionStorage.getItem('devolucionesSearchFocusId');
+        if (focusId) {
+            setTimeout(function() {
+                var qInput = document.getElementById(focusId);
+                if (qInput) {
+                    qInput.focus();
+                    var val = qInput.value;
+                    qInput.value = '';
+                    qInput.value = val;
+                }
+                sessionStorage.removeItem('devolucionesSearchFocusId');
+            }, 150);
+        }
     }
 
     function renderResumen(bodyId, totalItemsId, totalAumentaId, resumen) {
@@ -69,7 +92,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        var qInput = document.getElementById('q');
+        var qInput = document.getElementById('q_devoluciones_lista');
         var estadoSelect = document.getElementById('estado_reposicion');
         var tipoSelect = document.getElementById('tipo');
         var repartidorSelect = document.getElementById('repartidor');
@@ -77,10 +100,13 @@
         var fechaHasta = document.getElementById('fecha_hasta');
         var debounceTimer;
 
+        // Restaurar foco
+        restoreFocus();
+
         if (qInput) {
             qInput.addEventListener('input', function () {
                 window.clearTimeout(debounceTimer);
-                debounceTimer = window.setTimeout(applyRealtimeFilters, 350);
+                debounceTimer = window.setTimeout(applyRealtimeFilters, 1000);
             });
             qInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {

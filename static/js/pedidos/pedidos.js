@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const fechaDesdeInput = document.getElementById('fechaDesdePedido');
     const fechaHastaInput = document.getElementById('fechaHastaPedido');
     const pedidoTabs = document.getElementById('pedidoTabs');
+    
     if (!input && !estadoSelect && !rolSelect && !fechaDesdeInput && !fechaHastaInput && !pedidoTabs) return;
 
     let activeTab = (pedidoTabs && pedidoTabs.dataset.tab ? pedidoTabs.dataset.tab : 'pendientes').trim();
@@ -16,26 +17,54 @@ document.addEventListener('DOMContentLoaded', function () {
         const rol = (rolSelect && rolSelect.value ? rolSelect.value : '').trim();
         const fechaDesde = (fechaDesdeInput && fechaDesdeInput.value ? fechaDesdeInput.value : '').trim();
         const fechaHasta = (fechaHastaInput && fechaHastaInput.value ? fechaHastaInput.value : '').trim();
+        
         const url = new URL(window.location.href);
         if (q) url.searchParams.set('q', q);
         else url.searchParams.delete('q');
+        
         if (estado) url.searchParams.set('estado', estado);
         else url.searchParams.delete('estado');
+        
         if (rol) url.searchParams.set('rol', rol);
         else url.searchParams.delete('rol');
+        
         if (fechaDesde) url.searchParams.set('fecha_desde', fechaDesde);
         else url.searchParams.delete('fecha_desde');
+        
         if (fechaHasta) url.searchParams.set('fecha_hasta', fechaHasta);
         else url.searchParams.delete('fecha_hasta');
+        
         url.searchParams.set('tab', activeTab);
+
+        // Guardar información de que venimos de una búsqueda para restaurar el foco
+        if (document.activeElement === input) {
+            sessionStorage.setItem('searchFocus', 'buscarPedido');
+        }
+        
         window.location.href = url.toString();
+    }
+
+    // Restaurar foco si venimos de una búsqueda
+    if (input && sessionStorage.getItem('searchFocus') === 'buscarPedido') {
+        input.focus();
+        const val = input.value;
+        input.value = '';
+        input.value = val; // Poner el cursor al final
+        sessionStorage.removeItem('searchFocus');
     }
 
     let t;
     if (input) {
         input.addEventListener('input', function () {
             clearTimeout(t);
-            t = setTimeout(applyFilters, 250);
+            t = setTimeout(applyFilters, 1000);
+        });
+
+        input.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                clearTimeout(t);
+                applyFilters();
+            }
         });
     }
 
@@ -68,12 +97,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (pedidoTabs) {
-        const tabButtons = pedidoTabs.querySelectorAll('[data-tab]');
-        tabButtons.forEach(function (btn) {
+        pedidoTabs.querySelectorAll('.pedido-tab-btn').forEach(btn => {
             btn.addEventListener('click', function () {
-                const next = (btn.dataset.tab || '').trim();
-                if (next !== 'pendientes' && next !== 'anteriores') return;
-                activeTab = next;
+                activeTab = this.dataset.tab;
                 applyFilters();
             });
         });

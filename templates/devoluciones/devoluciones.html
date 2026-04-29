@@ -23,11 +23,11 @@
             <form method="get" action="{% url 'listar_devoluciones' %}" id="filtrosDevolucionesForm">
                 <div class="row align-items-end">
                     <div class="col-md-3 mb-2 mb-md-0">
-                        <label for="q" class="form-label-sm">Buscar</label>
+                        <label for="q_devoluciones_lista" class="form-label-sm">Buscar</label>
                         <input
                             type="text"
                             class="form-control form-control-sm"
-                            id="q"
+                            id="q_devoluciones_lista"
                             name="q"
                             placeholder="Pedido, cliente o repartidor..."
                             value="{{ q }}"
