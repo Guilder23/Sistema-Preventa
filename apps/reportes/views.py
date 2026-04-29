@@ -21,6 +21,22 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
+def _display_user_name(user):
+    if not user:
+        return "-"
+    return user.get_full_name() or user.username
+
+
+def _pedido_repartidor_nombre(pedido, devolucion=None):
+    if devolucion and getattr(devolucion, "repartidor", None):
+        return _display_user_name(devolucion.repartidor)
+
+    preventista = getattr(pedido, "preventista", None)
+    perfil = getattr(preventista, "perfil", None) if preventista else None
+    repartidor_asignado = getattr(perfil, "repartidor", None) if perfil else None
+    return _display_user_name(repartidor_asignado)
+
+
 @login_required
 def _pedidos_filtrados(request, user):
     from apps.pedidos.models import DevolucionPedido, Pedido
@@ -44,7 +60,12 @@ def _pedidos_filtrados(request, user):
     if tipo == "despacho" and not estado:
         estado = Pedido.ESTADO_PENDIENTE
 
-    pedidos = _pedido_qs_para_usuario(user).select_related("cliente", "preventista")
+    pedidos = _pedido_qs_para_usuario(user).select_related(
+        "cliente",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+    )
     pedidos_base = pedidos
 
     # Opciones de preventista dentro del alcance del usuario.
@@ -67,12 +88,23 @@ def _pedidos_filtrados(request, user):
         estado = ""
 
     if q:
+        pedido_ids_con_repartidor_q = DevolucionPedido.objects.filter(
+            Q(repartidor__username__icontains=q)
+            | Q(repartidor__first_name__icontains=q)
+            | Q(repartidor__last_name__icontains=q)
+        ).values_list("pedido_id", flat=True).distinct()
         pedidos = pedidos.filter(
             Q(cliente__nombres__icontains=q)
             | Q(cliente__apellidos__icontains=q)
             | Q(cliente__ci_nit__icontains=q)
             | Q(preventista__username__icontains=q)
-        )
+            | Q(preventista__first_name__icontains=q)
+            | Q(preventista__last_name__icontains=q)
+            | Q(preventista__perfil__repartidor__username__icontains=q)
+            | Q(preventista__perfil__repartidor__first_name__icontains=q)
+            | Q(preventista__perfil__repartidor__last_name__icontains=q)
+            | Q(id__in=pedido_ids_con_repartidor_q)
+        ).distinct()
 
     if estado:
         pedidos = pedidos.filter(estado=estado)
@@ -110,7 +142,8 @@ def _pedidos_filtrados(request, user):
             pedidos = pedidos.filter(preventista_id=preventista_id_int)
             preventista_id = str(preventista_id_int)
 
-    # Filtrar por repartidor si se especifica (por devoluciones)
+    # Filtrar por repartidor, considerando tanto el asignado al preventista
+    # como el que figure en devoluciones para pedidos ya gestionados.
     repartidor_id = ""
     if repartidor_id_raw:
         try:
@@ -118,11 +151,13 @@ def _pedidos_filtrados(request, user):
         except ValueError:
             repartidor_id_int = None
         if repartidor_id_int is not None:
-            # Obtener IDs de pedidos que tienen devoluciones de este repartidor
             pedido_ids_con_repartidor = DevolucionPedido.objects.filter(
                 repartidor_id=repartidor_id_int
             ).values_list("pedido_id", flat=True).distinct()
-            pedidos = pedidos.filter(id__in=pedido_ids_con_repartidor)
+            pedidos = pedidos.filter(
+                Q(preventista__perfil__repartidor_id=repartidor_id_int)
+                | Q(id__in=pedido_ids_con_repartidor)
+            ).distinct()
             repartidor_id = str(repartidor_id_int)
 
     fecha_desde = parse_date(desde) if desde else None
@@ -184,7 +219,13 @@ def reportes_inicio(request):
             registradores,
         )
 
-    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
+    pedidos = pedidos.select_related(
+        "cliente__creado_por",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+        "registrado_por",
+    )
 
     resumen = pedidos.aggregate(total_monto=Sum("total"))
     total_pedidos = pedidos.count()
@@ -276,10 +317,7 @@ def reportes_inicio(request):
         p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-"
 
         devol = devolucion_reciente_por_pedido.get(p.id)
-        if devol and devol.repartidor:
-            p.repartidor_nombre = devol.repartidor.get_full_name() or devol.repartidor.username
-        else:
-            p.repartidor_nombre = "-"
+        p.repartidor_nombre = _pedido_repartidor_nombre(p, devol)
 
         if p.estado == Pedido.ESTADO_NO_ENTREGADO:
             p.estado_entrega = "No entregado"
@@ -335,7 +373,13 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
     from apps.pedidos.models import DetallePedido, DevolucionPedido, Pedido
     from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 
-    pedidos = pedidos.select_related("cliente", "preventista", "registrado_por")
+    pedidos = pedidos.select_related(
+        "cliente",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+        "registrado_por",
+    )
     total_pedidos = pedidos.count()
     total_monto = pedidos.aggregate(total=Sum("total")).get("total") or Decimal("0.00")
     total_pendientes = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE).count()
@@ -425,10 +469,7 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
         p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
 
         devol = devolucion_reciente_por_pedido.get(p.id)
-        if devol and devol.repartidor:
-            p.repartidor_nombre = devol.repartidor.get_full_name() or devol.repartidor.username
-        else:
-            p.repartidor_nombre = "-"
+        p.repartidor_nombre = _pedido_repartidor_nombre(p, devol)
 
         if p.estado == Pedido.ESTADO_NO_ENTREGADO:
             p.estado_entrega = "No entregado"
@@ -484,6 +525,7 @@ def _reporte_devoluciones_inicio(request, filtros):
     # Buscamos ítems devueltos en el rango de fecha
     items_qs = DevolucionItem.objects.select_related(
         "devolucion__pedido__cliente",
+        "devolucion__pedido__preventista",
         "devolucion__repartidor",
         "producto"
     )
@@ -497,8 +539,14 @@ def _reporte_devoluciones_inicio(request, filtros):
         items_qs = items_qs.filter(
             Q(devolucion__pedido__cliente__nombres__icontains=filtros["q"]) |
             Q(devolucion__pedido__cliente__apellidos__icontains=filtros["q"]) |
+            Q(devolucion__pedido__cliente__ci_nit__icontains=filtros["q"]) |
+            Q(devolucion__pedido__preventista__username__icontains=filtros["q"]) |
+            Q(devolucion__pedido__preventista__first_name__icontains=filtros["q"]) |
+            Q(devolucion__pedido__preventista__last_name__icontains=filtros["q"]) |
             Q(producto__nombre__icontains=filtros["q"]) |
-            Q(devolucion__repartidor__username__icontains=filtros["q"])
+            Q(devolucion__repartidor__username__icontains=filtros["q"]) |
+            Q(devolucion__repartidor__first_name__icontains=filtros["q"]) |
+            Q(devolucion__repartidor__last_name__icontains=filtros["q"])
         )
 
     # Solo devoluciones pendientes de recibir (repuesto=False)
@@ -762,7 +810,13 @@ def pedidos_pdf(request):
     story.append(info_table)
     story.append(Spacer(1, 12))
 
-    pedidos = pedidos.select_related("cliente__creado_por", "preventista", "registrado_por")
+    pedidos = pedidos.select_related(
+        "cliente__creado_por",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+        "registrado_por",
+    )
     pedido_ids = list(pedidos.values_list("id", flat=True))
     devueltos_por_pedido = {}
     monto_devuelto_por_pedido = defaultdict(lambda: Decimal("0.00"))
@@ -827,7 +881,7 @@ def pedidos_pdf(request):
                 else (p.preventista.get_full_name() or p.preventista.username)
             )
             devol = devolucion_reciente_por_pedido.get(p.id)
-            repartidor = (devol.repartidor.get_full_name() or devol.repartidor.username) if (devol and devol.repartidor) else "-"
+            repartidor = _pedido_repartidor_nombre(p, devol)
 
             if p.estado == Pedido.ESTADO_NO_ENTREGADO:
                 estado_entrega = "No entregado"
