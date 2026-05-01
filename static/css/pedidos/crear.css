@@ -1,48 +1,48 @@
-/* Modal crear pedido
+/* Crear pedido page styles */
 
-#modalCrearPedido .table thead th {
+#crearPedidoPage .table thead th {
 	white-space: nowrap;
 }
 
-#modalCrearPedido .table thead {
+#crearPedidoPage .table thead {
 	background: var(--color-primario);
 	color: #fff;
 }
 
-#modalCrearPedido .table thead th {
+#crearPedidoPage .table thead th {
 	border-top: 0;
 	border-bottom: 0;
 	background: var(--color-primario) !important;
 	color: #fff !important;
 }
 
-#modalCrearPedido #tablaItemsPedido thead th {
+#crearPedidoPage #tablaItemsPedido thead th {
 	background: var(--color-primario) !important;
 	color: #fff !important;
 }
 
-#modalCrearPedido .table td,
-#modalCrearPedido .table th {
+#crearPedidoPage .table td,
+#crearPedidoPage .table th {
 	vertical-align: middle;
 }
 
-#modalCrearPedido .item-precio,
-#modalCrearPedido .item-subtotal {
+#crearPedidoPage .item-precio,
+#crearPedidoPage .item-subtotal {
 	background: #f8f9fa;
 }
 
-#modalCrearPedido #pedidoTotal {
+#crearPedidoPage #pedidoTotal {
 	font-variant-numeric: tabular-nums;
 }
 
-#modalCrearPedido .item-producto-buscar {
+#crearPedidoPage .item-producto-buscar {
 	min-width: 240px;
 	width: 100%;
 	font-size: 1.1em;
 	padding: 4px 6px;
 }
 
-#modalCrearPedido .item-cantidad {
+#crearPedidoPage .item-cantidad {
 	min-width: 40px;
 	max-width: 50px;
 	text-align: center;
@@ -50,41 +50,41 @@
 	padding: 4px 6px;
 }
 
-#modalCrearPedido .item-cantidad-wrap {
+#crearPedidoPage .item-cantidad-wrap {
 	display: flex;
 	align-items: center;
 	gap: 2px;
 }
 
-#modalCrearPedido .item-cantidad-wrap .item-cantidad {
+#crearPedidoPage .item-cantidad-wrap .item-cantidad {
 	min-width: 35px;
 	text-align: center;
 }
 
-#modalCrearPedido .item-cantidad-wrap .btn {
+#crearPedidoPage .item-cantidad-wrap .btn {
 	display: none;
 }
 
 /* Evita que el dropdown del autocomplete se recorte dentro de la tabla */
-/* #modalCrearPedido .table-responsive {
+#crearPedidoPage .table-responsive {
 	overflow-x: auto;
 	overflow-y: visible;
 }
 
-#modalCrearPedido #tablaItemsPedido,
-#modalCrearPedido #tablaItemsPedido td {
+#crearPedidoPage #tablaItemsPedido,
+#crearPedidoPage #tablaItemsPedido td {
 	overflow: visible;
-} */
+}
 
 /* Autocomplete dropdown */
-/* #modalCrearPedido .ac-wrap {
+#crearPedidoPage .ac-wrap {
 	position: relative;
 	z-index: 1065;
 }
 
-#modalCrearPedido .ac-dropdown {
+#crearPedidoPage .ac-dropdown {
 	position: absolute;
-	z-index: 1070; 
+	z-index: 1070; /* por encima de celdas/filas del detalle */
 	top: calc(100% + 4px);
 	left: 0;
 	right: 0;
@@ -96,7 +96,7 @@
 	box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
 }
 
-#modalCrearPedido .ac-item {
+#crearPedidoPage .ac-item {
 	width: 100%;
 	text-align: left;
 	padding: 8px 10px;
@@ -105,20 +105,20 @@
 	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-#modalCrearPedido .ac-item:hover,
-#modalCrearPedido .ac-item.active {
+#crearPedidoPage .ac-item:hover,
+#crearPedidoPage .ac-item.active {
 	background: rgba(0, 0, 0, 0.04);
 }
 
-#modalCrearPedido .ac-empty {
+#crearPedidoPage .ac-empty {
 	padding: 8px 10px;
 	color: #6c757d;
-} */
+}
 
 /* Dropdown flotante (se renderiza en body para evitar recortes por scroll/overflow) */
-/* .ac-dropdown-floating {
+.ac-dropdown-floating {
 	position: fixed;
-	z-index: 2060;
+	z-index: 1025;
 	max-height: 300px;
 	overflow: auto;
 	background: #fff;
@@ -147,71 +147,71 @@
 }
 
 @media (max-width: 768px) {
-	#modalCrearPedido .col-stock,
-	#modalCrearPedido .col-precio {
+	#crearPedidoPage .col-stock,
+	#crearPedidoPage .col-precio {
 		display: none;
 	}
 
-	#modalCrearPedido .table thead {
+	#crearPedidoPage .table thead {
 		display: none;
 	}
 
-	#modalCrearPedido .table-responsive {
+	#crearPedidoPage .table-responsive {
 		overflow-x: auto;
 	}
 
-	#modalCrearPedido #tablaItemsPedido {
+	#crearPedidoPage #tablaItemsPedido {
 		width: 100%;
 		table-layout: auto;
 	}
 
-	#modalCrearPedido #tablaItemsPedido tbody tr {
+	#crearPedidoPage #tablaItemsPedido tbody tr {
 		display: flex;
 		align-items: center;
 		gap: 2px;
 	}
 
-	#modalCrearPedido #tablaItemsPedido tbody td {
+	#crearPedidoPage #tablaItemsPedido tbody td {
 		border-top: 0;
-	} */
+	}
 
 	/* Producto */
-	/* #modalCrearPedido #tablaItemsPedido tbody td:nth-child(1) {
+	#crearPedidoPage #tablaItemsPedido tbody td:nth-child(1) {
 		flex: 2 1 60%;
 		min-width: 0;
-	} */
+	}
 
 	/* Cantidad */
-	/* #modalCrearPedido #tablaItemsPedido tbody td:nth-child(4) {
+	#crearPedidoPage #tablaItemsPedido tbody td:nth-child(4) {
 		flex: 0 0 80px;
-	} */
+	}
 
 	/* Subtotal */
-	/* #modalCrearPedido #tablaItemsPedido tbody td:nth-child(5) {
+	#crearPedidoPage #tablaItemsPedido tbody td:nth-child(5) {
 		flex: 0 0 70px;
-	} */
+	}
 
 	/* Acción */
-	/* #modalCrearPedido #tablaItemsPedido tbody td:nth-child(6) {
+	#crearPedidoPage #tablaItemsPedido tbody td:nth-child(6) {
 		flex: 0 0 24px;
 		padding-left: 0;
 		padding-right: 0;
 	}
 
-	#modalCrearPedido .table td,
-	#modalCrearPedido .table th {
+	#crearPedidoPage .table td,
+	#crearPedidoPage .table th {
 		padding: 0.35rem;
 		font-size: 13px;
 	}
 
-	#modalCrearPedido .item-producto-buscar {
+	#crearPedidoPage .item-producto-buscar {
 		min-width: 0;
 		width: 100%;
 		font-size: 1.1em;
 		padding: 4px 6px;
 	}
 
-	#modalCrearPedido .item-cantidad {
+	#crearPedidoPage .item-cantidad {
 		min-width: 0;
 		max-width: 50px;
 		text-align: center;
@@ -219,15 +219,15 @@
 		padding: 4px 6px;
 	}
 
-	#modalCrearPedido .item-cantidad-wrap {
+	#crearPedidoPage .item-cantidad-wrap {
 		gap: 2px;
 	}
 
-	#modalCrearPedido .item-cantidad-wrap .btn {
+	#crearPedidoPage .item-cantidad-wrap .btn {
 		display: none;
 	}
 
-	#modalCrearPedido .item-cantidad-wrap .item-cantidad {
+	#crearPedidoPage .item-cantidad-wrap .item-cantidad {
 		min-width: 0;
 		width: 44px;
 		padding-left: 6px;
@@ -235,15 +235,15 @@
 		height: 24px;
 	}
 
-	#modalCrearPedido .item-subtotal {
+	#crearPedidoPage .item-subtotal {
 		padding-left: 6px;
 		padding-right: 6px;
 		height: 24px;
 		font-size: 12px;
 	}
 
-	#modalCrearPedido .btn.btn-outline-primary.btn-sm {
+	#crearPedidoPage .btn.btn-outline-primary.btn-sm {
 		padding: 4px 8px;
 		font-size: 12px;
 	}
-}  */
+}

@@ -117,6 +117,35 @@ def _clientes_para_usuario(user):
     return qs.filter(creado_por=user)
 
 
+def _construir_datos_pedidos_form(user):
+    clientes = _clientes_para_usuario(user).order_by("nombres", "apellidos")
+    productos = Producto.objects.filter(activo=True).order_by("nombre")
+
+    clientes_data = []
+    for c in clientes:
+        label = f"{c.nombres}{(' ' + c.apellidos) if c.apellidos else ''}{(' - ' + c.ci_nit) if c.ci_nit else ''}"
+        clientes_data.append({"id": c.id, "label": label})
+
+    productos_data = []
+    for p in productos:
+        label = p.nombre
+        productos_data.append(
+            {
+                "id": p.id,
+                "label": label,
+                "precio": str(p.precio_unidad or Decimal('0.00')),
+                "stock": int(getattr(p, 'stock_unidades', 0) or 0),
+            }
+        )
+
+    return {
+        "clientes": clientes,
+        "productos": productos,
+        "clientes_data": clientes_data,
+        "productos_data": productos_data,
+    }
+
+
 def _pedidos_qs_para_usuario(user):
     perfil = getattr(user, "perfil", None)
     qs = Pedido.objects.select_related("cliente", "preventista")
@@ -246,25 +275,11 @@ def listar_pedidos(request):
         clientes_data = []
         productos_data = []
     else:
-        clientes = _clientes_para_usuario(request.user).order_by("nombres", "apellidos")
-        productos = Producto.objects.filter(activo=True).order_by("nombre")
-
-        clientes_data = []
-        for c in clientes:
-            label = f"{c.nombres}{(' ' + c.apellidos) if c.apellidos else ''}{(' - ' + c.ci_nit) if c.ci_nit else ''}"
-            clientes_data.append({"id": c.id, "label": label})
-
-        productos_data = []
-        for p in productos:
-            label = p.nombre  # Solo el nombre, sin el código
-            productos_data.append(
-                {
-                    "id": p.id,
-                    "label": label,
-                    "precio": str(p.precio_unidad or Decimal('0.00')),
-                    "stock": int(getattr(p, 'stock_unidades', 0) or 0),
-                }
-            )
+        form_data = _construir_datos_pedidos_form(request.user)
+        clientes = form_data['clientes']
+        productos = form_data['productos']
+        clientes_data = form_data['clientes_data']
+        productos_data = form_data['productos_data']
 
     # PAGINACIÓN
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -299,10 +314,22 @@ def listar_pedidos(request):
 
 
 @role_required("administrador", "supervisor", "preventista")
-@require_http_methods(["POST"])
 def crear_pedido(request):
     from django.utils.dateparse import parse_date
-    
+
+    if request.method == "GET":
+        form_data = _construir_datos_pedidos_form(request.user)
+        return render(
+            request,
+            "pedidos/crear.html",
+            {
+                "clientes": form_data["clientes"],
+                "productos": form_data["productos"],
+                "clientes_data": form_data["clientes_data"],
+                "productos_data": form_data["productos_data"],
+            },
+        )
+
     cliente_id = (request.POST.get("cliente_id") or "").strip()
     observacion = (request.POST.get("observacion") or "").strip()
     fecha_entrega_estimada_raw = (request.POST.get("fecha_entrega_estimada") or "").strip()
@@ -312,22 +339,22 @@ def crear_pedido(request):
 
     if not cliente_id:
         messages.error(request, "Selecciona un cliente")
-        return redirect("listar_pedidos")
+        return redirect("crear_pedido")
 
     # Validar fecha de entrega estimada
     if not fecha_entrega_estimada_raw:
         messages.error(request, "Ingresa una fecha de entrega estimada")
-        return redirect("listar_pedidos")
+        return redirect("crear_pedido")
     
     fecha_entrega_estimada = parse_date(fecha_entrega_estimada_raw)
     if not fecha_entrega_estimada:
         messages.error(request, "Formato de fecha inválido")
-        return redirect("listar_pedidos")
+        return redirect("crear_pedido")
     
     hoy = date.today()
     if fecha_entrega_estimada < hoy:
         messages.error(request, "La fecha de entrega no puede ser menor a hoy")
-        return redirect("listar_pedidos")
+        return redirect("crear_pedido")
 
     cliente = get_object_or_404(_clientes_para_usuario(request.user), id=cliente_id)
 
@@ -347,7 +374,7 @@ def crear_pedido(request):
 
     if not items:
         messages.error(request, "Agrega al menos un producto con cantidad")
-        return redirect("listar_pedidos")
+        return redirect("crear_pedido")
 
     # Consolidar cantidades por producto (evita duplicados que rompan el stock)
     qty_por_pid = {}
@@ -365,15 +392,15 @@ def crear_pedido(request):
             producto = productos_por_id.get(str(pid))
             if not producto:
                 messages.error(request, "Producto inválido")
-                return redirect("listar_pedidos")
+                return redirect("crear_pedido")
             stock = int(getattr(producto, "stock_unidades", 0) or 0)
             precio = producto.precio_unidad or Decimal("0.00")
             if cantidad_int > stock:
                 messages.error(request, f'Stock insuficiente para "{producto.nombre}" (stock: {stock})')
-                return redirect("listar_pedidos")
+                return redirect("crear_pedido")
             if precio <= 0:
                 messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
-                return redirect("listar_pedidos")
+                return redirect("crear_pedido")
 
         preventista_asignado = cliente.creado_por or request.user
         pedido = Pedido.objects.create(
