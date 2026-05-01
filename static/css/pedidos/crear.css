@@ -79,12 +79,12 @@
 /* Autocomplete dropdown */
 #crearPedidoPage .ac-wrap {
 	position: relative;
-	z-index: 1065;
+	z-index: auto;
 }
 
 #crearPedidoPage .ac-dropdown {
 	position: absolute;
-	z-index: 1070; /* por encima de celdas/filas del detalle */
+	z-index: 1005; /* por debajo del navbar sticky */
 	top: calc(100% + 4px);
 	left: 0;
 	right: 0;
@@ -94,6 +94,17 @@
 	border: 1px solid rgba(0, 0, 0, 0.15);
 	border-radius: 6px;
 	box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+}
+
+.ac-dropdown-floating {
+	position: fixed;
+	z-index: 1010 !important; /* asegure stack menor que el navbar */
+	max-height: 300px;
+	overflow: auto;
+	background: #fff;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: 6px;
+	box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
 }
 
 #crearPedidoPage .ac-item {
@@ -113,18 +124,6 @@
 #crearPedidoPage .ac-empty {
 	padding: 8px 10px;
 	color: #6c757d;
-}
-
-/* Dropdown flotante (se renderiza en body para evitar recortes por scroll/overflow) */
-.ac-dropdown-floating {
-	position: fixed;
-	z-index: 1025;
-	max-height: 300px;
-	overflow: auto;
-	background: #fff;
-	border: 1px solid rgba(0, 0, 0, 0.15);
-	border-radius: 6px;
-	box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
 }
 
 .ac-dropdown-floating .ac-item {
