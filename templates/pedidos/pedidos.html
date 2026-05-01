@@ -5,7 +5,6 @@
 
 {% block estilos_extra %}
 <link rel="stylesheet" href="{% static 'css/pedidos/pedidos.css' %}">
-<link rel="stylesheet" href="{% static 'css/pedidos/modals/crea.css' %}">
 <link rel="stylesheet" href="{% static 'css/pedidos/modals/edita.css' %}">
 <link rel="stylesheet" href="{% static 'css/pedidos/modals/ver.css' %}">
 <link rel="stylesheet" href="{% static 'css/pedidos/modals/anula.css' %}">
@@ -19,9 +18,9 @@
             <p class="page-subtitle">Registro e historial de pedidos</p>
         </div>
         {% if user.is_superuser or user.perfil.rol == 'administrador' or user.perfil.rol == 'supervisor' or user.perfil.rol == 'preventista' %}
-            <button type="button" class="btn btn-nuevo btn-lg" data-toggle="modal" data-target="#modalCrearPedido">
+            <a href="{% url 'crear_pedido' %}" class="btn btn-nuevo btn-lg">
                 <i class="fas fa-plus"></i> Nuevo Pedido
-            </button>
+            </a>
         {% endif %}
     </div>
 
@@ -244,19 +243,21 @@
     {% endif %}
 
     {% if user.is_superuser or user.perfil.rol == 'administrador' or user.perfil.rol == 'supervisor' or user.perfil.rol == 'preventista' %}
-        {% include 'pedidos/modals/crea.html' %}
         {% include 'pedidos/modals/edita.html' %}
     {% endif %}
     {% include 'pedidos/modals/ver.html' %}
     {% include 'pedidos/modals/anula.html' %}
     {% include 'pedidos/modals/vendido.html' %}
     {% include 'pedidos/modals/entrega.html' %}
+
+    {{ clientes_data|json_script:"clientes-data-pedidos" }}
+    {{ productos_data|json_script:"productos-data-pedidos" }}
+    <datalist id="dlProductosPedidos"></datalist>
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
 {% if user.is_superuser or user.perfil.rol == 'administrador' or user.perfil.rol == 'supervisor' or user.perfil.rol == 'preventista' %}
-    <script src="{% static 'js/pedidos/modals/crea.js' %}"></script>
     <script src="{% static 'js/pedidos/modals/edita.js' %}"></script>
 {% endif %}
 <script src="{% static 'js/pedidos/modals/ver.js' %}"></script>
