@@ -116,7 +116,11 @@ def listar_usuarios(request):
     estado = (request.GET.get("estado") or "").strip()
     rol = (request.GET.get("rol") or "").strip()
 
-    usuarios = User.objects.select_related("perfil").order_by("-date_joined")
+    usuarios = User.objects.select_related(
+        "perfil",
+        "perfil__supervisor",
+        "perfil__repartidor",
+    ).order_by("-date_joined")
 
     if buscar:
         usuarios = usuarios.filter(
