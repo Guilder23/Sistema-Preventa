@@ -90,8 +90,8 @@
                                 <tr>
                                     <th style="width: 10%;">Usuario</th>
                                     <th style="width: 15%;">Nombre</th>
-                                    <th style="width: 18%;">Correo</th>
-                                    <th style="width: 13%;">Rol</th>
+                                    <th style="width: 17%;">Correo</th>
+                                    <th style="width: 18%;">Rol</th>
                                     <th style="width: 10%;">Estado</th>
                                     <th style="width: 12%;">Último Acceso</th>
                                     <th class="text-center" style="width: 12%;">Acciones</th>
@@ -140,6 +140,23 @@
                                             {% endif %}
                                         {% else %}
                                             <span class="badge-rol badge-rol-sinrol" data-rol="">Sin rol</span>
+                                        {% endif %}
+
+                                        {% if usuario.perfil and usuario.perfil.rol == 'preventista' %}
+                                            <div class="rol-meta" title="Supervisor y repartidor">
+                                                S:
+                                                {% if usuario.perfil.supervisor %}
+                                                    {{ usuario.perfil.supervisor.get_full_name|default:usuario.perfil.supervisor.username }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                                &nbsp;R:
+                                                {% if usuario.perfil.repartidor %}
+                                                    {{ usuario.perfil.repartidor.get_full_name|default:usuario.perfil.repartidor.username }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </div>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
