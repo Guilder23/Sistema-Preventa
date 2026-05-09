@@ -20,6 +20,8 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from apps.usuarios.decorators import role_required
+
 
 def _display_user_name(user):
     if not user:
@@ -35,6 +37,74 @@ def _pedido_repartidor_nombre(pedido, devolucion=None):
     perfil = getattr(preventista, "perfil", None) if preventista else None
     repartidor_asignado = getattr(perfil, "repartidor", None) if perfil else None
     return _display_user_name(repartidor_asignado)
+
+
+def _ticket_data_for_pedido(pedido, *, repartidor_nombre: str | None = None):
+    """Construye los datos del ticket térmico para un pedido.
+
+    Reutiliza la misma lógica que `pedido_ticket` (devoluciones incluidas) para
+    mantener consistencia del formato.
+    """
+
+    from apps.pedidos.models import DevolucionItem
+
+    detalles_qs = list(pedido.detalles.select_related("producto").all())
+    detalle_ids = [d.id for d in detalles_qs]
+
+    devueltos_por_detalle = defaultdict(int)
+    if detalle_ids:
+        devueltos_rows = (
+            DevolucionItem.objects.filter(
+                devolucion__pedido_id=pedido.id,
+                detalle_pedido_id__in=detalle_ids,
+            )
+            .values("detalle_pedido_id")
+            .annotate(total_devuelto=Sum("cantidad_devuelta"))
+        )
+        for row in devueltos_rows:
+            devueltos_por_detalle[row["detalle_pedido_id"]] = int(row["total_devuelto"] or 0)
+
+    detalles = []
+    total_devuelto_unidades = 0
+    total_devuelto_monto = Decimal("0.00")
+    for d in detalles_qs:
+        cant_devuelta = int(devueltos_por_detalle.get(d.id, 0))
+        subtotal_bruto = d.subtotal or Decimal("0.00")
+        monto_devuelto_item = (d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta)
+        subtotal_neto = subtotal_bruto - monto_devuelto_item
+
+        total_devuelto_unidades += cant_devuelta
+        total_devuelto_monto += monto_devuelto_item
+
+        detalles.append(
+            {
+                "producto_nombre": d.producto.nombre,
+                "cantidad": int(d.cantidad or 0),
+                "precio_unitario": d.precio_unitario or Decimal("0.00"),
+                "cantidad_devuelta": cant_devuelta,
+                "subtotal_bruto": subtotal_bruto,
+                "subtotal_neto": subtotal_neto,
+            }
+        )
+
+    total_bruto = pedido.total or Decimal("0.00")
+    total_real = total_bruto - total_devuelto_monto
+
+    cliente_nombre = f"{pedido.cliente.nombres} {pedido.cliente.apellidos or ''}".strip()
+    preventista_nombre = pedido.preventista.get_full_name() or pedido.preventista.username
+
+    return {
+        "pedido": pedido,
+        "detalles": detalles,
+        "cliente_nombre": cliente_nombre,
+        "preventista_nombre": preventista_nombre,
+        "repartidor_nombre": repartidor_nombre or "-",
+        "estado_display": pedido.get_estado_display(),
+        "total_bruto": total_bruto,
+        "total_devuelto_unidades": total_devuelto_unidades,
+        "total_devuelto_monto": total_devuelto_monto,
+        "total_real": total_real,
+    }
 
 
 @login_required
@@ -390,11 +460,17 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
     detalles = (
         DetallePedido.objects.select_related("pedido", "pedido__cliente", "pedido__preventista", "producto")
         .filter(pedido_id__in=pedido_ids)
-        .order_by("producto__nombre", "pedido_id")
+        .order_by(
+            "pedido__cliente__nombres",
+            "pedido__cliente__apellidos",
+            "pedido_id",
+            "producto__nombre",
+        )
     )
 
     consolidado = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0.00"), "clientes": set(), "precio_unitario": Decimal("0.00")})
     detalle_productos = []
+    detalle_por_pedido_map = {}
     total_unidades = 0
 
     for d in detalles:
@@ -420,6 +496,29 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
                 "subtotal": subtotal,
             }
         )
+
+        if d.pedido_id not in detalle_por_pedido_map:
+            detalle_por_pedido_map[d.pedido_id] = {
+                "pedido_id": d.pedido_id,
+                "cliente_nombre": f"{d.pedido.cliente.nombres} {d.pedido.cliente.apellidos or ''}".strip(),
+                "preventista_nombre": d.pedido.preventista.get_full_name() or d.pedido.preventista.username,
+                "items": [],
+            }
+        detalle_por_pedido_map[d.pedido_id]["items"].append(
+            {
+                "producto_nombre": d.producto.nombre,
+                "cantidad": cantidad,
+                "precio_unitario": d.precio_unitario or Decimal("0.00"),
+                "subtotal": subtotal,
+            }
+        )
+
+    detalle_por_pedido = list(detalle_por_pedido_map.values())
+
+    filtros_qd = request.GET.copy()
+    if "page" in filtros_qd:
+        filtros_qd.pop("page")
+    despacho_querystring = filtros_qd.urlencode()
 
     lista_consolidado = []
     for _, item in sorted(consolidado.items(), key=lambda kv: kv[1].get("nombre", "")):
@@ -515,6 +614,70 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
             "total_unidades": total_unidades,
             "consolidado": lista_consolidado,
             "detalle_productos": detalle_productos,
+            "detalle_por_pedido": detalle_por_pedido,
+            "despacho_querystring": despacho_querystring,
+        },
+    )
+
+
+@role_required("administrador")
+def despacho_tickets_termico(request):
+    """Imprime tickets térmicos para todos los pedidos del reporte de despacho.
+
+    Usa los mismos filtros (querystring) que el reporte para que coincida con
+    “todos los que están ahí”.
+    """
+
+    from apps.pedidos.models import DevolucionPedido
+
+    pedidos, filtros, _, _, _ = _pedidos_filtrados(request, request.user)
+    if filtros.get("tipo") != "despacho":
+        filtros["tipo"] = "despacho"
+
+    pedidos = pedidos.select_related(
+        "cliente",
+        "preventista",
+        "preventista__perfil",
+        "preventista__perfil__repartidor",
+    ).prefetch_related("detalles__producto")
+
+    pedidos_list = list(
+        pedidos.order_by(
+            "cliente__nombres",
+            "cliente__apellidos",
+            "id",
+        )
+    )
+
+    pedido_ids = [p.id for p in pedidos_list]
+    devolucion_reciente_por_pedido = {}
+    if pedido_ids:
+        devoluciones = (
+            DevolucionPedido.objects.filter(pedido_id__in=pedido_ids)
+            .select_related("repartidor")
+            .order_by("pedido_id", "-fecha_creacion")
+        )
+        for devolucion in devoluciones:
+            if devolucion.pedido_id not in devolucion_reciente_por_pedido:
+                devolucion_reciente_por_pedido[devolucion.pedido_id] = devolucion
+
+    tickets = []
+    for pedido in pedidos_list:
+        devol = devolucion_reciente_por_pedido.get(pedido.id)
+        repartidor_nombre = _pedido_repartidor_nombre(pedido, devol)
+        tickets.append(_ticket_data_for_pedido(pedido, repartidor_nombre=repartidor_nombre))
+
+    volver_qd = request.GET.copy()
+    if "page" in volver_qd:
+        volver_qd.pop("page")
+    volver_querystring = volver_qd.urlencode()
+
+    return render(
+        request,
+        "reportes/despacho_tickets_termico.html",
+        {
+            "tickets": tickets,
+            "volver_querystring": volver_querystring,
         },
     )
 

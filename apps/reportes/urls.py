@@ -9,5 +9,10 @@ urlpatterns = [
     path("reportes/pedidos/<int:id>/ticket/", views.pedido_ticket, name="reporte_pedido_ticket"),
     path("reportes/pedidos/<int:id>/ticket/marcar-impreso/", views.marcar_ticket_impreso, name="reporte_pedido_ticket_impreso"),
     path("reportes/pedidos/<int:id>/ticket/whatsapp/", views.compartir_ticket_whatsapp, name="reporte_pedido_ticket_whatsapp"),
+    path(
+        "reportes/despacho/tickets/",
+        views.despacho_tickets_termico,
+        name="reporte_despacho_tickets_termico",
+    ),
     path("reportes/pedidos/<int:id>/pdf/", views.pedido_pdf, name="reporte_pedido_pdf"),
 ]

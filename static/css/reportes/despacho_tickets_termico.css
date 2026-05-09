@@ -1,0 +1,39 @@
+/* Extensiones para impresión en lote de tickets térmicos */
+
+.tickets-bulk {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+}
+
+.ticket-paper--bulk {
+    break-after: page;
+    page-break-after: always;
+}
+
+.ticket-paper--bulk:last-child {
+    break-after: auto;
+    page-break-after: auto;
+}
+
+.ticket-cut {
+    width: 80mm;
+    max-width: 100%;
+    border-top: 2px dashed #d1d5db;
+    margin: 2mm auto 6mm;
+}
+
+@media print {
+    .ticket-cut {
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+        border-top: 2px dashed #d1d5db;
+    }
+
+    .tickets-bulk {
+        gap: 0;
+        align-items: flex-start;
+    }
+}
