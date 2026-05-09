@@ -243,8 +243,13 @@
 
         <div class="col-lg-7">
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white py-3">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0"><i class="fas fa-box-open"></i> Detalle de Productos por Pedido</h5>
+                    {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                        <a class="btn btn-dark btn-sm" href="{% url 'reporte_despacho_tickets_termico' %}{% if despacho_querystring %}?{{ despacho_querystring }}{% endif %}" target="_blank" rel="noopener" title="Imprimir tickets térmicos de todos los pedidos mostrados">
+                            <i class="fas fa-print"></i>
+                        </a>
+                    {% endif %}
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -261,20 +266,32 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in detalle_productos %}
-                                <tr>
-                                    <td>#{{ item.pedido_id }}</td>
-                                    <td>{{ item.cliente_nombre }}</td>
-                                    <td>{{ item.preventista_nombre }}</td>
-                                    <td>{{ item.producto_nombre }}</td>
-                                    <td class="text-center">{{ item.cantidad }}</td>
-                                    <td class="text-right">Bs {{ item.precio_unitario|floatformat:2 }}</td>
-                                    <td class="text-right">Bs {{ item.subtotal|floatformat:2 }}</td>
-                                </tr>
+                                {% for grupo in detalle_por_pedido %}
+                                    <tr class="table-active detalle-group-row">
+                                        <td><strong>#{{ grupo.pedido_id }}</strong></td>
+                                        <td><strong>{{ grupo.cliente_nombre }}</strong></td>
+                                        <td class="text-muted">{{ grupo.preventista_nombre }}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+
+                                    {% for item in grupo.items %}
+                                    <tr>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td>{{ item.producto_nombre }}</td>
+                                        <td class="text-center">{{ item.cantidad }}</td>
+                                        <td class="text-right">Bs {{ item.precio_unitario|floatformat:2 }}</td>
+                                        <td class="text-right">Bs {{ item.subtotal|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
                                 {% empty %}
-                                <tr>
-                                    <td colspan="7" class="text-center py-4 text-muted">No hay detalle de productos disponible.</td>
-                                </tr>
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">No hay detalle de productos disponible.</td>
+                                    </tr>
                                 {% endfor %}
                             </tbody>
                         </table>

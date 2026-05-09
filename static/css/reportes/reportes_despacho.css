@@ -25,6 +25,10 @@
     vertical-align: middle;
 }
 
+.reporte-despacho-tabla .detalle-group-row td {
+    white-space: normal;
+}
+
 .reporte-despacho-tabla .text-right {
     text-align: right;
 }
