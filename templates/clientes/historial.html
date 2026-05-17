@@ -1,0 +1,179 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Historial de {{ cliente }}{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/clientes/historial.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid">
+    <div class="page-header historial-header">
+        <div class="page-header-content">
+            <h1 class="page-title"><i class="fas fa-receipt"></i> Historial de pedidos</h1>
+            <p class="page-subtitle text-white-50 opacity-75">{{ cliente }}</p>
+        </div>
+        <a href="{% url 'listar_clientes' %}" class="btn btn-light btn-lg shadow-sm">
+            <i class="fas fa-arrow-left"></i> Clientes
+        </a>
+    </div>
+
+    <div class="historial-shell">
+        <section class="historial-cliente-panel">
+            <div class="historial-cliente-main">
+                <div class="historial-avatar">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div>
+                    <h2>{{ cliente }}</h2>
+                    <div class="historial-cliente-meta">
+                        <span><i class="fas fa-id-card"></i> {{ cliente.ci_nit|default:'-' }}</span>
+                        <span><i class="fas fa-phone"></i> {{ cliente.telefono|default:'-' }}</span>
+                        <span><i class="fas fa-location-dot"></i> {{ cliente.direccion|default:'-'|truncatechars:96 }}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="historial-resumen-grid">
+            <div class="historial-resumen-item">
+                <span>Pedidos</span>
+                <strong>{{ resumen.total_pedidos }}</strong>
+            </div>
+            <div class="historial-resumen-item">
+                <span>Vendidos</span>
+                <strong>{{ resumen.vendidos }}</strong>
+            </div>
+            <div class="historial-resumen-item">
+                <span>Pendientes</span>
+                <strong>{{ resumen.pendientes }}</strong>
+            </div>
+            <div class="historial-resumen-item">
+                <span>No entregados</span>
+                <strong>{{ resumen.no_entregados }}</strong>
+            </div>
+            <div class="historial-resumen-item">
+                <span>Anulados</span>
+                <strong>{{ resumen.anulados }}</strong>
+            </div>
+            <div class="historial-resumen-item">
+                <span>Total bruto</span>
+                <strong>Bs {{ resumen.total_bruto }}</strong>
+            </div>
+            <div class="historial-resumen-item">
+                <span>Devuelto</span>
+                <strong>Bs {{ resumen.total_devuelto }}</strong>
+            </div>
+            <div class="historial-resumen-item historial-resumen-item--real">
+                <span>Total real</span>
+                <strong>Bs {{ resumen.total_real }}</strong>
+            </div>
+        </section>
+
+        <section class="historial-lista" id="historialPedidosAccordion">
+            {% for pedido in pedidos %}
+                <article class="historial-pedido">
+                    <button
+                        class="historial-pedido-toggle"
+                        type="button"
+                        data-toggle="collapse"
+                        data-target="#detallePedido{{ pedido.id }}"
+                        aria-expanded="false"
+                        aria-controls="detallePedido{{ pedido.id }}"
+                    >
+                        <span class="historial-pedido-id">#{{ pedido.id }}</span>
+                        <span class="historial-pedido-cluster historial-pedido-fecha">
+                            <span class="historial-pedido-label">Pedido</span>
+                            <strong>{{ pedido.fecha|default:'-' }}</strong>
+                        </span>
+                        <span class="historial-pedido-cluster historial-pedido-entrega">
+                            <span class="historial-pedido-label">Entrega</span>
+                            <strong>{{ pedido.fecha_entrega|default:'-' }}</strong>
+                        </span>
+                        <span class="historial-pedido-cluster historial-pedido-preventista">
+                            <span class="historial-pedido-label">Preventista</span>
+                            <strong>{{ pedido.preventista|default:'-' }}</strong>
+                        </span>
+                        <span class="historial-pedido-cluster historial-pedido-total">
+                            <span class="historial-pedido-label">Total real</span>
+                            <strong>Bs {{ pedido.total_neto }}</strong>
+                        </span>
+                        <span class="historial-pedido-estado">
+                            {% if pedido.estado == 'vendido' %}
+                                <span class="badge-estado badge-estado-vendido"><i class="fas fa-check-circle"></i> {{ pedido.estado_display }}</span>
+                            {% elif pedido.estado == 'pendiente' %}
+                                <span class="badge-estado badge-estado-pendiente"><i class="fas fa-clock"></i> {{ pedido.estado_display }}</span>
+                            {% elif pedido.estado == 'no_entregado' %}
+                                <span class="badge-estado badge-estado-no-entregado"><i class="fas fa-store-slash"></i> {{ pedido.estado_display }}</span>
+                            {% else %}
+                                <span class="badge-estado badge-estado-anulado"><i class="fas fa-ban"></i> {{ pedido.estado_display }}</span>
+                            {% endif %}
+                        </span>
+                        <span class="historial-chevron"><i class="fas fa-chevron-down"></i></span>
+                    </button>
+
+                    <div id="detallePedido{{ pedido.id }}" class="collapse" data-parent="#historialPedidosAccordion">
+                        <div class="historial-pedido-detalle">
+                            <div class="historial-pedido-totales">
+                                <span>Bruto: <strong>Bs {{ pedido.total }}</strong></span>
+                                <span>Devuelto: <strong>Bs {{ pedido.total_devuelto }}</strong></span>
+                                <span>Real: <strong>Bs {{ pedido.total_neto }}</strong></span>
+                                {% if pedido.fecha_vendido %}
+                                    <span>Vendido: <strong>{{ pedido.fecha_vendido }}</strong></span>
+                                {% endif %}
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm historial-detalle-tabla mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th class="text-center">Cant.</th>
+                                            <th class="text-center">Dev.</th>
+                                            <th class="text-right">Precio</th>
+                                            <th class="text-right">Subtotal</th>
+                                            <th class="text-right">Real</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for detalle in pedido.detalles %}
+                                            <tr>
+                                                <td>{{ detalle.producto }}</td>
+                                                <td class="text-center">{{ detalle.cantidad }}</td>
+                                                <td class="text-center">{{ detalle.cantidad_devuelta }}</td>
+                                                <td class="text-right">Bs {{ detalle.precio_unitario }}</td>
+                                                <td class="text-right">Bs {{ detalle.subtotal }}</td>
+                                                <td class="text-right font-weight-bold">Bs {{ detalle.subtotal_neto }}</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted py-3">Este pedido no tiene detalle.</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {% if pedido.observacion %}
+                                <div class="historial-observacion">
+                                    <i class="fas fa-note-sticky"></i> {{ pedido.observacion }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="historial-empty">
+                    <i class="fas fa-inbox"></i>
+                    <p>Este cliente todavia no tiene pedidos registrados.</p>
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/clientes/historial.js' %}"></script>
+{% endblock %}
