@@ -1,0 +1,159 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Tickets térmicos (Despacho){% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/pedido_ticket.css' %}">
+<link rel="stylesheet" href="{% static 'css/reportes/despacho_tickets_termico.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<div class="ticket-shell">
+    <div class="ticket-actions no-print">
+        <button type="button" class="btn btn-dark btn-sm" id="btnImprimirTickets">
+            <i class="fas fa-print"></i> Imprimir tickets
+        </button>
+        <a href="{% url 'reportes_inicio' %}{% if volver_querystring %}?{{ volver_querystring }}{% endif %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+
+    <div class="tickets-bulk" aria-label="Tickets de despacho">
+        {% for t in tickets %}
+        <main class="ticket-paper ticket-paper--bulk" aria-label="Ticket pedido #{{ t.pedido.id }}">
+            <header class="ticket-header">
+                <div style="text-align:center; margin-bottom: 0.5rem;">
+                    <img src="{% static 'img/logoAlmacen.png' %}" alt="Logo" style="max-width:90px; max-height:60px; display:inline-block;">
+                </div>
+                <div class="ticket-brand">
+                    <div class="ticket-brand-title">D. Jeremy</div>
+                    <div class="ticket-brand-subtitle">Comprobante de entrega</div>
+                </div>
+                <div class="ticket-badge">#{{ t.pedido.id }}</div>
+            </header>
+
+            <section class="ticket-block ticket-summary">
+                <div class="ticket-row">
+                    <span>Fecha</span>
+                    <strong>
+                        {% if t.pedido.fecha_vendido %}
+                            {{ t.pedido.fecha_vendido|date:'d/m/Y H:i' }}
+                        {% else %}
+                            {{ t.pedido.fecha|date:'d/m/Y H:i' }}
+                        {% endif %}
+                    </strong>
+                </div>
+                {% if t.pedido.fecha_entrega_estimada %}
+                <div class="ticket-row">
+                    <span>Entrega estimada</span>
+                    <strong>{{ t.pedido.fecha_entrega_estimada|date:'d/m/Y' }}</strong>
+                </div>
+                {% endif %}
+                <div class="ticket-row">
+                    <span>Estado</span>
+                    <strong>{{ t.estado_display }}</strong>
+                </div>
+                <div class="ticket-row">
+                    <span>Cliente</span>
+                    <strong>{{ t.cliente_nombre }}</strong>
+                </div>
+                {% if t.pedido.cliente.ci_nit %}
+                <div class="ticket-row">
+                    <span>CI/NIT</span>
+                    <strong>{{ t.pedido.cliente.ci_nit }}</strong>
+                </div>
+                {% endif %}
+                {% if t.pedido.cliente.telefono %}
+                <div class="ticket-row">
+                    <span>Teléfono</span>
+                    <strong>{{ t.pedido.cliente.telefono }}</strong>
+                </div>
+                {% endif %}
+                {% if t.pedido.cliente.direccion %}
+                <div class="ticket-row ticket-row--stacked">
+                    <span>Dirección</span>
+                    <strong>{{ t.pedido.cliente.direccion }}</strong>
+                </div>
+                {% endif %}
+                <div class="ticket-row">
+                    <span>Preventista</span>
+                    <strong>{{ t.preventista_nombre }}</strong>
+                </div>
+                <div class="ticket-row">
+                    <span>Repartidor</span>
+                    <strong>{{ t.repartidor_nombre }}</strong>
+                </div>
+            </section>
+
+            <section class="ticket-block">
+                <div class="ticket-section-title">Detalle</div>
+                <div class="ticket-items">
+                    {% for d in t.detalles %}
+                    <article class="ticket-item">
+                        <div class="ticket-item-main">
+                            <div class="ticket-item-name">{{ d.producto_nombre }}</div>
+                            <div class="ticket-item-meta">{{ d.cantidad }} x Bs {{ d.precio_unitario|floatformat:2 }}</div>
+                            {% if d.cantidad_devuelta > 0 %}
+                            <div class="ticket-item-meta ticket-item-meta--danger">Devueltos: {{ d.cantidad_devuelta }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="ticket-item-total-wrap">
+                            <div class="ticket-item-total-label">Bruto</div>
+                            <div class="ticket-item-total">Bs {{ d.subtotal_bruto|floatformat:2 }}</div>
+                            <div class="ticket-item-total-label">Real</div>
+                            <div class="ticket-item-total ticket-item-total--real">Bs {{ d.subtotal_neto|floatformat:2 }}</div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="ticket-block ticket-total-box">
+                <div class="ticket-row">
+                    <span>Total bruto</span>
+                    <strong>Bs {{ t.total_bruto|floatformat:2 }}</strong>
+                </div>
+                <div class="ticket-row">
+                    <span>Devueltos</span>
+                    <strong>{{ t.total_devuelto_unidades }} und. / Bs {{ t.total_devuelto_monto|floatformat:2 }}</strong>
+                </div>
+                <div class="ticket-row ticket-row--total">
+                    <span>Total real</span>
+                    <strong>Bs {{ t.total_real|floatformat:2 }}</strong>
+                </div>
+                {% if t.pedido.observacion %}
+                <div class="ticket-note">
+                    <span>Observación:</span>
+                    <p>{{ t.pedido.observacion }}</p>
+                </div>
+                {% endif %}
+            </section>
+
+            <footer class="ticket-footer">
+                <p>Gracias por su compra.</p>
+                <p>Impresión térmica lista para 80mm.</p>
+            </footer>
+        </main>
+
+        {% if not forloop.last %}
+        <div class="ticket-cut" aria-hidden="true"></div>
+        {% endif %}
+        {% empty %}
+        <div class="alert alert-info" role="alert" style="max-width: 520px; margin: 0 auto;">
+            No hay pedidos para imprimir con los filtros actuales.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    window.addEventListener('load', function () {
+        var btn = document.getElementById('btnImprimirTickets');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            window.print();
+        });
+    });
+</script>
+{% endblock %}
