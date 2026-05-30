@@ -2,11 +2,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('buscarPedido');
     const estadoSelect = document.getElementById('estadoPedido');
     const rolSelect = document.getElementById('rolPedido');
+    const preventistaSelect = document.getElementById('preventistaPedido');
     const fechaDesdeInput = document.getElementById('fechaDesdePedido');
     const fechaHastaInput = document.getElementById('fechaHastaPedido');
     const pedidoTabs = document.getElementById('pedidoTabs');
     
-    if (!input && !estadoSelect && !rolSelect && !fechaDesdeInput && !fechaHastaInput && !pedidoTabs) return;
+    if (!input && !estadoSelect && !rolSelect && !preventistaSelect && !fechaDesdeInput && !fechaHastaInput && !pedidoTabs) return;
 
     let activeTab = (pedidoTabs && pedidoTabs.dataset.tab ? pedidoTabs.dataset.tab : 'pendientes').trim();
     if (activeTab !== 'pendientes' && activeTab !== 'anteriores') activeTab = 'pendientes';
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const q = (input && input.value ? input.value : '').trim();
         const estado = (estadoSelect && estadoSelect.value ? estadoSelect.value : '').trim();
         const rol = (rolSelect && rolSelect.value ? rolSelect.value : '').trim();
+        const preventistaId = (preventistaSelect && preventistaSelect.value ? preventistaSelect.value : '').trim();
         const fechaDesde = (fechaDesdeInput && fechaDesdeInput.value ? fechaDesdeInput.value : '').trim();
         const fechaHasta = (fechaHastaInput && fechaHastaInput.value ? fechaHastaInput.value : '').trim();
         
@@ -27,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function () {
         
         if (rol) url.searchParams.set('rol', rol);
         else url.searchParams.delete('rol');
+        
+        if (preventistaId) url.searchParams.set('preventista_id', preventistaId);
+        else url.searchParams.delete('preventista_id');
         
         if (fechaDesde) url.searchParams.set('fecha_desde', fechaDesde);
         else url.searchParams.delete('fecha_desde');
@@ -77,6 +82,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (rolSelect) {
         rolSelect.addEventListener('change', function () {
+            clearTimeout(t);
+            applyFilters();
+        });
+    }
+
+    if (preventistaSelect) {
+        preventistaSelect.addEventListener('change', function () {
             clearTimeout(t);
             applyFilters();
         });

@@ -180,6 +180,7 @@ def listar_pedidos(request):
     q = (request.GET.get("q") or "").strip()
     estado = (request.GET.get("estado") or "").strip().lower()
     rol_usuario = (request.GET.get("rol") or "").strip().lower()
+    preventista_id = (request.GET.get("preventista_id") or "").strip()
     fecha_desde_raw = (request.GET.get("fecha_desde") or "").strip()
     fecha_hasta_raw = (request.GET.get("fecha_hasta") or "").strip()
     vista_pedidos = (request.GET.get("tab") or "pendientes").strip().lower()
@@ -212,27 +213,53 @@ def listar_pedidos(request):
     }:
         estado = ""
 
+    # Para repartidor: buscar por cliente O por preventista
+    # Para otros roles: buscar por cliente, apellidos, CI/NIT
     if q:
-        pedidos = pedidos.filter(
-            Q(cliente__nombres__icontains=q)
-            | Q(cliente__apellidos__icontains=q)
-            | Q(cliente__ci_nit__icontains=q)
-        )
+        perfil = getattr(request.user, "perfil", None)
+        if perfil and perfil.rol == "repartidor":
+            pedidos = pedidos.filter(
+                Q(cliente__nombres__icontains=q)
+                | Q(cliente__apellidos__icontains=q)
+                | Q(cliente__ci_nit__icontains=q)
+                | Q(preventista__first_name__icontains=q)
+                | Q(preventista__last_name__icontains=q)
+            )
+        else:
+            # Permitir búsqueda por preventista también para roles como administrador
+            pedidos = pedidos.filter(
+                Q(cliente__nombres__icontains=q)
+                | Q(cliente__apellidos__icontains=q)
+                | Q(cliente__ci_nit__icontains=q)
+                | Q(preventista__first_name__icontains=q)
+                | Q(preventista__last_name__icontains=q)
+            )
 
     if estado:
         pedidos = pedidos.filter(estado=estado)
 
-    roles_validos = {"administrador", "supervisor", "preventista", "repartidor"}
-    if rol_usuario not in roles_validos:
-        rol_usuario = ""
+    # Para repartidor: filtro de preventista específico
+    perfil = getattr(request.user, "perfil", None)
+    if perfil and perfil.rol == "repartidor":
+        if preventista_id:
+            try:
+                preventista_id = int(preventista_id)
+                pedidos = pedidos.filter(preventista_id=preventista_id)
+            except (ValueError, TypeError):
+                preventista_id = ""
+    else:
+        # Para otros roles: mantener filtro de roles
+        roles_validos = {"administrador", "supervisor", "preventista", "repartidor"}
+        if rol_usuario not in roles_validos:
+            rol_usuario = ""
 
-    if rol_usuario:
-        if rol_usuario == "administrador":
-            pedidos = pedidos.filter(
-                Q(preventista__is_superuser=True) | Q(preventista__perfil__rol="administrador")
-            )
-        else:
-            pedidos = pedidos.filter(preventista__perfil__rol=rol_usuario)
+        if rol_usuario:
+            if rol_usuario == "administrador":
+                pedidos = pedidos.filter(
+                    Q(preventista__is_superuser=True) | Q(preventista__perfil__rol="administrador")
+                )
+            else:
+                pedidos = pedidos.filter(preventista__perfil__rol=rol_usuario)
 
     if fecha_desde:
         pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
@@ -269,11 +296,21 @@ def listar_pedidos(request):
         p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if getattr(p, 'fecha_vendido', None) else "-"
 
     perfil = getattr(request.user, "perfil", None)
+    preventistas_asignados = []
+    
     if perfil and perfil.rol == "repartidor":
         clientes = Cliente.objects.none()
         productos = Producto.objects.none()
         clientes_data = []
         productos_data = []
+        
+        # Obtener preventistas asignados a este repartidor
+        preventistas_asignados = PerfilUsuario.objects.filter(
+            rol="preventista",
+            repartidor=request.user,
+            activo=True,
+            usuario__is_active=True,
+        ).select_related("usuario").values_list("usuario_id", "usuario__first_name", "usuario__last_name")
     else:
         form_data = _construir_datos_pedidos_form(request.user)
         clientes = form_data['clientes']
@@ -302,6 +339,8 @@ def listar_pedidos(request):
             "q": q,
             "estado": estado,
             "rol_usuario": rol_usuario,
+            "preventista_id": preventista_id,
+            "preventistas_asignados": preventistas_asignados,
             "fecha_desde": fecha_desde_raw,
             "fecha_hasta": fecha_hasta_raw,
             "vista_pedidos": vista_pedidos,
