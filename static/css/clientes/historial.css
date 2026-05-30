@@ -1,0 +1,291 @@
+.historial-header {
+    margin-bottom: 12px;
+}
+
+.historial-shell {
+    display: grid;
+    gap: 12px;
+}
+
+.historial-cliente-panel,
+.historial-pedido,
+.historial-resumen-item {
+    background: var(--color-blanco);
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.historial-cliente-panel {
+    padding: 12px 14px;
+}
+
+.historial-cliente-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.historial-avatar {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border-radius: 8px;
+    color: var(--color-acento);
+    background: color-mix(in srgb, var(--color-acento), transparent 88%);
+    font-size: 1.15rem;
+}
+
+.historial-cliente-main h2 {
+    margin: 0 0 3px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-texto);
+}
+
+.historial-cliente-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    color: var(--color-texto-secundario);
+    font-size: 0.8rem;
+}
+
+.historial-resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(92px, 1fr));
+    gap: 8px;
+}
+
+.historial-resumen-item {
+    padding: 10px 11px;
+    min-width: 0;
+}
+
+.historial-resumen-item span {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--color-texto-secundario);
+    font-size: 0.72rem;
+    line-height: 1.2;
+}
+
+.historial-resumen-item strong {
+    display: block;
+    overflow-wrap: anywhere;
+    color: var(--color-texto);
+    font-size: 0.95rem;
+    line-height: 1.15;
+}
+
+.historial-resumen-item--real strong {
+    color: var(--color-exito);
+}
+
+.historial-lista {
+    display: grid;
+    gap: 8px;
+}
+
+.historial-pedido {
+    overflow: hidden;
+}
+
+.historial-pedido-toggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 64px minmax(132px, 1.1fr) minmax(96px, 0.8fr) minmax(130px, 1fr) minmax(96px, 0.8fr) minmax(118px, auto) 28px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto);
+    text-align: left;
+}
+
+.historial-pedido-toggle:hover {
+    background: color-mix(in srgb, var(--color-acento), transparent 94%);
+}
+
+.historial-pedido-toggle:focus {
+    outline: 2px solid color-mix(in srgb, var(--color-acento), transparent 55%);
+    outline-offset: -2px;
+}
+
+.historial-pedido-id {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-acento);
+}
+
+.historial-pedido-cluster {
+    min-width: 0;
+}
+
+.historial-pedido-cluster strong {
+    display: block;
+    overflow: hidden;
+    color: var(--color-texto);
+    font-size: 0.84rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.historial-pedido-label {
+    display: block;
+    color: var(--color-texto-secundario);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.historial-pedido-estado {
+    justify-self: end;
+}
+
+.historial-chevron {
+    justify-self: end;
+    color: var(--color-texto-secundario);
+    transition: transform 0.2s ease;
+}
+
+.historial-pedido.is-open .historial-chevron {
+    transform: rotate(180deg);
+}
+
+.historial-pedido-detalle {
+    padding: 0 12px 12px;
+    border-top: 1px solid var(--color-borde);
+    background: color-mix(in srgb, var(--color-gris-claro), transparent 35%);
+}
+
+.historial-pedido-totales {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    padding: 9px 0;
+    color: var(--color-texto-secundario);
+    font-size: 0.78rem;
+}
+
+.historial-pedido-totales strong {
+    color: var(--color-texto);
+}
+
+.historial-detalle-tabla {
+    background: var(--color-blanco);
+    border: 1px solid var(--color-borde);
+}
+
+.historial-detalle-tabla th {
+    border-top: 0;
+    color: var(--color-texto-secundario);
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+.historial-detalle-tabla td {
+    vertical-align: middle;
+    font-size: 0.8rem;
+}
+
+.historial-observacion {
+    margin-top: 8px;
+    color: var(--color-texto-secundario);
+    font-size: 0.8rem;
+}
+
+.historial-empty {
+    padding: 44px 16px;
+    text-align: center;
+    color: var(--color-texto-secundario);
+}
+
+.historial-empty i {
+    margin-bottom: 8px;
+    font-size: 2rem;
+}
+
+.badge-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.22rem 0.5rem;
+    border: 1px solid;
+    border-radius: 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.badge-estado-vendido {
+    color: var(--color-exito);
+    border-color: color-mix(in srgb, var(--color-exito), transparent 55%);
+    background: color-mix(in srgb, var(--color-exito), transparent 90%);
+}
+
+.badge-estado-pendiente {
+    color: var(--color-advertencia);
+    border-color: color-mix(in srgb, var(--color-advertencia), transparent 55%);
+    background: color-mix(in srgb, var(--color-advertencia), transparent 90%);
+}
+
+.badge-estado-no-entregado,
+.badge-estado-anulado {
+    color: var(--color-peligro);
+    border-color: color-mix(in srgb, var(--color-peligro), transparent 55%);
+    background: color-mix(in srgb, var(--color-peligro), transparent 90%);
+}
+
+@media (max-width: 1200px) {
+    .historial-resumen-grid {
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+    }
+
+    .historial-pedido-toggle {
+        grid-template-columns: 56px repeat(4, minmax(92px, 1fr)) 28px;
+    }
+
+    .historial-pedido-preventista {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .historial-resumen-grid {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+
+    .historial-pedido-toggle {
+        grid-template-columns: 52px 1fr auto 24px;
+    }
+
+    .historial-pedido-entrega,
+    .historial-pedido-preventista {
+        display: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .historial-cliente-main {
+        align-items: flex-start;
+    }
+
+    .historial-resumen-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .historial-pedido-toggle {
+        grid-template-columns: 48px 1fr 24px;
+    }
+
+    .historial-pedido-estado {
+        display: none;
+    }
+}
