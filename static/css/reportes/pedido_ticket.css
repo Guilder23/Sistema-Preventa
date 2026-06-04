@@ -259,7 +259,7 @@
         min-height: auto;
         width: 80mm;
         padding: 0 !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
     }
 
     .ticket-paper {
@@ -268,7 +268,7 @@
         box-shadow: none;
         border-radius: 0;
         padding: 0;
-        margin: 0;
+        margin: 0 auto !important;
         /* Tipografía y espaciado para impresión térmica: un poco más grande y menos interlineado */
         font-size: 13px;
         line-height: 1.15;
@@ -278,6 +278,23 @@
     /* Reducir espacios entre filas/items en impresión */
     .ticket-row {
         margin-bottom: 4px;
+    }
+
+    /* Aumentar intensidad de texto en impresión (sin cambiar formato) */
+    .ticket-paper,
+    .ticket-row span,
+    .ticket-row strong,
+    .ticket-item-meta,
+    .ticket-item-total-label,
+    .ticket-footer,
+    .ticket-section-title {
+        color: #000 !important;
+    }
+
+    .ticket-row span,
+    .ticket-item-meta,
+    .ticket-item-total-label {
+        font-weight: 600;
     }
 
     .ticket-items {
