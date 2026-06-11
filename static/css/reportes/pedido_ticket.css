@@ -32,8 +32,8 @@
 .ticket-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: center;
+    gap: 6px;
     margin-bottom: 12px;
     padding-bottom: 10px;
     border-bottom: 2px dashed #d1d5db;
@@ -43,12 +43,15 @@
     font-size: 18px;
     font-weight: 800;
     letter-spacing: 0.2px;
+    margin: 0;
+    line-height: 1;
 }
 
 .ticket-brand-subtitle {
     font-size: 11px;
     color: #6b7280;
-    margin-top: 2px;
+    margin: 2px 0 0 0;
+    line-height: 1;
 }
 
 .ticket-badge {
@@ -209,14 +212,19 @@
 @page {
     size: 80mm auto;
     margin: 0;
+    padding: 0;
 }
 
 @media print {
+    * {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     html,
     body {
         width: 80mm;
-        margin: 0 !important;
-        padding: 0 !important;
+        height: auto;
         background: #fff !important;
     }
 
@@ -234,24 +242,18 @@
     .main-container {
         margin-left: 0 !important;
         padding: 0 !important;
-        width: 100% !important;
+        width: 80mm !important;
         min-height: auto !important;
     }
 
     .content {
         margin: 0 !important;
         padding: 0 !important;
-        width: 100% !important;
+        width: 80mm !important;
     }
 
     .no-print,
-    .ticket-shell {
-        background: #fff !important;
-        padding: 0 !important;
-    }
-
-    .ticket-actions,
-    .no-print {
+    .ticket-actions {
         display: none !important;
     }
 
@@ -259,25 +261,42 @@
         min-height: auto;
         width: 80mm;
         padding: 0 !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
+        background: #fff !important;
     }
 
     .ticket-paper {
         width: 80mm;
-        max-width: 80mm;
+        max-width: 80mm !important;
+        min-width: 80mm;
         box-shadow: none;
         border-radius: 0;
-        padding: 0;
-        margin: 0 auto !important;
-        /* Tipografía y espaciado para impresión térmica: un poco más grande y menos interlineado */
-        font-size: 13px;
-        line-height: 1.15;
+        background: #fff;
+        margin: 0 !important;
         padding: 6px 6px 8px;
+        font-size: 12px;
+        line-height: 1.2;
+        page-break-inside: avoid;
     }
 
     /* Reducir espacios entre filas/items en impresión */
+    .ticket-header {
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+    }
+
+    .ticket-block {
+        margin-bottom: 8px;
+    }
+
     .ticket-row {
-        margin-bottom: 4px;
+        margin-bottom: 3px;
+        gap: 8px;
+    }
+
+    .ticket-row span {
+        min-width: 25%;
+        flex: 0 0 25%;
     }
 
     /* Aumentar intensidad de texto en impresión (sin cambiar formato) */
@@ -297,31 +316,66 @@
         font-weight: 600;
     }
 
+    .ticket-section-title {
+        font-size: 10px;
+        margin-bottom: 4px;
+    }
+
     .ticket-items {
-        gap: 4px;
+        gap: 2px;
     }
 
     .ticket-item {
-        padding-bottom: 4px;
-        gap: 8px;
-    }
-
-    .ticket-item-meta {
-        margin-top: 0px;
-    }
-
-    .ticket-section-title {
-        font-size: 10px;
-        margin-bottom: 6px;
+        padding-bottom: 2px;
+        margin-bottom: 2px;
+        gap: 6px;
     }
 
     .ticket-item-name {
-        font-size: 13px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .ticket-item-meta {
+        font-size: 10px;
+        margin-top: 0;
+    }
+
+    .ticket-item-total-wrap {
+        min-width: 80px;
+    }
+
+    .ticket-item-total {
+        min-width: 75px;
+        font-size: 11px;
+    }
+
+    .ticket-row--total {
+        margin-bottom: 6px;
+    }
+
+    .ticket-row--total span,
+    .ticket-row--total strong {
+        font-size: 12px;
     }
 
     .ticket-footer {
+        font-size: 9px;
+        padding-top: 4px;
+        margin-top: 4px;
+    }
+
+    .ticket-badge {
         font-size: 10px;
-        padding-top: 6px;
+        padding: 3px 6px;
+    }
+
+    .ticket-brand-title {
+        font-size: 16px;
+    }
+
+    .ticket-brand-subtitle {
+        font-size: 9px;
     }
 }
 

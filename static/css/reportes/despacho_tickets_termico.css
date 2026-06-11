@@ -25,23 +25,53 @@
 }
 
 @media print {
-    .ticket-cut {
-        width: 80mm;
-        margin: 0;
-        padding: 0;
-        border-top: 2px dashed #d1d5db;
-    }
-
-    /* Centrar los tickets en la página de impresión térmica */
+    /* Reset de márgenes para lista de tickets */
     .tickets-bulk {
         gap: 0;
-        align-items: center;
-        justify-content: center;
+        align-items: stretch;
+        justify-content: flex-start;
+        width: 80mm;
+        margin: 0 auto;
+        padding: 0;
     }
 
-    /* Asegurar que cada ticket quede centrado horizontalmente */
-    .ticket-paper--bulk,
-    .ticket-paper {
-        margin: 0 auto !important;
+    /* Cada ticket separado con divisor visible */
+    .ticket-paper--bulk {
+        width: 80mm;
+        max-width: 80mm !important;
+        min-width: 80mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        page-break-after: always;
+        break-after: page;
+        border: none;
+        border-bottom: 2px dashed #000;
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    .ticket-paper--bulk:last-child {
+        border-bottom: none;
+        page-break-after: avoid;
+        break-after: avoid;
+    }
+
+    /* Asegurar que el corte sea visible */
+    .ticket-cut {
+        width: 80mm;
+        height: 2px;
+        border: none;
+        border-top: 2px dashed #000;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+    }
+
+    /* Separador entre tickets en impresión */
+    .ticket-paper--bulk::after {
+        content: '';
+        display: block;
+        height: 3mm;
+        width: 80mm;
     }
 }
