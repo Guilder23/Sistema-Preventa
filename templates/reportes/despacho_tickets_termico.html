@@ -110,8 +110,6 @@
                         <div class="ticket-item-total-wrap">
                             <div class="ticket-item-total-label">Bruto</div>
                             <div class="ticket-item-total">Bs {{ d.subtotal_bruto|floatformat:2 }}</div>
-                            <div class="ticket-item-total-label">Real</div>
-                            <div class="ticket-item-total ticket-item-total--real">Bs {{ d.subtotal_neto|floatformat:2 }}</div>
                         </div>
                     </article>
                     {% endfor %}
@@ -119,16 +117,8 @@
             </section>
 
             <section class="ticket-block ticket-total-box">
-                <div class="ticket-row">
-                    <span>Total bruto</span>
-                    <strong>Bs {{ t.total_bruto|floatformat:2 }}</strong>
-                </div>
-                <div class="ticket-row">
-                    <span>Devueltos</span>
-                    <strong>{{ t.total_devuelto_unidades }} und. / Bs {{ t.total_devuelto_monto|floatformat:2 }}</strong>
-                </div>
                 <div class="ticket-row ticket-row--total">
-                    <span>Total real</span>
+                    <span>Total</span>
                     <strong>Bs {{ t.total_real|floatformat:2 }}</strong>
                 </div>
                 {% if t.pedido.observacion %}
@@ -140,8 +130,9 @@
             </section>
 
             <footer class="ticket-footer">
-                <p>Gracias por su compra.</p>
-                <p>Impresión térmica lista para 80mm.</p>
+                <p>¡Gracias por su compra!</p>
+                <p>Para cualquier consulta o pedido:</p>
+                <p>75272005 - 69995657</p>
             </footer>
         </main>
 
