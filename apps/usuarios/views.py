@@ -2,14 +2,20 @@ from __future__ import annotations
 
 import json
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_http_methods
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from .decorators import role_required
 from .models import PerfilUsuario
@@ -55,6 +61,117 @@ def custom_logout(request):
     logout(request)
     messages.success(request, "Sesión cerrada exitosamente")
     return redirect("index")
+
+
+@require_http_methods(["GET", "POST"])
+def recuperar_password(request):
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip().lower()
+
+        reset_url = None
+        email_sent = False
+        user = User.objects.filter(email__iexact=email).first() if email else None
+        if user:
+            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_url = request.build_absolute_uri(
+                reverse("recuperar_password_confirmar", args=[uidb64, token])
+            )
+            try:
+                send_mail(
+                    "Recupera tu contraseña",
+                    (
+                        f"Hola {user.get_full_name() or user.username},\n\n"
+                        f"Usa este enlace para crear una nueva contraseña:\n{reset_url}\n\n"
+                        "Si no solicitaste este cambio, puedes ignorar este mensaje."
+                    ),
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
+                email_sent = True
+            except Exception:
+                email_sent = False
+
+        if email_sent:
+            messages.success(
+                request,
+                "Si el correo existe, te hemos enviado un enlace para recuperar la contraseña.",
+            )
+        else:
+            if settings.DEBUG and reset_url:
+                messages.warning(
+                    request,
+                    "No pudimos enviar el correo automáticamente. Usa este enlace temporal para continuar:",
+                )
+            else:
+                messages.error(
+                    request,
+                    "No pudimos enviar el correo en este momento. Intenta nuevamente más tarde.",
+                )
+
+        return render(
+            request,
+            "usuarios/recuperar_password.html",
+            {"email": email, "reset_url": reset_url},
+        )
+
+    return render(request, "usuarios/recuperar_password.html")
+
+
+@require_http_methods(["GET", "POST"])
+def recuperar_password_confirmar(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is None or not default_token_generator.check_token(user, token):
+        messages.error(request, "El enlace de recuperación es inválido o ha expirado.")
+        return render(request, "usuarios/recuperar_password_confirmar.html", {"valid_link": False})
+
+    if request.method == "POST":
+        new_password = request.POST.get("new_password") or ""
+        confirm_password = request.POST.get("confirm_password") or ""
+
+        if not new_password or not confirm_password:
+            messages.error(request, "Completa ambos campos para actualizar tu contraseña")
+            return render(
+                request,
+                "usuarios/recuperar_password_confirmar.html",
+                {"valid_link": True, "uidb64": uidb64, "token": token},
+            )
+
+        if len(new_password) < 8:
+            messages.error(request, "La contraseña debe tener al menos 8 caracteres")
+            return render(
+                request,
+                "usuarios/recuperar_password_confirmar.html",
+                {"valid_link": True, "uidb64": uidb64, "token": token},
+            )
+
+        if new_password != confirm_password:
+            messages.error(request, "Las contraseñas no coinciden")
+            return render(
+                request,
+                "usuarios/recuperar_password_confirmar.html",
+                {"valid_link": True, "uidb64": uidb64, "token": token},
+            )
+
+        user.set_password(new_password)
+        user.save()
+        return redirect("recuperar_password_completado")
+
+    return render(
+        request,
+        "usuarios/recuperar_password_confirmar.html",
+        {"valid_link": True, "uidb64": uidb64, "token": token},
+    )
+
+
+def recuperar_password_completado(request):
+    return render(request, "usuarios/recuperar_password_completado.html")
 
 
 @login_required
