@@ -53,6 +53,20 @@
                         </div>
                     {% endfor %}
                 {% endif %}
+
+                {% if remaining_attempts is not None %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Intentos restantes: {{ remaining_attempts }}</span>
+                    </div>
+                {% endif %}
+
+                {% if wait_seconds %}
+                    <div class="alert alert-info" role="alert" data-countdown>
+                        <i class="fas fa-clock"></i>
+                        <span>Espere {{ wait_seconds }} segundos antes de volver a intentar.</span>
+                    </div>
+                {% endif %}
             </div>
 
             <form method="post" action="{% url 'login' %}" class="login-form" id="loginForm">

@@ -123,4 +123,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 3000);
     }
+
+    const countdownAlert = document.querySelector('[data-countdown]');
+    if (countdownAlert) {
+        const countdownText = countdownAlert.querySelector('span');
+        let remainingSeconds = parseInt(countdownText.textContent.match(/(\d+)/)?.[0] || '0', 10);
+
+        if (remainingSeconds > 0) {
+            const interval = setInterval(() => {
+                remainingSeconds -= 1;
+                if (remainingSeconds <= 0) {
+                    clearInterval(interval);
+                    countdownText.textContent = 'Ya puedes volver a intentar.';
+                    return;
+                }
+                countdownText.textContent = `Espere ${remainingSeconds} segundos antes de volver a intentar.`;
+            }, 1000);
+        }
+    }
 });

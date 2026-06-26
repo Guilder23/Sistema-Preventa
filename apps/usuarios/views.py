@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -32,14 +34,78 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
 
+    ip_address = request.META.get("REMOTE_ADDR", "")
+    login_key = f"login_attempts:{ip_address}"
+    now = timezone.now()
+    attempts_data = request.session.get(login_key, {})
+
+    cooldown_until = attempts_data.get("cooldown_until")
+    if cooldown_until:
+        cooldown_until_dt = datetime.fromisoformat(cooldown_until)
+        if now < cooldown_until_dt:
+            wait_seconds = max(0, int((cooldown_until_dt - now).total_seconds()))
+            request.session["login_wait_seconds"] = wait_seconds
+            request.session[login_key] = attempts_data
+            if request.method == "POST":
+                messages.error(request, f"Demasiados intentos fallidos. Intenta nuevamente en {wait_seconds} segundos.")
+                return render(
+                    request,
+                    "inicio/modals/login.html",
+                    {"wait_seconds": wait_seconds, "remaining_attempts": 0},
+                )
+        else:
+            attempts_data.pop("cooldown_until", None)
+            request.session.pop("login_wait_seconds", None)
+            request.session[login_key] = attempts_data
+
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
         password = request.POST.get("password") or ""
 
         user = authenticate(request, username=username, password=password)
         if user is None:
-            messages.error(request, "Usuario o contraseña incorrectos")
-            return redirect("login")
+            attempts = attempts_data.copy()
+            attempts["count"] = attempts.get("count", 0) + 1
+            attempts["last_attempt_time"] = now.isoformat()
+
+            if attempts["count"] <= 3:
+                wait_seconds = 0
+                attempts.pop("cooldown_until", None)
+            elif attempts["count"] == 4:
+                wait_seconds = 30
+            elif attempts["count"] == 5:
+                wait_seconds = 60
+            elif attempts["count"] == 6:
+                wait_seconds = 120
+            elif attempts["count"] == 7:
+                wait_seconds = 240
+            elif attempts["count"] == 8:
+                wait_seconds = 480
+            else:
+                wait_seconds = 1800
+
+            if wait_seconds:
+                attempts["cooldown_until"] = (now + timedelta(seconds=wait_seconds)).isoformat()
+            else:
+                attempts.pop("cooldown_until", None)
+
+            request.session[login_key] = attempts
+            request.session["login_wait_seconds"] = wait_seconds
+
+            remaining_attempts = max(0, 3 - min(attempts["count"], 3))
+            if wait_seconds > 0:
+                messages.error(
+                    request,
+                    f"Correo o contraseña incorrectos. Espera {wait_seconds} segundos antes de volver a intentar.",
+                )
+            else:
+                messages.error(request, "Correo o contraseña incorrectos.")
+
+            return render(
+                request,
+                "inicio/modals/login.html",
+                {"remaining_attempts": remaining_attempts, "wait_seconds": wait_seconds},
+            )
 
         if not user.is_active:
             messages.error(request, "Tu usuario está bloqueado")
@@ -51,6 +117,8 @@ def login_view(request):
                 messages.error(request, "Tu usuario está bloqueado")
                 return redirect("login")
 
+        request.session.pop(login_key, None)
+        request.session.pop("login_wait_seconds", None)
         login(request, user)
         return redirect("dashboard")
 
