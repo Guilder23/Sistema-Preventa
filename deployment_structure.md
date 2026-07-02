@@ -1,203 +1,236 @@
-# Estructura de despliegue - SistemaPreventaOficial
+﻿# Estructura de despliegue - SistemaPreventaOficial y SistemaPreventaPrueba
 
-Este archivo describe la estructura del despliegue en el servidor Hostinger, con comentarios para entender cada sección y facilitar el mantenimiento.
+Este archivo describe la estructura real del despliegue en el servidor Hostinger, con detalles de la configuración actual, los servicios activos y las rutas que deben mantenerse.
 
 ---
 
-## 1. Ubicaciones principales del servidor
+## 1. Visión general del servidor
 
 - `/root`
   - Home del usuario root.
-  - Contiene archivos de configuración del servidor cuando se usa root.
+  - No se utiliza directamente para los despliegues de aplicación.
 
 - `/home/guilder`
-  - Home del usuario que ejecuta la aplicación.
-  - Aquí está el proyecto, los entornos virtuales, backups, logs y scripts.
-
-- `/home/guilder/projects/SistemaPreventaOficial`
-  - Carpeta raíz del proyecto Django desplegado.
-  - Contiene el código fuente, los archivos estáticos generados, los medios y el entorno virtual.
+  - Home del usuario que ejecuta los proyectos.
+  - Contiene los proyectos, los entornos virtuales y scripts.
 
 - `/etc/nginx`
-  - Directorio donde vive la configuración global de Nginx.
-  - Aquí están los sitios disponibles y habilitados.
+  - Configuración global de Nginx.
+  - Carga los sitios habilitados desde `sites-enabled`.
 
 - `/etc/systemd/system`
-  - Directorio donde está el servicio systemd que gestiona Gunicorn para la app.
+  - Servicios `systemd` que arrancan Gunicorn para cada despliegue.
+
+- PostgreSQL:
+  - Configuración: `/etc/postgresql/16`
+  - Datos: `/var/lib/postgresql/16`
 
 ---
 
-## 2. Configuración de Nginx
+## 2. Deploy oficial - SistemaPreventaOficial
 
-### Archivos clave
-- `/etc/nginx/nginx.conf`
-  - Configuración principal de Nginx.
-  - Carga los sitios de `sites-enabled` y la configuración global.
-
-- `/etc/nginx/sites-available/sistema-preventa`
-  - Configuración de servidor para la app.
-  - Define proxy a Gunicorn, alias estáticos y media.
-
-- `/etc/nginx/sites-enabled/sistema-preventa`
-  - Enlace simbólico activo hacia `sites-available/sistema-preventa`.
-
-### Comentarios importantes
-- `location /static/`:
-  - Sirve archivos estáticos desde `/home/guilder/projects/SistemaPreventaOficial/staticfiles/`.
-
-- `location /media/`:
-  - Sirve archivos de usuario/media desde `/home/guilder/projects/SistemaPreventaOficial/media/`.
-
-- `proxy_pass http://sistema_preventa;`:
-  - Redirige las peticiones a Gunicorn en `127.0.0.1:8001`.
-
----
-
-## 3. Servicio systemd para Gunicorn
-
-### Archivo clave
-- `/etc/systemd/system/sistema-preventa.service`
-
-### Contenido y propósito
-- `User=guilder`
-  - El proceso se ejecuta como usuario `guilder`, no como root.
-
-- `WorkingDirectory=/home/guilder/projects/SistemaPreventaOficial`
-  - Directorio base desde donde arranca Gunicorn.
-
-- `Environment="PATH=/home/guilder/projects/SistemaPreventaOficial/venv/bin"`
-  - Usa el entorno virtual correcto del proyecto.
-
-- `ExecStart=/home/guilder/projects/SistemaPreventaOficial/venv/bin/gunicorn ... sistemaPreventa.wsgi:application`
-  - Ejecuta Gunicorn con el módulo WSGI de Django.
-  - El binding se hace en `127.0.0.1:8001`.
-
----
-
-## 4. Proyecto Django en el servidor
-
-### Raíz del proyecto
+### Ubicación del proyecto
 - `/home/guilder/projects/SistemaPreventaOficial`
 
-### Subcarpetas principales
-- `apps/`
-  - Contiene las apps Django locales del proyecto (`clientes`, `productos`, `pedidos`, `usuarios`, etc.).
+### Configuración de Nginx
+- `/etc/nginx/sites-available/sistema-preventa`
+- `/etc/nginx/sites-enabled/sistema-preventa`
 
-- `sistemaPreventa/`
-  - Contiene la configuración Django principal (`settings.py`, `urls.py`, `wsgi.py`, `asgi.py`).
+### Servicio Gunicorn
+- `/etc/systemd/system/sistema-preventa.service`
 
-- `templates/`
-  - Plantillas HTML compartidas por Django.
+### Bind de Gunicorn
+- `127.0.0.1:8001`
 
-- `static/`
-  - Archivos estáticos fuente (CSS, JS, imágenes) del proyecto.
+### Base de datos
+- Nombre: `sistema_preventa_oficial`
+- Usuario: `sistema_user`
+- Base de datos PostgreSQL compartida en el mismo servidor.
 
-- `staticfiles/`
-  - Archivos estáticos recolectados listos para servir vía Nginx.
+### URL pública
+- `http://187.127.45.61`
 
-- `media/`
-  - Archivos subidos por usuarios o generados en tiempo de ejecución.
+---
 
-- `venv/`
-  - Entorno virtual Python usado para ejecutar la aplicación.
+## 3. Deploy de prueba - SistemaPreventaPrueba
+
+### Ubicación del proyecto de prueba
+- `/home/guilder/projects/SistemaPreventaPrueba`
+
+### Configuración de Nginx de prueba
+- `/etc/nginx/sites-available/sistema-preventa-prueba`
+- `/etc/nginx/sites-enabled/sistema-preventa-prueba`
+
+### Servicio Gunicorn de prueba
+- `/etc/systemd/system/sistema-preventa-prueba.service`
+
+### Bind de Gunicorn de prueba
+- `127.0.0.1:8002`
+
+### Base de datos de prueba
+- Nombre: `sistema_preventa_prueba`
+- Usuario: `sistema_user_prueba`
+
+### URL de prueba
+- `http://187.127.45.61:8081`
+
+---
+
+## 4. Configuración Nginx común
+
+### Nginx principal
+- `/etc/nginx/nginx.conf`
+  - Configuración global de Nginx.
+  - Incluye `/etc/nginx/sites-enabled/*`.
+
+### Sitios configurados
+- `sistema-preventa` (oficial)
+- `sistema-preventa-prueba` (prueba)
+
+### Comentarios importantes
+- El deploy oficial sirve estáticos desde `/home/guilder/projects/SistemaPreventaOficial/staticfiles/`.
+- El deploy oficial sirve media desde `/home/guilder/projects/SistemaPreventaOficial/media/`.
+- El deploy de prueba sirve estáticos desde `/home/guilder/projects/SistemaPreventaPrueba/staticfiles/`.
+- El deploy de prueba sirve media desde `/home/guilder/projects/SistemaPreventaPrueba/media/`.
+- El deploy oficial y de prueba usan diferentes puertos Nginx y Gunicorn.
+
+---
+
+## 5. Servicios systemd activos
+
+### Oficial
+- `sistema-preventa.service`
+  - User: `guilder`
+  - WorkingDirectory: `/home/guilder/projects/SistemaPreventaOficial`
+  - Gunicorn bind: `127.0.0.1:8001`
+
+### Prueba
+- `sistema-preventa-prueba.service`
+  - User: `guilder`
+  - WorkingDirectory: `/home/guilder/projects/SistemaPreventaPrueba`
+  - Gunicorn bind: `127.0.0.1:8002`
+
+---
+
+## 6. Proyecto oficial: estructura de carpetas
+
+- `/home/guilder/projects/SistemaPreventaOficial/`
+  - `.git/`
+  - `apps/`
+  - `media/`
+  - `static/`
+  - `staticfiles/`
+  - `templates/`
+  - `venv/`
+  - `sistemaPreventa/`
+  - `.env`
 
 ### Comentarios de mantenimiento
-- Siempre actualizar el código en `apps/` y `sistemaPreventa/`.
-- Volver a ejecutar `collectstatic` para regenerar `staticfiles/` cuando haya cambios en `static/`.
-- Revisar `media/` si hay uploads o assets dinámicos que deben sincronizarse.
+- Cambios de código: `apps/` y `sistemaPreventa/`.
+- Cambios estáticos: `static/` → `python manage.py collectstatic` → `staticfiles/`.
+- Archivos subidos: `media/`.
+- Variables sensibles: `.env` debe tener permisos seguros y ser legible por `guilder`.
 
 ---
 
-## 5. Base de datos
+## 7. Proyecto de prueba: estructura de carpetas
 
-### Comentario general
-- El servicio systemd indica que el proyecto depende de PostgreSQL:
-  - `After=network.target postgresql.service`
-- La base de datos no está dentro de la carpeta del proyecto.
-- Se gestiona externamente, fuera de `/home/guilder/projects/SistemaPreventaOficial`.
+- `/home/guilder/projects/SistemaPreventaPrueba/`
+  - `.git/`
+  - `apps/`
+  - `media/`
+  - `static/`
+  - `staticfiles/`
+  - `templates/`
+  - `venv/`
+  - `sistemaPreventa/`
+  - `.env`
 
-### Nota de mantenimiento
-- Revisar `DATABASES` en `sistemaPreventa/settings.py` para ver conexión y credenciales.
-- Si se actualiza el servidor de DB, no se mueve la carpeta del proyecto.
-
----
-
-## 6. Flujo de solicitudes
-
-1. El usuario accede al servidor por HTTP/HTTPS.
-2. Nginx recibe la petición.
-3. Si la solicitud es `/static/` o `/media/`, Nginx sirve el archivo directamente.
-4. Si es otra ruta, Nginx proxy_pass a Gunicorn en `127.0.0.1:8001`.
-5. Gunicorn ejecuta Django y devuelve la respuesta.
-6. Django puede leer/escribir datos vía PostgreSQL externo.
+### Comentarios de mantenimiento
+- Debe ser independiente del oficial, con su propio `.env` y base de datos.
+- El directorio debe ser propiedad de `guilder`.
+- Si se actualiza la rama o el código, el deploy de prueba debe hacer `git pull origin dev` sin tocar el oficial.
 
 ---
 
-## 7. Puntos útiles para mantenimiento
+## 8. PostgreSQL en el servidor
 
-- Para reiniciar el servicio:
-  - `systemctl restart sistema-preventa`
-
-- Para verificar errores de Nginx:
-  - `journalctl -u nginx` o revisar `/var/log/nginx/error.log`
-
-- Para verificar Gunicorn y Django:
-  - `journalctl -u sistema-preventa`
-
-- Para verificar que Nginx está usando el sitio correcto:
-  - `ls -l /etc/nginx/sites-enabled/`
-
-- Para cambios de código:
-  1. Actualizar archivos en `/home/guilder/projects/SistemaPreventaOficial`
-  2. Activar entorno virtual y ejecutar migraciones si es necesario
-  3. Ejecutar `python manage.py collectstatic`
-  4. Reiniciar `systemctl restart sistema-preventa`
-  5. Probar la aplicación
+- Configuración: `/etc/postgresql/16`
+- Datos: `/var/lib/postgresql/16`
+- Bases de datos creadas por los despliegues:
+  - `sistema_preventa_oficial`
+  - `sistema_preventa_prueba`
 
 ---
 
-## 8. Árbol de directorios touchados y configurados
-
-Este árbol muestra las rutas que se tocaron para la configuración actual y las rutas que se deberían cambiar si se actualiza el despliegue.
+## 9. Árbol de directorios actual
 
 ```
-/root                  # Home de root, no usado directamente por la app
-/home/guilder          # Home del usuario de despliegue
-  ├─ backups/          # Backups del usuario, no parte del proyecto directo
-  ├─ envs/             # Entornos virtuales o ambientes auxiliares
-  ├─ logs/             # Logs personalizados del usuario
-  ├─ projects/         # Carpeta de proyectos desplegados
-  │   ├─ SistemaPreventaOficial/  # Proyecto Django actual en producción
-  │   │   ├─ .git/      # Repo Git del proyecto
-  │   │   ├─ apps/      # Apps Django locales del proyecto
-  │   │   ├─ media/     # Archivos subidos y media servida por Nginx
-  │   │   ├─ static/    # Archivos estáticos fuente del proyecto
-  │   │   ├─ staticfiles/ # Archivos estáticos recolectados para Nginx
-  │   │   ├─ templates/ # Plantillas Django
-  │   │   ├─ venv/      # Entorno virtual Python usado por Gunicorn
-  │   │   └─ sistemaPreventa/ # Configuración Django principal
-  │   └─ SistemaPreventaPrueba/ # Proyecto de prueba
-  └─ scripts/          # Scripts de despliegue o mantenimiento
-/etc/nginx/            # Configuración de Nginx
-  ├─ nginx.conf        # Configuración global de Nginx
-  ├─ conf.d/           # Configs adicionales de Nginx
-  ├─ sites-available/  # Sitios disponibles para habilitar
+/root
+/home/guilder
+  ├─ backups/
+  ├─ envs/
+  ├─ logs/
+  ├─ projects/
+  │   ├─ SistemaPreventaOficial/
+  │   │   ├─ .git/
+  │   │   ├─ apps/
+  │   │   ├─ media/
+  │   │   ├─ static/
+  │   │   ├─ staticfiles/
+  │   │   ├─ templates/
+  │   │   ├─ venv/
+  │   │   └─ sistemaPreventa/
+  │   └─ SistemaPreventaPrueba/
+  │       ├─ .git/
+  │       ├─ apps/
+  │       ├─ media/
+  │       ├─ static/
+  │       ├─ staticfiles/
+  │       ├─ templates/
+  │       ├─ venv/
+  │       └─ sistemaPreventa/
+  └─ scripts/
+/etc/nginx/
+  ├─ nginx.conf
+  ├─ conf.d/
+  ├─ sites-available/
   │   ├─ default
-  │   └─ sistema-preventa  # Configuración de este proyecto
-  └─ sites-enabled/    # Sitios habilitados activamente
-      └─ sistema-preventa -> /etc/nginx/sites-available/sistema-preventa
-/etc/systemd/system/   # Servicios systemd
-  └─ sistema-preventa.service  # Servicio de Gunicorn para el proyecto
-/etc/postgresql/       # Configuración de PostgreSQL
-  └─ 16/                # Versión del servidor PostgreSQL
-/var/lib/postgresql/   # Datos físicos de PostgreSQL
-  └─ 16/                # Cluster de datos de PostgreSQL
+  │   ├─ sistema-preventa
+  │   └─ sistema-preventa-prueba
+  └─ sites-enabled/
+      ├─ sistema-preventa -> /etc/nginx/sites-available/sistema-preventa
+      └─ sistema-preventa-prueba -> /etc/nginx/sites-available/sistema-preventa-prueba
+/etc/systemd/system/
+  ├─ sistema-preventa.service
+  └─ sistema-preventa-prueba.service
+/etc/postgresql/
+  └─ 16/
+/var/lib/postgresql/
+  └─ 16/
 ```
 
-### Comentarios de mantenimiento sobre el árbol
-- Cambios de código y estáticos: principalmente en `/home/guilder/projects/SistemaPreventaOficial`.
-- Configuración de Nginx: `/etc/nginx/sites-available/sistema-preventa` y su enlace en `sites-enabled`.
-- Servicio de arranque y Gunicorn: `/etc/systemd/system/sistema-preventa.service`.
-- Base de datos PostgreSQL: `/etc/postgresql/16` y `/var/lib/postgresql/16`.
-- Si se migrara el proyecto completo, estas rutas son las que deberán actualizarse en primer lugar.
+---
 
+## 10. Comandos útiles
+
+- Ver estado del deploy oficial:
+  - `systemctl status sistema-preventa`
+- Ver estado del deploy de prueba:
+  - `systemctl status sistema-preventa-prueba`
+- Ver logs de ambos:
+  - `journalctl -u sistema-preventa -f`
+  - `journalctl -u sistema-preventa-prueba -f`
+- Recargar Nginx:
+  - `sudo nginx -t && sudo systemctl reload nginx`
+- Reiniciar un servicio:
+  - `sudo systemctl restart sistema-preventa`
+  - `sudo systemctl restart sistema-preventa-prueba`
+
+---
+
+## 11. Notas finales
+
+- El deploy oficial se sirve en `http://187.127.45.61`.
+- El deploy de prueba se sirve en `http://187.127.45.61:8081`.
+- Ambos despliegues son independientes en servicios, Nginx, puertos y bases de datos.
