@@ -1,4 +1,5 @@
 import importlib
+import os
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -11,10 +12,11 @@ from django.utils.http import urlsafe_base64_encode
 
 
 class AllowedHostsSettingsTests(TestCase):
-    def test_public_ip_is_allowed_by_default(self):
+    def test_public_ip_is_allowed_even_when_env_overrides_hosts(self):
         import sistemaPreventa.settings as settings_module
 
-        reloaded_module = importlib.reload(settings_module)
+        with patch.dict(os.environ, {"ALLOWED_HOSTS": "localhost,127.0.0.1"}, clear=False):
+            reloaded_module = importlib.reload(settings_module)
 
         self.assertIn("187.127.45.61", reloaded_module.ALLOWED_HOSTS)
 
