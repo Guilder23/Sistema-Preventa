@@ -1,8 +1,9 @@
 """Configuración principal de Django para Sistema Preventa."""
 
+import os
 from pathlib import Path
 
-from decouple import config
+from decouple import Csv, config
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -15,10 +16,15 @@ SECRET_KEY = config(
 
 DEBUG = config("DEBUG", default=True, cast=bool)
 
+DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", "187.127.45.61"]
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    default="localhost,127.0.0.1,187.127.45.61",
-).split(",")
+    default=",".join(DEFAULT_ALLOWED_HOSTS),
+    cast=Csv(),
+)
+
+if "187.127.45.61" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("187.127.45.61")
 
 
 INSTALLED_APPS = [
