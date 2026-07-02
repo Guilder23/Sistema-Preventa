@@ -76,7 +76,7 @@ cat > "$PROJECT_DIR/.env" << EOF
 # Configuración de Producción de prueba
 SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')
 DEBUG=False
-ALLOWED_HOSTS=$DOMAIN,localhost,127.0.0.1
+ALLOWED_HOSTS=$DOMAIN,www.$DOMAIN,localhost,127.0.0.1
 
 # Base de datos PostgreSQL
 DB_NAME=$DB_NAME
@@ -93,6 +93,9 @@ EMAIL_HOST_USER=
 EMAIL_HOST_PASSWORD=
 EMAIL_USE_TLS=True
 DEFAULT_FROM_EMAIL=noreply@sistema-preventa-prueba.com
+
+# CSRF y Seguridad
+CSRF_TRUSTED_ORIGINS=http://$DOMAIN:$NGINX_PORT,http://www.$DOMAIN:$NGINX_PORT,http://localhost:$NGINX_PORT,http://127.0.0.1:$NGINX_PORT
 EOF
 
 chmod 600 "$PROJECT_DIR/.env"
