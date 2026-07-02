@@ -140,6 +140,14 @@ LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/inicio/"
 
 
+# CSRF y Seguridad
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost,http://127.0.0.1,http://187.127.45.61",
+    cast=Csv(),
+)
+
+
 # Mensajes (Bootstrap)
 from django.contrib.messages import constants as messages  # noqa: E402
 

@@ -73,6 +73,9 @@ EMAIL_HOST_USER=
 EMAIL_HOST_PASSWORD=
 EMAIL_USE_TLS=True
 DEFAULT_FROM_EMAIL=noreply@sistema-preventa.com
+
+# CSRF y Seguridad
+CSRF_TRUSTED_ORIGINS=http://$DOMAIN,http://www.$DOMAIN,http://localhost,http://127.0.0.1
 EOF
 
 chmod 600 "$PROJECT_DIR/.env"
