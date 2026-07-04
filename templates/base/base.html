@@ -11,7 +11,16 @@
     <script>
         (function () {
             try {
-                var themeAllowed = {% if theme_allowed %}true{% else %}false{% endif %};
+                // Modo oscuro comentado temporalmente.
+                // var themeAllowed = {% if theme_allowed %}true{% else %}false{% endif %};
+                // window.THEME_ALLOWED = themeAllowed;
+                // if (!themeAllowed) {
+                //     try { localStorage.removeItem('theme'); } catch (e) { /* ignore */ }
+                //     document.documentElement.setAttribute('data-theme', 'light');
+                //     return;
+                // }
+
+                var themeAllowed = false;
                 window.THEME_ALLOWED = themeAllowed;
 
                 if (!themeAllowed) {
