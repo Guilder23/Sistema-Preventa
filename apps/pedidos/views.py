@@ -162,7 +162,12 @@ def _pedidos_qs_para_usuario(user):
         ).values_list("usuario_id", flat=True)
         return qs.filter(
             preventista_id__in=preventistas_ids,
-            estado__in=[Pedido.ESTADO_PENDIENTE, Pedido.ESTADO_VENDIDO, Pedido.ESTADO_NO_ENTREGADO]
+            estado__in=[
+                Pedido.ESTADO_PENDIENTE,
+                Pedido.ESTADO_VENDIDO,
+                Pedido.ESTADO_NO_ENTREGADO,
+                Pedido.ESTADO_ANULADO,
+            ]
         )
     if perfil and perfil.rol == "supervisor":
         preventistas_ids = PerfilUsuario.objects.filter(
@@ -676,7 +681,8 @@ def pedidos_mapa_puntos(request):
             cliente__longitud__isnull=False,
             preventista_id__in=preventistas_ids,
         )
-        .order_by("-fecha")
+        .order_by("cliente_id", "-fecha", "-id")
+        .distinct("cliente_id")
     )
 
     # Filtrado opcional por fecha de entrega registrada (igualdad)

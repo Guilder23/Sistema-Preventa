@@ -85,7 +85,7 @@
                     <input type="date" class="form-control form-control-sm" id="fechaHastaPedido" name="fecha_hasta" value="{{ fecha_hasta }}" title="Fecha hasta">
                 </div>
                 <div class="col-md-1 text-right">
-                    <small class="text-muted">Mostrando {{ pedidos|length }} pedidos</small>
+                    <small class="text-muted">{{ pedidos|length }} pedidos</small>
                 </div>
             </div>
         </div>
@@ -150,11 +150,7 @@
                                 {% endif %}
 
                                 {% if not user.is_superuser %}
-                                    {% if user.perfil.rol == 'preventista' and p.estado == 'pendiente' %}
-                                        <button type="button" class="btn btn-success btn-sm btn-marcar-vendido" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Marcar como vendido">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                    {% elif user.perfil.rol == 'repartidor' and p.estado == 'pendiente' %}
+                                    {% if user.perfil.rol == 'repartidor' and p.estado == 'pendiente' %}
                                         <button type="button" class="btn btn-success btn-sm btn-registrar-entrega" data-pedido-id="{{ p.id }}" data-pedido-label="#{{ p.id }}" title="Registrar entrega/devolución">
                                             <i class="fas fa-truck"></i>
                                         </button>
