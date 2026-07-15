@@ -120,7 +120,11 @@ def login_view(request):
         request.session.pop(login_key, None)
         request.session.pop("login_wait_seconds", None)
         login(request, user)
-        return redirect("dashboard")
+
+        perfil = getattr(user, "perfil", None)
+        if user.is_superuser or (perfil and perfil.rol == "administrador"):
+            return redirect("dashboard")
+        return redirect("listar_pedidos")
 
     return render(request, "inicio/modals/login.html")
 
