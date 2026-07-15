@@ -70,9 +70,13 @@
                         <th style="width: 10%;" class="text-center">Stock</th>
                         <th style="width: 10%;" class="text-center">Agregado</th>
                         <th style="width: 10%;">V. Unidad</th>
+                        {% if user.is_superuser or user.perfil.rol == 'administrador' %}
                         <th style="width: 10%;">C. Unidad</th>
+                        {% endif %}
                         <th style="width: 10%;">V. Caja</th>
+                        {% if user.is_superuser or user.perfil.rol == 'administrador' %}
                         <th style="width: 10%;">C. Caja</th>
+                        {% endif %}
                         <th style="width: 10%;" class="text-center">Estado</th>
                         <th style="width: 14%;" class="text-center">Acciones</th>
                     </tr>
@@ -107,9 +111,13 @@
                             <span class="badge-stock badge-stock-verde" title="Suma de entradas de inventario">{{ p.stock_agregado }}</span>
                         </td>
                         <td>Bs {{ p.precio_unidad|floatformat:2 }}</td>
+                        {% if user.is_superuser or user.perfil.rol == 'administrador' %}
                         <td>Bs {{ p.precio_compra_unidad|floatformat:2 }}</td>
+                        {% endif %}
                         <td>Bs {{ p.precio_caja|floatformat:2 }}</td>
+                        {% if user.is_superuser or user.perfil.rol == 'administrador' %}
                         <td>Bs {{ p.precio_compra_caja|floatformat:2 }}</td>
+                        {% endif %}
                         <td class="text-center">
                             {% if p.activo %}
                             <span class="badge-estado badge-estado-activo"><i class="fas fa-check-circle"></i> Activo</span>
@@ -138,7 +146,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="11" class="text-center py-4">
+                        <td colspan="{% if user.is_superuser or user.perfil.rol == 'administrador' %}11{% else %}9{% endif %}" class="text-center py-4">
                             <i class="fas fa-inbox fa-3x text-muted mb-2"></i>
                             <p class="text-muted">No hay productos registrados</p>
                         </td>
