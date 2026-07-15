@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -18,6 +18,20 @@ from django.views.decorators.http import require_http_methods
 from apps.usuarios.decorators import role_required
 
 from .models import MovimientoInventario, Producto
+
+
+MONEY_QUANTIZER = Decimal("0.01")
+
+
+def _parse_money(value: object, default: str = "0") -> Decimal:
+    raw = ("" if value is None else str(value)).strip().replace(",", ".")
+    if not raw:
+        raw = default
+    try:
+        amount = Decimal(raw)
+    except (InvalidOperation, ValueError):
+        amount = Decimal(default)
+    return amount.quantize(MONEY_QUANTIZER, rounding=ROUND_HALF_UP)
 
 
 @login_required
@@ -92,10 +106,10 @@ def crear_producto(request):
     codigo = (request.POST.get("codigo") or "").strip()
     nombre = (request.POST.get("nombre") or "").strip()
     descripcion = (request.POST.get("descripcion") or "").strip()
-    precio_unidad = request.POST.get("precio_unidad") or "0"
-    precio_caja = request.POST.get("precio_caja") or "0"
-    precio_compra_unidad = request.POST.get("precio_compra_unidad") or "0"
-    precio_compra_caja = request.POST.get("precio_compra_caja") or "0"
+    precio_unidad = _parse_money(request.POST.get("precio_unidad"))
+    precio_caja = _parse_money(request.POST.get("precio_caja"))
+    precio_compra_unidad = _parse_money(request.POST.get("precio_compra_unidad"))
+    precio_compra_caja = _parse_money(request.POST.get("precio_compra_caja"))
     foto = request.FILES.get("foto")
     stock_umbral_amarillo = (request.POST.get("stock_umbral_amarillo") or "10").strip()
     stock_umbral_rojo = (request.POST.get("stock_umbral_rojo") or "3").strip()
@@ -111,10 +125,10 @@ def crear_producto(request):
         codigo=codigo,
         nombre=nombre,
         descripcion=descripcion or None,
-        precio_unidad=precio_unidad or 0,
-        precio_caja=precio_caja or 0,
-        precio_compra_unidad=precio_compra_unidad or 0,
-        precio_compra_caja=precio_compra_caja or 0,
+        precio_unidad=precio_unidad,
+        precio_caja=precio_caja,
+        precio_compra_unidad=precio_compra_unidad,
+        precio_compra_caja=precio_compra_caja,
         foto=foto,
         stock_unidades=0,
         stock_umbral_amarillo=stock_umbral_amarillo or 10,
@@ -209,13 +223,13 @@ def ajustar_inventario_producto(request, id: int):
 
         if tipo == MovimientoInventario.TIPO_ENTRADA:
             stock_nuevo = stock_anterior + cantidad
-            valor_compra_total = Decimal(cantidad) * (producto.precio_compra_unidad or Decimal("0.00"))
+            valor_compra_total = (Decimal(cantidad) * (producto.precio_compra_unidad or Decimal("0.00"))).quantize(MONEY_QUANTIZER, rounding=ROUND_HALF_UP)
         else:
             if cantidad > stock_anterior:
                 messages.error(request, "No puedes retirar más unidades de las que hay en stock")
                 return redirect("listar_productos")
             stock_nuevo = stock_anterior - cantidad
-            valor_compra_total = Decimal(cantidad) * (producto.precio_compra_unidad or Decimal("0.00"))
+            valor_compra_total = (Decimal(cantidad) * (producto.precio_compra_unidad or Decimal("0.00"))).quantize(MONEY_QUANTIZER, rounding=ROUND_HALF_UP)
 
         producto.stock_unidades = stock_nuevo
         producto.save(update_fields=["stock_unidades", "fecha_actualizacion"])
@@ -226,7 +240,7 @@ def ajustar_inventario_producto(request, id: int):
             cantidad=cantidad,
             stock_anterior=stock_anterior,
             stock_nuevo=stock_nuevo,
-            precio_compra_unitario=producto.precio_compra_unidad or Decimal("0.00"),
+            precio_compra_unitario=(producto.precio_compra_unidad or Decimal("0.00")).quantize(MONEY_QUANTIZER, rounding=ROUND_HALF_UP),
             valor_compra_total=valor_compra_total,
             motivo=motivo or None,
             usuario=request.user,
@@ -245,10 +259,10 @@ def editar_producto(request, id: int):
     producto = get_object_or_404(Producto, id=id)
     nombre = (request.POST.get("nombre") or "").strip()
     descripcion = (request.POST.get("descripcion") or "").strip()
-    precio_unidad = request.POST.get("precio_unidad") or "0"
-    precio_caja = request.POST.get("precio_caja") or "0"
-    precio_compra_unidad = request.POST.get("precio_compra_unidad") or "0"
-    precio_compra_caja = request.POST.get("precio_compra_caja") or "0"
+    precio_unidad = _parse_money(request.POST.get("precio_unidad"))
+    precio_caja = _parse_money(request.POST.get("precio_caja"))
+    precio_compra_unidad = _parse_money(request.POST.get("precio_compra_unidad"))
+    precio_compra_caja = _parse_money(request.POST.get("precio_compra_caja"))
     foto = request.FILES.get("foto")
     activo = request.POST.get("activo") == "on"
     stock_umbral_amarillo = (request.POST.get("stock_umbral_amarillo") or "10").strip()
@@ -260,10 +274,10 @@ def editar_producto(request, id: int):
 
     producto.nombre = nombre
     producto.descripcion = descripcion or None
-    producto.precio_unidad = precio_unidad or 0
-    producto.precio_caja = precio_caja or 0
-    producto.precio_compra_unidad = precio_compra_unidad or 0
-    producto.precio_compra_caja = precio_compra_caja or 0
+    producto.precio_unidad = precio_unidad
+    producto.precio_caja = precio_caja
+    producto.precio_compra_unidad = precio_compra_unidad
+    producto.precio_compra_caja = precio_compra_caja
     producto.stock_umbral_amarillo = stock_umbral_amarillo or 10
     producto.stock_umbral_rojo = stock_umbral_rojo or 3
     producto.activo = activo
