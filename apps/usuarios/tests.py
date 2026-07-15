@@ -10,6 +10,8 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from .models import PerfilUsuario
+
 
 class AllowedHostsSettingsTests(TestCase):
     def test_public_ip_is_allowed_even_when_env_overrides_hosts(self):
@@ -58,3 +60,28 @@ class PasswordResetFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No pudimos enviar")
+
+
+class DashboardAccessTests(TestCase):
+    def test_non_admin_roles_are_redirected_to_pedidos_when_accessing_dashboard(self):
+        user = User.objects.create_user(username="preventista", password="Password123")
+        PerfilUsuario.objects.get_or_create(usuario=user, defaults={"rol": "preventista", "activo": True})
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("listar_pedidos"))
+
+    def test_login_redirects_non_admin_users_to_pedidos(self):
+        user = User.objects.create_user(username="repartidor", password="Password123")
+        PerfilUsuario.objects.get_or_create(usuario=user, defaults={"rol": "repartidor", "activo": True})
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "repartidor", "password": "Password123"},
+            follow=False,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("listar_pedidos"))

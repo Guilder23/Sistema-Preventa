@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Sum
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from collections import defaultdict
 from decimal import Decimal
@@ -9,6 +9,11 @@ from decimal import Decimal
 
 @login_required
 def dashboard(request):
+    user = request.user
+    perfil = getattr(user, "perfil", None)
+    if not user.is_superuser and not (perfil and perfil.rol == "administrador"):
+        return redirect("listar_pedidos")
+
     from apps.clientes.models import Cliente
     from apps.pedidos.models import DetallePedido, DevolucionItem, DevolucionPedido, Pedido
     from apps.productos.models import MovimientoInventario, Producto
