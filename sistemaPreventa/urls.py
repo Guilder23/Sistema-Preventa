@@ -7,7 +7,7 @@ from apps.usuarios import views as usuarios_views
 
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("secret-admin/", admin.site.urls),
     path("", usuarios_views.index, name="root"),
     path("", include("apps.usuarios.urls")),
     path("", include("apps.dashboard.urls")),
