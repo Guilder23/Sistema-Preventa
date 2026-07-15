@@ -10,6 +10,8 @@ from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
+from apps.clientes.models import Cliente
+from apps.pedidos.models import Pedido
 from .models import PerfilUsuario
 
 
@@ -72,6 +74,43 @@ class DashboardAccessTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse("listar_pedidos"))
+
+
+class PedidosRepartidorTests(TestCase):
+    def test_repartidor_ve_pedidos_anulados_en_anteriores(self):
+        repartidor = User.objects.create_user(username="repartidor", password="Password123")
+        repartidor.perfil.rol = "repartidor"
+        repartidor.perfil.activo = True
+        repartidor.perfil.save(update_fields=["rol", "activo"])
+
+        preventista = User.objects.create_user(username="preventista", password="Password123")
+        preventista.perfil.rol = "preventista"
+        preventista.perfil.repartidor = repartidor
+        preventista.perfil.activo = True
+        preventista.perfil.save(update_fields=["rol", "repartidor", "activo"])
+
+        cliente = Cliente.objects.create(
+            nombres="Cliente",
+            ci_nit="123456",
+            direccion="Calle 1",
+            latitud="-16.5000000",
+            longitud="-68.1500000",
+            activo=True,
+        )
+
+        Pedido.objects.create(
+            cliente=cliente,
+            preventista=preventista,
+            registrado_por=preventista,
+            estado=Pedido.ESTADO_ANULADO,
+            total="10.00",
+        )
+
+        self.client.force_login(repartidor)
+        response = self.client.get(reverse("listar_pedidos"), {"tab": "anteriores"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Anulado")
 
     def test_login_redirects_non_admin_users_to_pedidos(self):
         user = User.objects.create_user(username="repartidor", password="Password123")
