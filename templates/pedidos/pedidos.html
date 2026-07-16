@@ -4,14 +4,14 @@
 {% block titulo %}Pedidos{% endblock %}
 
 {% block estilos_extra %}
-<link rel="stylesheet" href="{% static 'css/pedidos/pedidos.css' %}">
+<link rel="stylesheet" href="{% static 'css/pedidos/pedidos.css' %}?v=20260716">
 <link rel="stylesheet" href="{% static 'css/pedidos/modals/edita.css' %}">
 <link rel="stylesheet" href="{% static 'css/pedidos/modals/ver.css' %}">
 <link rel="stylesheet" href="{% static 'css/pedidos/modals/anula.css' %}">
 {% endblock %}
 
 {% block contenido %}
-<div class="container-fluid">
+<div class="container-fluid" id="pedidosPage">
     <div class="page-header">
         <div class="page-header-content">
             <h1 class="page-title"><i class="fas fa-clipboard-list"></i> Pedidos</h1>
@@ -79,10 +79,16 @@
                     </div>
                 {% endif %}
                 <div class="col-md-2 mb-2 mb-md-0">
-                    <input type="date" class="form-control form-control-sm" id="fechaDesdePedido" name="fecha_desde" value="{{ fecha_desde }}" title="Fecha desde">
+                    <div class="date-input-wrap">
+                        <input type="date" class="form-control form-control-sm js-date-hint-input" id="fechaDesdePedido" name="fecha_desde" value="{{ fecha_desde }}" title="Fecha desde" autocomplete="off">
+                        <span class="date-input-hint">dd/mm/aaaa</span>
+                    </div>
                 </div>
                 <div class="col-md-2 mb-2 mb-md-0">
-                    <input type="date" class="form-control form-control-sm" id="fechaHastaPedido" name="fecha_hasta" value="{{ fecha_hasta }}" title="Fecha hasta">
+                    <div class="date-input-wrap">
+                        <input type="date" class="form-control form-control-sm js-date-hint-input" id="fechaHastaPedido" name="fecha_hasta" value="{{ fecha_hasta }}" title="Fecha hasta" autocomplete="off">
+                        <span class="date-input-hint">dd/mm/aaaa</span>
+                    </div>
                 </div>
                 <div class="col-md-1 text-right">
                     <small class="text-muted">{{ pedidos|length }} pedidos</small>
@@ -277,5 +283,5 @@
 <script src="{% static 'js/pedidos/modals/anula.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/vendido.js' %}"></script>
 <script src="{% static 'js/pedidos/modals/entrega.js' %}"></script>
-<script src="{% static 'js/pedidos/pedidos.js' %}"></script>
+<script src="{% static 'js/pedidos/pedidos.js' %}?v=20260716"></script>
 {% endblock %}

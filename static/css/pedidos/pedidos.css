@@ -1,5 +1,82 @@
 /* Pedidos - estilos mínimos */
 
+#pedidosPage .date-input-wrap {
+    position: relative;
+    width: 100%;
+}
+
+#pedidosPage .date-input-hint {
+    display: none;
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+    font-size: 0.95rem;
+    line-height: 1;
+    white-space: nowrap;
+    z-index: 2;
+}
+
+#pedidosPage .date-input-wrap.has-value .date-input-hint {
+    display: none;
+}
+
+#pedidosPage .date-input-wrap:not(.has-value) .date-input-hint {
+    display: inline-block;
+}
+
+#pedidosPage .date-input-wrap .form-control {
+    position: relative;
+    z-index: 1;
+    background-color: transparent;
+}
+
+#pedidosPage .date-input-wrap .form-control:focus {
+    background-color: #fff;
+}
+
+#pedidosPage .date-input-wrap .form-control:not(:focus) {
+    color: #212529;
+}
+
+@media (min-width: 769px) {
+    #pedidosPage .date-input-hint {
+        display: none !important;
+    }
+
+    #pedidosPage .date-input-wrap .form-control {
+        background-color: #fff;
+    }
+}
+
+@media (max-width: 768px) {
+    #pedidosPage .date-input-wrap {
+        display: block;
+    }
+
+    #pedidosPage .date-input-hint {
+        left: 0.6rem;
+        font-size: 0.88rem;
+        max-width: calc(100% - 1.2rem);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #pedidosPage .date-input-wrap .form-control {
+        background-color: transparent;
+    }
+
+    #pedidosPage .date-input-wrap .form-control::-webkit-datetime-edit {
+        color: transparent;
+    }
+
+    #pedidosPage .date-input-wrap .form-control:focus::-webkit-datetime-edit {
+        color: #212529;
+    }
+}
+
 .tabla-pedidos td {
     vertical-align: middle;
 }

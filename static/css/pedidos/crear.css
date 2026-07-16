@@ -35,6 +35,56 @@
 	font-variant-numeric: tabular-nums;
 }
 
+#crearPedidoPage .date-input-wrap {
+	position: relative;
+	width: 100%;
+}
+
+#crearPedidoPage .date-input-hint {
+	display: none;
+	position: absolute;
+	left: 0.75rem;
+	top: 50%;
+	transform: translateY(-50%);
+	color: #6c757d;
+	pointer-events: none;
+	font-size: 0.95rem;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+#crearPedidoPage .date-input-wrap.has-value .date-input-hint {
+	display: none;
+}
+
+#crearPedidoPage .date-input-wrap:not(.has-value) .date-input-hint {
+	display: inline-block;
+}
+
+#crearPedidoPage .date-input-wrap .form-control {
+	position: relative;
+	z-index: 1;
+	background-color: transparent;
+}
+
+#crearPedidoPage .date-input-wrap .form-control:focus {
+	background-color: #fff;
+}
+
+#crearPedidoPage .date-input-wrap .form-control:not(:focus) {
+	color: #212529;
+}
+
+@media (min-width: 769px) {
+	#crearPedidoPage .date-input-hint {
+		display: none !important;
+	}
+
+	#crearPedidoPage .date-input-wrap .form-control {
+		background-color: #fff;
+	}
+}
+
 #crearPedidoPage .item-producto-buscar {
 	min-width: 240px;
 	width: 100%;
@@ -146,6 +196,15 @@
 }
 
 @media (max-width: 768px) {
+	#crearPedidoPage {
+		padding-left: 0.25rem;
+		padding-right: 0.25rem;
+	}
+
+	#crearPedidoPage .card-body {
+		padding: 0.6rem;
+	}
+
 	#crearPedidoPage .col-stock,
 	#crearPedidoPage .col-precio {
 		display: none;
@@ -176,18 +235,18 @@
 
 	/* Producto */
 	#crearPedidoPage #tablaItemsPedido tbody td:nth-child(1) {
-		flex: 2 1 60%;
+		flex: 1 1 72%;
 		min-width: 0;
 	}
 
 	/* Cantidad */
 	#crearPedidoPage #tablaItemsPedido tbody td:nth-child(4) {
-		flex: 0 0 80px;
+		flex: 0 0 54px;
 	}
 
 	/* Subtotal */
 	#crearPedidoPage #tablaItemsPedido tbody td:nth-child(5) {
-		flex: 0 0 70px;
+		flex: 0 0 56px;
 	}
 
 	/* Acción */
@@ -199,27 +258,36 @@
 
 	#crearPedidoPage .table td,
 	#crearPedidoPage .table th {
-		padding: 0.35rem;
-		font-size: 13px;
+		padding: 0.24rem;
+		font-size: 11px;
+	}
+
+	#crearPedidoPage .date-input-hint {
+		font-size: 0.88rem;
+		left: 0.6rem;
+	}
+
+	#crearPedidoPage .date-input-wrap .form-control {
+		background-color: transparent;
 	}
 
 	#crearPedidoPage .item-producto-buscar {
 		min-width: 0;
 		width: 100%;
-		font-size: 1.1em;
-		padding: 4px 6px;
+		font-size: 0.9rem !important;
+		padding: 0.3rem 0.4rem !important;
 	}
 
 	#crearPedidoPage .item-cantidad {
 		min-width: 0;
-		max-width: 50px;
+		max-width: 40px;
 		text-align: center;
-		font-size: 1.1em;
-		padding: 4px 6px;
+		font-size: 0.88rem !important;
+		padding: 0.28rem 0.3rem !important;
 	}
 
 	#crearPedidoPage .item-cantidad-wrap {
-		gap: 2px;
+		gap: 0;
 	}
 
 	#crearPedidoPage .item-cantidad-wrap .btn {
@@ -228,21 +296,26 @@
 
 	#crearPedidoPage .item-cantidad-wrap .item-cantidad {
 		min-width: 0;
-		width: 44px;
-		padding-left: 6px;
-		padding-right: 6px;
+		width: 38px;
+		padding-left: 3px;
+		padding-right: 3px;
 		height: 24px;
 	}
 
 	#crearPedidoPage .item-subtotal {
-		padding-left: 6px;
-		padding-right: 6px;
+		padding-left: 3px;
+		padding-right: 3px;
 		height: 24px;
-		font-size: 12px;
+		font-size: 10px;
 	}
 
 	#crearPedidoPage .btn.btn-outline-primary.btn-sm {
-		padding: 4px 8px;
-		font-size: 12px;
+		padding: 0.3rem 0.5rem;
+		font-size: 11px;
+	}
+
+	#crearPedidoPage .btn.btn-outline-primary.btn-sm,
+	#crearPedidoPage .btn.btn-primary {
+		white-space: nowrap;
 	}
 }

@@ -116,4 +116,38 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     }
+
+    function syncDateHint(inputEl) {
+        if (!inputEl) return;
+        const wrap = inputEl.closest('.date-input-wrap');
+        if (!wrap) return;
+        const hasValue = Boolean((inputEl.value || '').trim());
+        wrap.classList.toggle('has-value', hasValue);
+
+        const hintEl = inputEl.nextElementSibling;
+        if (hintEl && hintEl.classList.contains('date-input-hint')) {
+            hintEl.hidden = hasValue;
+            hintEl.setAttribute('aria-hidden', hasValue ? 'true' : 'false');
+        }
+    }
+
+    [fechaDesdeInput, fechaHastaInput].forEach((inputEl) => {
+        syncDateHint(inputEl);
+        inputEl?.addEventListener('input', function () {
+            syncDateHint(inputEl);
+        });
+        inputEl?.addEventListener('change', function () {
+            syncDateHint(inputEl);
+        });
+        inputEl?.addEventListener('blur', function () {
+            syncDateHint(inputEl);
+        });
+        inputEl?.addEventListener('click', function () {
+            syncDateHint(inputEl);
+        });
+    });
+
+    window.addEventListener('pageshow', function () {
+        [fechaDesdeInput, fechaHastaInput].forEach(syncDateHint);
+    });
 });
