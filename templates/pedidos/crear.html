@@ -50,13 +50,16 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label>Fecha de Entrega Estimada <span class="text-danger">*</span></label>
-                            <input
-                                type="date"
-                                class="form-control"
-                                name="fecha_entrega_estimada"
-                                id="pedidoFechaEntrega"
-                                required
-                            >
+                            <div class="date-input-wrap">
+                                <input
+                                    type="date"
+                                    class="form-control js-date-hint-input"
+                                    name="fecha_entrega_estimada"
+                                    id="pedidoFechaEntrega"
+                                    required
+                                >
+                                <span class="date-input-hint">dd/mm/aaaa</span>
+                            </div>
                             <small class="text-muted d-block mt-1">No puede ser una fecha menor a hoy</small>
                         </div>
                     </div>

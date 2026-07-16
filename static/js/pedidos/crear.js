@@ -33,7 +33,11 @@
 
         function place() {
             const rect = inputEl.getBoundingClientRect();
-            const width = rect.width;
+            const viewportMargin = 8;
+            const mobileWidth = window.innerWidth <= 768
+                ? Math.max(rect.width, window.innerWidth - (viewportMargin * 2))
+                : rect.width;
+            const width = Math.min(mobileWidth, window.innerWidth - (viewportMargin * 2));
             const maxLeft = Math.max(8, window.innerWidth - width - 8);
             const left = Math.min(Math.max(rect.left, 8), maxLeft);
 
@@ -201,6 +205,13 @@
         return Number.isFinite(n) ? n : 0;
     }
 
+    function syncDateHint(inputEl) {
+        if (!inputEl) return;
+        const wrap = inputEl.closest('.date-input-wrap');
+        if (!wrap) return;
+        wrap.classList.toggle('has-value', Boolean((inputEl.value || '').trim()));
+    }
+
     function getNombreProductoPorId(id) {
         const prod = id ? (window.__pedidosProductosById?.get(String(id)) || null) : null;
         if (!prod || !prod.label) return 'Producto';
@@ -253,6 +264,22 @@
         if (totalEl) totalEl.textContent = total.toFixed(2);
     }
 
+    function obtenerIdsProductoSeleccionados(exceptoFila) {
+        const ids = [];
+        document.querySelectorAll('#itemsPedidoBody tr').forEach((tr) => {
+            if (exceptoFila && tr === exceptoFila) return;
+            const id = (tr.querySelector('.item-producto-id')?.value || '').trim();
+            if (id) ids.push(id);
+        });
+        return ids;
+    }
+
+    function esProductoDuplicado(productoId, exceptoFila) {
+        const id = String(productoId || '').trim();
+        if (!id) return false;
+        return obtenerIdsProductoSeleccionados(exceptoFila).includes(id);
+    }
+
     function agregarFila() {
         const tpl = document.getElementById('tplItemPedido');
         const body = document.getElementById('itemsPedidoBody');
@@ -275,6 +302,16 @@
             hiddenIdEl: prodIdEl,
             items: window.__pedidosProductosData || [],
             onPick: function () {
+                const productoId = (prodIdEl?.value || '').trim();
+                if (esProductoDuplicado(productoId, last)) {
+                    prodIdEl.value = '';
+                    prodBuscarEl.value = '';
+                    prodBuscarEl.classList.add('is-invalid');
+                    setInlineError('No puedes agregar el mismo producto más de una vez.');
+                    calcularFila(last);
+                    calcularTotal();
+                    return;
+                }
                 setInlineError('');
                 calcularFila(last);
                 calcularTotal();
@@ -333,10 +370,19 @@
 
         const clienteBuscarEl = document.getElementById('pedidoClienteBuscar');
         const clienteIdEl = document.getElementById('pedidoClienteId');
+        const fechaEntregaEl = document.getElementById('pedidoFechaEntrega');
         const acCliente = attachAutocomplete({
             inputEl: clienteBuscarEl,
             hiddenIdEl: clienteIdEl,
             items: clientesData,
+        });
+
+        syncDateHint(fechaEntregaEl);
+        fechaEntregaEl?.addEventListener('input', function () {
+            syncDateHint(fechaEntregaEl);
+        });
+        fechaEntregaEl?.addEventListener('change', function () {
+            syncDateHint(fechaEntregaEl);
         });
 
         clienteBuscarEl?.addEventListener('input', function () {
@@ -355,7 +401,6 @@
                 const errores = [];
 
                 // Validar fecha de entrega estimada
-                const fechaEntregaEl = document.getElementById('pedidoFechaEntrega');
                 if (!fechaEntregaEl || !fechaEntregaEl.value) {
                     okFecha = false;
                     errores.push('Ingresa una fecha de entrega estimada.');
@@ -395,6 +440,13 @@
                     } else {
                         idEl.value = String(match.id);
                         buscarEl.classList.remove('is-invalid');
+
+                        if (esProductoDuplicado(match.id, tr)) {
+                            buscarEl.classList.add('is-invalid');
+                            okProductos = false;
+                            errores.push(`Fila ${fila} (${getNombreProductoPorId(match.id)}): ya fue agregado en otra línea.`);
+                            return;
+                        }
 
                         const nombreProducto = getNombreProductoPorId(match.id);
                         const stock = parseInt(match.stock || '0', 10) || 0;
