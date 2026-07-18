@@ -12,4 +12,5 @@ urlpatterns = [
     path("clientes/<int:id>/historial/", views.historial_pedidos_cliente, name="historial_pedidos_cliente"),
     path("clientes/<int:id>/editar/", views.editar_cliente, name="editar_cliente"),
     path("clientes/<int:id>/bloquear/", views.bloquear_cliente, name="bloquear_cliente"),
+    path("clientes/<int:id>/eliminar/", views.eliminar_cliente, name="eliminar_cliente"),
 ]

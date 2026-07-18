@@ -125,6 +125,11 @@
                                 <button type="button" class="btn btn-danger btn-sm btn-bloquear-cliente" data-cliente-id="{{ c.id }}" data-cliente-nombre="{{ c.nombres }} {{ c.apellidos }}" title="Bloquear/Activar">
                                     <i class="fas fa-lock"></i>
                                 </button>
+                                {% if not c.tiene_pedidos %}
+                                <button type="button" class="btn btn-dark btn-sm btn-eliminar-cliente" data-cliente-id="{{ c.id }}" data-cliente-nombre="{{ c.nombres }} {{ c.apellidos }}" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </td>
@@ -177,6 +182,7 @@
     {% include 'clientes/modals/edita.html' %}
     {% include 'clientes/modals/ver.html' %}
     {% include 'clientes/modals/elimina.html' %}
+    {% include 'clientes/modals/eliminar.html' %}
 </div>
 {% endblock %}
 
@@ -186,5 +192,6 @@
 <script src="{% static 'js/clientes/modals/edita.js' %}"></script>
 <script src="{% static 'js/clientes/modals/ver.js' %}"></script>
 <script src="{% static 'js/clientes/modals/elimina.js' %}"></script>
+<script src="{% static 'js/clientes/modals/eliminar.js' %}"></script>
 <script src="{% static 'js/clientes/clientes.js' %}"></script>
 {% endblock %}
