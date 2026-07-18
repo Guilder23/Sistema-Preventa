@@ -67,7 +67,9 @@ def listar_clientes(request):
             if vendedor_id not in set(vendedor_ids):
                 vendedor_id = None
 
-    clientes = clientes_base.order_by("-fecha_creacion")
+    clientes = clientes_base.annotate(
+        tiene_pedidos=Count("pedidos")
+    ).order_by("-fecha_creacion")
     if q:
         clientes = clientes.filter(
             Q(nombres__icontains=q)
@@ -438,4 +440,17 @@ def bloquear_cliente(request, id: int):
     cliente.activo = not cliente.activo
     cliente.save(update_fields=["activo"])
     messages.success(request, "Cliente activado" if cliente.activo else "Cliente bloqueado")
+    return redirect("listar_clientes")
+
+
+@role_required("administrador")
+@require_http_methods(["POST"])
+def eliminar_cliente(request, id: int):
+    cliente = get_object_or_404(Cliente, id=id)
+    from apps.pedidos.models import Pedido
+    if Pedido.objects.filter(cliente=cliente).exists():
+        messages.error(request, "No se puede eliminar el cliente porque tiene pedidos asociados")
+        return redirect("listar_clientes")
+    cliente.delete()
+    messages.success(request, "Cliente eliminado correctamente")
     return redirect("listar_clientes")
