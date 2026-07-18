@@ -83,6 +83,18 @@
                             </div>
 
                             <div class="form-group">
+                                <label class="mb-2">Ubicación obtenida</label>
+                                <div class="small text-muted mb-2" id="ubicacionTextoEditar">Sin ubicación</div>
+                                <div class="d-flex flex-wrap align-items-center mb-2" style="gap:8px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnEditarMapaEditar">
+                                        <i class="fas fa-map-marker-alt"></i> Editar mapa
+                                    </button>
+                                    <small class="text-muted">Activa edición para mover el marcador si la posición no es exacta.</small>
+                                </div>
+                                <div id="mapaUbicacionEditar" class="ubicacion-map"></div>
+                            </div>
+
+                            <div class="form-group">
                                 <div class="custom-control custom-checkbox">
                                     <input type="checkbox" class="custom-control-input" id="editActivoCliente" name="activo">
                                     <label class="custom-control-label" for="editActivoCliente">Cliente activo</label>

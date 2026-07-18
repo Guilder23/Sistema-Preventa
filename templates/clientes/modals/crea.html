@@ -83,6 +83,18 @@
                                 <input type="text" class="form-control" name="longitud" id="crearLongitud" placeholder="Ej: -63.18210">
                             </div>
 
+                            <div class="form-group">
+                                <label class="mb-2">Ubicación obtenida</label>
+                                <div class="small text-muted mb-2" id="ubicacionTextoCrear">Sin ubicación</div>
+                                <div class="d-flex flex-wrap align-items-center mb-2" style="gap:8px;">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnEditarMapaCrear">
+                                        <i class="fas fa-map-marker-alt"></i> Editar mapa
+                                    </button>
+                                    <small class="text-muted">Activa edición para mover el marcador si la posición no es exacta.</small>
+                                </div>
+                                <div id="mapaUbicacionCrear" class="ubicacion-map"></div>
+                            </div>
+
                             <small class="text-muted">Puedes capturar o ingresar la ubicación manualmente.</small>
                         </div>
                     </div>
