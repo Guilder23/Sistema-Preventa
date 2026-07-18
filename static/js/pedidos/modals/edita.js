@@ -175,13 +175,18 @@
         const precioEl = tr.querySelector('.item-precio');
         const cantEl = tr.querySelector('.item-cantidad');
         const subEl = tr.querySelector('.item-subtotal');
+        const aplicarEl = tr.querySelector('.item-aplicar-ajuste');
+        const aplicarValorEl = tr.querySelector('.item-aplicar-ajuste-valor');
+        const precioManualEl = tr.querySelector('.item-precio-manual');
 
         const productoId = (prodIdEl?.value || '').trim();
         const prod = getProductoById(productoId);
-        const precio = parsePrecio(prod?.precio);
+        const precioBase = parsePrecio(prod?.precio);
         const stock = Number.isFinite(parseInt(prod?.stock, 10)) ? parseInt(prod.stock, 10) : 0;
         const cant = parseInt(cantEl.value || '0', 10) || 0;
-        const subtotal = precio * cant;
+        const aplicarAjuste = !!(aplicarEl && aplicarEl.checked);
+        const precioFinal = aplicarAjuste ? parsePrecio(precioManualEl?.value) : precioBase;
+        const subtotal = precioFinal * cant;
 
         if (stockEl) stockEl.value = String(stock);
         if (cantEl) {
@@ -194,14 +199,23 @@
         }
 
         const buscarEl = tr.querySelector('.item-producto-buscar');
-        if (buscarEl && productoId && (stock === 0 || precio <= 0)) {
+        if (buscarEl && productoId && (stock === 0 || precioBase <= 0)) {
             buscarEl.classList.add('is-invalid');
         } else {
             buscarEl?.classList.remove('is-invalid');
         }
 
-        precioEl.value = precio.toFixed(2);
+        precioEl.value = precioBase.toFixed(2);
         subEl.value = subtotal.toFixed(2);
+        if (aplicarValorEl) {
+            aplicarValorEl.value = aplicarAjuste ? '1' : '0';
+        }
+        if (precioManualEl) {
+            precioManualEl.disabled = !aplicarAjuste;
+            if (!aplicarAjuste && precioManualEl.value) {
+                precioManualEl.value = '';
+            }
+        }
     }
 
     function calcularTotal() {
@@ -235,6 +249,18 @@
             calcularTotal();
         });
 
+        tr.querySelector('.item-aplicar-ajuste')?.addEventListener('change', function () {
+            setInlineError('');
+            calcularFila(tr);
+            calcularTotal();
+        });
+
+        tr.querySelector('.item-precio-manual')?.addEventListener('input', function () {
+            setInlineError('');
+            calcularFila(tr);
+            calcularTotal();
+        });
+
         tr.querySelector('.btn-cant-menos')?.addEventListener('click', function () {
             const cantEl = tr.querySelector('.item-cantidad');
             const actual = parseInt(cantEl?.value || '1', 10) || 1;
@@ -260,7 +286,7 @@
         });
     }
 
-    function agregarFila({ productoId, cantidad } = {}) {
+    function agregarFila({ productoId, cantidad, aplicarAjuste, precioManual } = {}) {
         const tpl = document.getElementById('tplItemPedidoEditar');
         const body = document.getElementById('itemsPedidoEditarBody');
         if (!tpl || !body) return null;
@@ -282,6 +308,19 @@
         }
         if (cantidad) {
             tr.querySelector('.item-cantidad').value = String(cantidad);
+        }
+
+        const aplicarEl = tr.querySelector('.item-aplicar-ajuste');
+        const aplicarValorEl = tr.querySelector('.item-aplicar-ajuste-valor');
+        const precioManualEl = tr.querySelector('.item-precio-manual');
+        if (aplicarEl) {
+            aplicarEl.checked = !!aplicarAjuste;
+        }
+        if (aplicarValorEl) {
+            aplicarValorEl.value = aplicarAjuste ? '1' : '0';
+        }
+        if (precioManualEl) {
+            precioManualEl.value = aplicarAjuste ? (precioManual ?? '') : '';
         }
 
         calcularFila(tr);
@@ -327,7 +366,12 @@
                     agregarFila();
                 } else {
                     detalles.forEach((d) => {
-                        agregarFila({ productoId: d.producto_id, cantidad: d.cantidad });
+                        agregarFila({
+                            productoId: d.producto_id,
+                            cantidad: d.cantidad,
+                            aplicarAjuste: !!d.precio_ajustado,
+                            precioManual: d.precio_manual || ''
+                        });
                     });
                 }
 
@@ -433,6 +477,10 @@
                         const stock = parseInt(match.stock || '0', 10) || 0;
                         const precio = parseFloat(match.precio || '0') || 0;
                         const cant = parseInt(cantEl?.value || '0', 10) || 0;
+                        const aplicarEl = tr.querySelector('.item-aplicar-ajuste');
+                        const precioManualEl = tr.querySelector('.item-precio-manual');
+                        const aplicarAjuste = !!(aplicarEl && aplicarEl.checked);
+                        const precioFinal = aplicarAjuste ? parsePrecio(precioManualEl?.value) : precio;
                         if (cantEl && cant > stock) {
                             cantEl.classList.add('is-invalid');
                             ok = false;
@@ -451,6 +499,14 @@
                             buscarEl.classList.add('is-invalid');
                             ok = false;
                             errores.push(`Fila ${fila} (${nombreProducto}): no tiene precio de venta válido.`);
+                        }
+
+                        if (aplicarAjuste && precioFinal <= 0) {
+                            precioManualEl?.classList.add('is-invalid');
+                            ok = false;
+                            errores.push(`Fila ${fila} (${nombreProducto}): ingresa un precio final válido.`);
+                        } else {
+                            precioManualEl?.classList.remove('is-invalid');
                         }
                     }
                 });
