@@ -5,7 +5,119 @@
         if (el) el.textContent = text;
     }
 
-    function capturarUbicacion(latInput, lonInput, estadoEl) {
+    function formatearTextoUbicacion(lat, lon) {
+        if (lat === '' || lon === '' || lat === null || lon === null) return 'Sin ubicación';
+        return `Lat ${parseFloat(lat).toFixed(5)} · Lon ${parseFloat(lon).toFixed(5)}`;
+    }
+
+    function actualizarTextoUbicacion(latInput, lonInput, textoEl) {
+        if (textoEl) {
+            textoEl.textContent = formatearTextoUbicacion(latInput.value, lonInput.value);
+        }
+    }
+
+    function initMapaUbicacion(mapId, latInput, lonInput, textoEl, editBtnId, estadoEl) {
+        const mapEl = document.getElementById(mapId);
+        const editBtn = document.getElementById(editBtnId);
+        if (!mapEl || typeof window.L === 'undefined') return null;
+
+        const map = window.L.map(mapEl, {
+            zoomControl: true,
+            scrollWheelZoom: true,
+            attributionControl: true
+        });
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = null;
+        let editable = false;
+
+        function establecerMarcador(lat, lon) {
+            const latNum = parseFloat(lat);
+            const lonNum = parseFloat(lon);
+            if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) return;
+            if (!marker) {
+                marker = window.L.marker([latNum, lonNum], { draggable: true }).addTo(map);
+                marker.on('dragend', function (evt) {
+                    if (!editable) return;
+                    const point = evt.target.getLatLng();
+                    latInput.value = point.lat.toFixed(7);
+                    lonInput.value = point.lng.toFixed(7);
+                    actualizarTextoUbicacion(latInput, lonInput, textoEl);
+                });
+            } else {
+                marker.setLatLng([latNum, lonNum]);
+            }
+            map.setView([latNum, lonNum], 16);
+            if (marker && marker.dragging) {
+                marker.dragging[editable ? 'enable' : 'disable']();
+            }
+        }
+
+        function syncDesdeInputs() {
+            actualizarTextoUbicacion(latInput, lonInput, textoEl);
+            if (!editable) {
+                establecerMarcador(latInput.value, lonInput.value);
+            }
+        }
+
+        function refrescarMapa() {
+            if (map && map.invalidateSize) {
+                window.setTimeout(function () {
+                    map.invalidateSize();
+                    if (marker) {
+                        const latLng = marker.getLatLng();
+                        if (latLng) {
+                            map.setView([latLng.lat, latLng.lng], Math.max(map.getZoom(), 15));
+                        }
+                    }
+                }, 120);
+            }
+        }
+
+        if (editBtn) {
+            editBtn.addEventListener('click', function () {
+                editable = !editable;
+                editBtn.classList.toggle('btn-primary', editable);
+                editBtn.classList.toggle('btn-outline-secondary', !editable);
+                editBtn.innerHTML = editable
+                    ? '<i class="fas fa-map-marker-alt"></i> Mover marcador'
+                    : '<i class="fas fa-map-marker-alt"></i> Editar mapa';
+                if (marker && marker.dragging) {
+                    marker.dragging[editable ? 'enable' : 'disable']();
+                }
+                if (estadoEl) {
+                    setEstado(estadoEl, editable ? 'Modo edición activado' : 'Modo edición desactivado');
+                }
+                refrescarMapa();
+            });
+        }
+
+        [latInput, lonInput].forEach(function (input) {
+            input.addEventListener('input', function () {
+                syncDesdeInputs();
+            });
+        });
+
+        syncDesdeInputs();
+        refrescarMapa();
+        window.setTimeout(refrescarMapa, 250);
+        window.setTimeout(refrescarMapa, 600);
+        return {
+            map: map,
+            setPosition: function (lat, lon) {
+                latInput.value = parseFloat(lat).toFixed(7);
+                lonInput.value = parseFloat(lon).toFixed(7);
+                actualizarTextoUbicacion(latInput, lonInput, textoEl);
+                establecerMarcador(latInput.value, lonInput.value);
+                refrescarMapa();
+            }
+        };
+    }
+
+    function capturarUbicacion(latInput, lonInput, estadoEl, textoEl, mapId, editBtnId) {
         if (!navigator.geolocation) {
             setEstado(estadoEl, 'Geolocalización no soportada');
             return;
@@ -18,6 +130,13 @@
                 latInput.value = lat;
                 lonInput.value = lon;
                 setEstado(estadoEl, `OK: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                actualizarTextoUbicacion(latInput, lonInput, textoEl);
+                if (typeof window.L !== 'undefined') {
+                    const mapObj = window.__clienteUbicacionMapaEditar;
+                    if (mapObj && mapObj.setPosition) {
+                        mapObj.setPosition(lat, lon);
+                    }
+                }
             },
             () => {
                 setEstado(estadoEl, 'No se pudo obtener ubicación');
@@ -63,6 +182,10 @@
                     $('#editLatitud').val(data.latitud || '');
                     $('#editLongitud').val(data.longitud || '');
                     $('#editActivoCliente').prop('checked', !!data.activo);
+                    actualizarTextoUbicacion(document.getElementById('editLatitud'), document.getElementById('editLongitud'), document.getElementById('ubicacionTextoEditar'));
+                    if (window.__clienteUbicacionMapaEditar && window.__clienteUbicacionMapaEditar.setPosition && data.latitud && data.longitud) {
+                        window.__clienteUbicacionMapaEditar.setPosition(data.latitud, data.longitud);
+                    }
 
                     const fotoPreview = document.getElementById('editFotoTiendaPreview');
                     if (fotoPreview) {
@@ -82,6 +205,11 @@
                         setEstado(st, 'Sin ubicación');
                     }
 
+                    $('#modalEditarCliente').on('shown.bs.modal', function () {
+                        if (window.__clienteUbicacionMapaEditar && window.__clienteUbicacionMapaEditar.map && window.__clienteUbicacionMapaEditar.map.invalidateSize) {
+                            window.__clienteUbicacionMapaEditar.map.invalidateSize();
+                        }
+                    });
                     $('#modalEditarCliente').modal('show');
                 },
                 error: function () {
@@ -90,11 +218,20 @@
             });
         });
 
+        const latInputEditar = document.getElementById('editLatitud');
+        const lonInputEditar = document.getElementById('editLongitud');
+        const textoUbicacionEditar = document.getElementById('ubicacionTextoEditar');
+        const mapaEditar = initMapaUbicacion('mapaUbicacionEditar', latInputEditar, lonInputEditar, textoUbicacionEditar, 'btnEditarMapaEditar', document.getElementById('ubicacionEditarEstado'));
+        window.__clienteUbicacionMapaEditar = mapaEditar;
+
         document.getElementById('btnUbicacionEditar')?.addEventListener('click', function () {
             capturarUbicacion(
-                document.getElementById('editLatitud'),
-                document.getElementById('editLongitud'),
-                document.getElementById('ubicacionEditarEstado')
+                latInputEditar,
+                lonInputEditar,
+                document.getElementById('ubicacionEditarEstado'),
+                textoUbicacionEditar,
+                'mapaUbicacionEditar',
+                'btnEditarMapaEditar'
             );
         });
 
@@ -139,6 +276,8 @@
             }
             $('#formEditarCliente')[0].reset();
             setEstado(document.getElementById('ubicacionEditarEstado'), 'Sin ubicación');
+            const texto = document.getElementById('ubicacionTextoEditar');
+            if (texto) texto.textContent = 'Sin ubicación';
 
             const fp = document.getElementById('editFotoTiendaPreview');
             const fi = document.getElementById('editFotoTienda');

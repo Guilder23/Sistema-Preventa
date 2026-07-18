@@ -1,1 +1,30 @@
 /* Modal editar cliente */
+
+.ubicacion-map {
+    height: 280px;
+    width: 100%;
+    min-height: 280px;
+    border: 1px solid #dfe3e8;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8f9fa;
+    position: relative;
+    z-index: 1;
+}
+
+.ubicacion-map .leaflet-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 280px;
+    z-index: 1;
+}
+
+.ubicacion-map .leaflet-marker-icon {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+    transform: translate3d(0,0,0);
+}
+
+.ubicacion-map .leaflet-control-zoom {
+    border: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
