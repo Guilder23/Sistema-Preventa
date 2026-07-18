@@ -514,6 +514,8 @@ def obtener_pedido(request, id: int):
                 "subtotal": f"{(d.subtotal or Decimal('0.00')):.2f}",
                 "cantidad_devuelta": cant_devuelta,
                 "subtotal_neto": f"{subtotal_neto:.2f}",
+                "precio_ajustado": bool(d.precio_ajustado),
+                "precio_manual": f"{(d.precio_unitario or Decimal('0.00')):.2f}",
             }
         )
 
@@ -569,9 +571,12 @@ def editar_pedido(request, id: int):
     
     producto_ids = request.POST.getlist("producto_id[]")
     cantidades = request.POST.getlist("cantidad[]")
+    aplicar_ajuste = request.POST.getlist("aplicar_ajuste[]")
+    precios_manuales = request.POST.getlist("precio_manual[]")
 
     items = []
-    for pid, cant in zip(producto_ids, cantidades):
+    for idx, pid in enumerate(producto_ids):
+        cant = (cantidades[idx] if idx < len(cantidades) else "")
         pid = (pid or "").strip()
         cant = (cant or "").strip()
         if not pid or not cant:
@@ -582,14 +587,25 @@ def editar_pedido(request, id: int):
             continue
         if cantidad_int <= 0:
             continue
-        items.append((pid, cantidad_int))
+        aplicar = bool(idx < len(aplicar_ajuste) and aplicar_ajuste[idx] == "1")
+        precio_manual_raw = (precios_manuales[idx] if idx < len(precios_manuales) else "")
+        precio_manual = None
+        if aplicar:
+            try:
+                precio_manual = Decimal(str(precio_manual_raw).replace(",", "."))
+            except Exception:
+                precio_manual = None
+            if precio_manual is None or precio_manual <= 0:
+                messages.error(request, "Ingresa un precio válido para los ajustes aplicados")
+                return redirect("listar_pedidos")
+        items.append((pid, cantidad_int, aplicar, precio_manual))
 
     if not items:
         messages.error(request, "Agrega al menos un producto con cantidad")
         return redirect("listar_pedidos")
 
     qty_por_pid = {}
-    for pid, cantidad_int in items:
+    for pid, cantidad_int, *_ in items:
         qty_por_pid[pid] = int(qty_por_pid.get(pid, 0)) + int(cantidad_int)
 
     with transaction.atomic():
@@ -634,9 +650,11 @@ def editar_pedido(request, id: int):
 
         total = Decimal("0.00")
         detalles_creados = []
-        for pid, cantidad_int in qty_por_pid.items():
+        for pid, cantidad_int, aplicar, precio_manual in items:
             producto = productos_por_id.get(str(pid))
             precio = producto.precio_unidad or Decimal("0.00")
+            if aplicar and precio_manual is not None:
+                precio = precio_manual
             subtotal = (precio * Decimal(cantidad_int)).quantize(Decimal("0.01"))
             det = DetallePedido.objects.create(
                 pedido=pedido,
@@ -644,6 +662,7 @@ def editar_pedido(request, id: int):
                 cantidad=cantidad_int,
                 precio_unitario=precio,
                 subtotal=subtotal,
+                precio_ajustado=aplicar,
             )
             detalles_creados.append(det)
             total += subtotal

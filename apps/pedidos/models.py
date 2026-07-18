@@ -58,6 +58,10 @@ class Pedido(models.Model):
             self.save(update_fields=["total"])
         return total
 
+    @property
+    def tiene_precio_ajustado(self) -> bool:
+        return self.detalles.filter(precio_ajustado=True).exists()
+
 
 class DetallePedido(models.Model):
     pedido = models.ForeignKey(
@@ -67,6 +71,7 @@ class DetallePedido(models.Model):
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
+    precio_ajustado = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["id"]

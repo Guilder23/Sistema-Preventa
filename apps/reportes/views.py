@@ -69,8 +69,9 @@ def _ticket_data_for_pedido(pedido, *, repartidor_nombre: str | None = None):
     total_devuelto_monto = Decimal("0.00")
     for d in detalles_qs:
         cant_devuelta = int(devueltos_por_detalle.get(d.id, 0))
+        precio_unitario = d.precio_unitario or Decimal("0.00")
         subtotal_bruto = d.subtotal or Decimal("0.00")
-        monto_devuelto_item = (d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta)
+        monto_devuelto_item = precio_unitario * Decimal(cant_devuelta)
         subtotal_neto = subtotal_bruto - monto_devuelto_item
 
         total_devuelto_unidades += cant_devuelta
@@ -80,7 +81,7 @@ def _ticket_data_for_pedido(pedido, *, repartidor_nombre: str | None = None):
             {
                 "producto_nombre": d.producto.nombre,
                 "cantidad": int(d.cantidad or 0),
-                "precio_unitario": d.precio_unitario or Decimal("0.00"),
+                "precio_unitario": precio_unitario,
                 "cantidad_devuelta": cant_devuelta,
                 "subtotal_bruto": subtotal_bruto,
                 "subtotal_neto": subtotal_neto,
@@ -1288,8 +1289,9 @@ def pedido_ticket(request, id: int):
     total_devuelto_monto = Decimal("0.00")
     for d in detalles_qs:
         cant_devuelta = int(devueltos_por_detalle.get(d.id, 0))
+        precio_unitario = d.precio_unitario or Decimal("0.00")
         subtotal_bruto = d.subtotal or Decimal("0.00")
-        monto_devuelto_item = (d.precio_unitario or Decimal("0.00")) * Decimal(cant_devuelta)
+        monto_devuelto_item = precio_unitario * Decimal(cant_devuelta)
         subtotal_neto = subtotal_bruto - monto_devuelto_item
 
         total_devuelto_unidades += cant_devuelta
@@ -1299,7 +1301,7 @@ def pedido_ticket(request, id: int):
             {
                 "producto_nombre": d.producto.nombre,
                 "cantidad": int(d.cantidad or 0),
-                "precio_unitario": d.precio_unitario or Decimal("0.00"),
+                "precio_unitario": precio_unitario,
                 "cantidad_devuelta": cant_devuelta,
                 "subtotal_bruto": subtotal_bruto,
                 "subtotal_neto": subtotal_neto,
