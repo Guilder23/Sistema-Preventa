@@ -267,9 +267,9 @@ def listar_pedidos(request):
                 pedidos = pedidos.filter(preventista__perfil__rol=rol_usuario)
 
     if fecha_desde:
-        pedidos = pedidos.filter(fecha__date__gte=fecha_desde)
+        pedidos = pedidos.filter(fecha_entrega_estimada__gte=fecha_desde)
     if fecha_hasta:
-        pedidos = pedidos.filter(fecha__date__lte=fecha_hasta)
+        pedidos = pedidos.filter(fecha_entrega_estimada__lte=fecha_hasta)
 
     if vista_pedidos == "pendientes":
         pedidos = pedidos.filter(estado=Pedido.ESTADO_PENDIENTE)
