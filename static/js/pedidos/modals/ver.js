@@ -64,12 +64,14 @@
                         const subtotal = d.subtotal ?? '0.00';
                         const devuelto = d.cantidad_devuelta ?? 0;
                         const subtotalNeto = d.subtotal_neto ?? subtotal;
+                        const ajusteLabel = d.precio_ajustado ? 'Sí' : 'No';
                         body.append(`
                             <tr>
                                 <td>${d.producto__nombre}</td>
                                 <td>Bs ${precio}</td>
                                 <td>${d.cantidad}</td>
                                 <td>${devuelto}</td>
+                                <td>${ajusteLabel}</td>
                                 <td>Bs ${subtotal}</td>
                                 <td>Bs ${subtotalNeto}</td>
                             </tr>

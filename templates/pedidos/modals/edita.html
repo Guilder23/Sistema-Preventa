@@ -51,11 +51,12 @@
                         <table class="table table-sm" id="tablaItemsPedidoEditar">
                             <thead>
                                 <tr>
-                                    <th style="width: 36%;">Producto</th>
-                                    <th style="width: 12%;" class="col-stock">Stock</th>
-                                    <th style="width: 14%;" class="col-precio">Precio (Bs)</th>
-                                    <th style="width: 14%;">Cantidad</th>
-                                    <th style="width: 14%;">Subtotal (Bs)</th>
+                                    <th style="width: 30%;">Producto</th>
+                                    <th style="width: 10%;" class="col-stock">Stock</th>
+                                    <th style="width: 12%;" class="col-precio">Precio (Bs)</th>
+                                    <th style="width: 10%;">Cantidad</th>
+                                    <th style="width: 12%;">Subtotal (Bs)</th>
+                                    <th style="width: 16%;">Ajuste</th>
                                     <th style="width: 10%;" class="text-center">Acción</th>
                                 </tr>
                             </thead>
@@ -94,6 +95,20 @@
                             <td>
                                 <input type="text" class="form-control form-control-sm item-subtotal" value="0.00" readonly>
                             </td>
+                            <td>
+                                {% if user.is_superuser or user.perfil.rol == 'administrador' %}
+                                <div class="d-flex flex-column gap-1">
+                                    <label class="mb-0 small text-muted">
+                                        <input type="hidden" class="item-aplicar-ajuste-valor" name="aplicar_ajuste[]" value="0">
+                                        <input type="checkbox" class="item-aplicar-ajuste" value="1">
+                                        <span class="ml-1">Aplicar precio</span>
+                                    </label>
+                                    <input type="number" min="0" step="0.01" class="form-control form-control-sm item-precio-manual" name="precio_manual[]" placeholder="Precio final">
+                                </div>
+                                {% else %}
+                                <small class="text-muted">Solo admin</small>
+                                {% endif %}
+                            </td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-outline-danger btn-sm btn-quitar-item" title="Quitar">
                                     <i class="fas fa-times"></i>
@@ -102,7 +117,7 @@
                         </tr>
                     </template>
 
-                    <small class="text-muted">El pedido guarda el precio unitario vigente del producto.</small>
+                    <small class="text-muted">Si marca el ajuste, el precio ingresado se aplicará solo a ese detalle del pedido actual.</small>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times"></i> Cancelar</button>
