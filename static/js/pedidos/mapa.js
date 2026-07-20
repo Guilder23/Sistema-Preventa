@@ -65,6 +65,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
     var estadoSelect = el('repartidorEstado');
     var fechaInput = el('repartidorFecha');
     var btnFiltro = el('btnRepartidorFiltro');
+    var btnMiUbicacion = el('btnMiUbicacion');
 
     var bottom = el('repartidorBottom');
     var bottomTitulo = el('repartidorTitulo');
@@ -73,6 +74,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
     var bottomFoto = el('repartidorFoto');
     var bottomFotoEmpty = el('repartidorFotoEmpty');
     var btnCerrar = el('repartidorCerrar');
+    var btnMapsCliente = el('btnAbrirGoogleMaps');
 
     var imgViewer = el('imgViewer');
     var imgViewerImg = el('imgViewerImg');
@@ -129,9 +131,14 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
     }
 
     var layerGroup = L.layerGroup().addTo(map);
+    var userLocationLayer = L.layerGroup().addTo(map);
     var markersByPedido = Object.create(null);
     var allPuntos = [];
     var selectedPedidoId = null;
+    var userMarker = null;
+    var userAccuracyCircle = null;
+    var userLocationWatchId = null;
+    var userLocationCentered = false;
 
     function markerColorByEstado(estado) {
       if (estado === 'vendido') return '#28a745';
@@ -152,6 +159,10 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       return popup;
     }
 
+    function buildGoogleMapsUrl(lat, lng) {
+      return 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
+    }
+
     function showBottom(p) {
       if (!bottom || !bottomTitulo || !bottomDireccion || !bottomMeta) return;
 
@@ -163,6 +174,16 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       if (p.fecha_entrega) meta.push('Entrega: ' + safeText(p.fecha_entrega));
       if (p.total) meta.push('Total: Bs ' + safeText(p.total));
       bottomMeta.textContent = meta.join(' • ');
+
+      if (btnMapsCliente) {
+        if (typeof p.lat === 'number' && typeof p.lng === 'number') {
+          btnMapsCliente.href = buildGoogleMapsUrl(p.lat, p.lng);
+          btnMapsCliente.style.display = 'inline-flex';
+        } else {
+          btnMapsCliente.removeAttribute('href');
+          btnMapsCliente.style.display = 'none';
+        }
+      }
 
       if (bottomFoto && bottomFotoEmpty) {
         var url = safeText(p.foto_url || '');
@@ -324,6 +345,91 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
       }
     }
 
+    function updateUserLocationMarker(lat, lng, accuracy) {
+      var latLng = [lat, lng];
+      var radius = Math.max(Math.min((accuracy || 20), 25), 8);
+
+      if (!userMarker) {
+        userMarker = L.circleMarker(latLng, {
+          radius: 8,
+          fillColor: '#2563eb',
+          color: '#ffffff',
+          weight: 3,
+          opacity: 1,
+          fillOpacity: 0.95,
+          zIndexOffset: 1000
+        }).addTo(userLocationLayer);
+        userMarker.bindTooltip('Tu ubicación');
+        userMarker.bindPopup(
+          '<div style="min-width: 180px;">' +
+            '<div style="font-weight: 600; margin-bottom: 6px;">Tu ubicación</div>' +
+            '<a href="' + buildGoogleMapsUrl(lat, lng) + '" target="_blank" rel="noopener" style="display: inline-block; padding: 6px 10px; background: #2563eb; color: #fff; border-radius: 6px; text-decoration: none; font-size: 12px;">Abrir en Google Maps</a>' +
+          '</div>',
+          { autoPan: true, maxWidth: 220 }
+        );
+      } else {
+        userMarker.setLatLng(latLng);
+        userMarker.setPopupContent(
+          '<div style="min-width: 180px;">' +
+            '<div style="font-weight: 600; margin-bottom: 6px;">Tu ubicación</div>' +
+            '<a href="' + buildGoogleMapsUrl(lat, lng) + '" target="_blank" rel="noopener" style="display: inline-block; padding: 6px 10px; background: #2563eb; color: #fff; border-radius: 6px; text-decoration: none; font-size: 12px;">Abrir en Google Maps</a>' +
+          '</div>'
+        );
+      }
+
+      if (!userAccuracyCircle) {
+        userAccuracyCircle = L.circle(latLng, {
+          radius: radius,
+          fillColor: '#60a5fa',
+          color: '#60a5fa',
+          weight: 1,
+          opacity: 0.2,
+          fillOpacity: 0.08,
+          zIndexOffset: 999,
+          interactive: false
+        }).addTo(userLocationLayer);
+      } else {
+        userAccuracyCircle.setLatLng(latLng);
+        userAccuracyCircle.setRadius(radius);
+      }
+
+      if (!userLocationCentered) {
+        map.setView(latLng, 15);
+        userLocationCentered = true;
+      }
+    }
+
+    function startUserLocationTracking() {
+      if (!navigator.geolocation) {
+        setInfo('Tu navegador no admite geolocalización.');
+        return;
+      }
+
+      if (userLocationWatchId !== null) {
+        return;
+      }
+
+      userLocationWatchId = navigator.geolocation.watchPosition(function (pos) {
+        updateUserLocationMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+      }, function () {
+        setInfo('No se pudo obtener tu ubicación. Permite el acceso a la ubicación del navegador.');
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 20000
+      });
+    }
+
+    if (btnMiUbicacion) {
+      btnMiUbicacion.addEventListener('click', function () {
+        if (userMarker && userAccuracyCircle) {
+          map.setView(userMarker.getLatLng(), Math.max(map.getZoom(), 15));
+          return;
+        }
+        startUserLocationTracking();
+      });
+    }
+
     function wireFilters() {
       if (searchInput) {
         searchInput.addEventListener('input', function () {
@@ -343,6 +449,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
     }
 
     wireFilters();
+    startUserLocationTracking();
 
     // Clic sobre el nombre (tooltip) => muestra la tarjeta (delegación global)
     document.addEventListener('click', function (e) {

@@ -34,6 +34,9 @@
                     <button type="button" class="topbar-btn" id="btnRepartidorFiltro" aria-label="Filtros">
                         <i class="fas fa-filter"></i>
                     </button>
+                    <button type="button" class="topbar-btn" id="btnMiUbicacion" aria-label="Mostrar mi ubicación" title="Mostrar mi ubicación">
+                        <i class="fas fa-location-crosshairs"></i>
+                    </button>
                 </div>
                 <div class="topbar-filters" id="repartidorFiltros" hidden>
                     <input type="date" id="repartidorFecha" class="topbar-select" aria-label="Filtrar por fecha de entrega" title="Filtrar por fecha de entrega">
@@ -58,6 +61,9 @@
                             <div class="bottom-title" id="repartidorTitulo"></div>
                             <div class="bottom-sub" id="repartidorDireccion"></div>
                             <div class="bottom-meta" id="repartidorMeta"></div>
+                            <a href="#" class="bottom-action" id="btnAbrirGoogleMaps" target="_blank" rel="noopener" title="Abrir ubicación del cliente en Google Maps">
+                                <i class="fas fa-location-dot"></i> Google Maps
+                            </a>
                         </div>
                         <button type="button" class="bottom-close" id="repartidorCerrar" aria-label="Cerrar">
                             <i class="fas fa-times"></i>
