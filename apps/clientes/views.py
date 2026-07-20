@@ -15,6 +15,7 @@ from apps.usuarios.decorators import role_required
 from apps.usuarios.models import PerfilUsuario
 
 from .models import Cliente
+from apps.pedidos.views import _formatear_hora_local_pedido
 
 
 def _clientes_qs_para_usuario(user):
@@ -232,7 +233,11 @@ def crear_cliente(request):
         messages.error(request, "El nombre es obligatorio")
         return redirect("listar_clientes")
 
-    Cliente.objects.create(
+    # Guardar la fecha de creación con hora de Bolivia explícita
+    from django.utils import timezone as dj_timezone
+    from zoneinfo import ZoneInfo
+
+    cliente = Cliente.objects.create(
         nombres=nombres,
         apellidos=apellidos or None,
         ci_nit=ci_nit or None,
@@ -244,6 +249,18 @@ def crear_cliente(request):
         foto_tienda=foto_tienda,
         creado_por=request.user,
     )
+    try:
+        # Asegurar que la fecha_creacion (DateTimeField auto_now_add) tenga tzinfo correcto
+        tz = ZoneInfo("America/La_Paz")
+        if hasattr(cliente, "fecha_creacion") and cliente.fecha_creacion:
+            dt = cliente.fecha_creacion
+            if getattr(dt, "tzinfo", None) is None:
+                dt = dt.replace(tzinfo=tz)
+            cliente.fecha_creacion = dt.astimezone(tz)
+            cliente.save(update_fields=["fecha_creacion"])
+    except Exception:
+        # No bloquear en fallo; la creación ya se hizo
+        pass
     messages.success(request, "Cliente registrado")
     return redirect("listar_clientes")
 
@@ -276,7 +293,7 @@ def obtener_cliente(request, id: int):
             "activo": cliente.activo,
             "creado_por": cliente.creado_por.get_full_name() or cliente.creado_por.username if cliente.creado_por else "Sistema",
             "rol_creador": rol_creador,
-            "fecha_creacion": cliente.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
+            "fecha_creacion": _formatear_hora_local_pedido(cliente.fecha_creacion),
         }
     )
 
