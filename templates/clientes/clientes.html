@@ -88,12 +88,18 @@
                         <td><small class="text-muted">{{ c.direccion|default:'—'|truncatechars:70 }}</small></td>
                         <td>
                             <div class="small">
-                                <strong>{{ c.creado_por.get_full_name|default:c.creado_por.username|default:'Sistema' }}</strong>
+                                <strong>
+                                    {% if c.creado_por %}
+                                        {{ c.creado_por.get_full_name|default:c.creado_por.username }}
+                                    {% else %}
+                                        Sistema
+                                    {% endif %}
+                                </strong>
                             </div>
                             <div class="small text-muted">
-                                {% if c.creado_por.perfil %}
+                                {% if c.creado_por and c.creado_por.perfil %}
                                     {{ c.creado_por.perfil.get_rol_display }}
-                                {% elif c.creado_por.is_superuser %}
+                                {% elif c.creado_por and c.creado_por.is_superuser %}
                                     Administrador
                                 {% else %}
                                     —
