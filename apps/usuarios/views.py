@@ -21,6 +21,7 @@ from django.views.decorators.http import require_http_methods
 
 from .decorators import role_required
 from .models import PerfilUsuario
+from apps.pedidos.views import _formatear_hora_local_pedido
 
 
 def index(request):
@@ -408,6 +409,19 @@ def crear_usuario(request):
         is_active=is_active,
     )
 
+    # Asegurar que date_joined use la hora local de Bolivia
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("America/La_Paz")
+        if getattr(user, "date_joined", None):
+            dj = user.date_joined
+            if getattr(dj, "tzinfo", None) is None:
+                dj = dj.replace(tzinfo=tz)
+            user.date_joined = dj.astimezone(tz)
+            user.save(update_fields=["date_joined"])
+    except Exception:
+        pass
+
     supervisor = None
     if rol == "preventista" and supervisor_id:
         supervisor = get_object_or_404(User.objects.select_related("perfil"), id=supervisor_id)
@@ -477,8 +491,8 @@ def obtener_usuario(request, id: int):
             else None
         ),
         "is_active": usuario.is_active,
-        "last_login": usuario.last_login.strftime("%d/%m/%y %H:%M") if usuario.last_login else None,
-        "date_joined": usuario.date_joined.strftime("%d/%m/%y %H:%M") if usuario.date_joined else None,
+        "last_login": _formatear_hora_local_pedido(usuario.last_login) if usuario.last_login else None,
+        "date_joined": _formatear_hora_local_pedido(usuario.date_joined) if usuario.date_joined else None,
         # Compat con UI del proyecto guía
         "almacen_id": None,
         "almacen_nombre": None,

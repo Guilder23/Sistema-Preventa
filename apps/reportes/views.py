@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date, datetime
 from decimal import Decimal
 from io import BytesIO
 from urllib.parse import quote
@@ -13,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -27,6 +29,39 @@ def _display_user_name(user):
     if not user:
         return "-"
     return user.get_full_name() or user.username
+
+
+def _formatear_fecha_hora_local(dt, fallback="-"):
+    if not dt:
+        return fallback
+
+    timezone_bolivia = ZoneInfo("America/La_Paz")
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone_bolivia)
+        try:
+            dt_local = dt.astimezone(timezone_bolivia)
+        except Exception:
+            return dt.strftime("%d/%m/%Y %H:%M")
+        return dt_local.strftime("%d/%m/%Y %H:%M")
+
+    if isinstance(dt, date):
+        return dt.strftime("%d/%m/%Y")
+
+    return fallback
+
+
+def _formatear_fecha_local(dt, fallback="-"):
+    if not dt:
+        return fallback
+
+    if isinstance(dt, datetime):
+        return _formatear_fecha_hora_local(dt, fallback=fallback)
+
+    if isinstance(dt, date):
+        return dt.strftime("%d/%m/%Y")
+
+    return fallback
 
 
 def _pedido_repartidor_nombre(pedido, devolucion=None):
@@ -383,9 +418,9 @@ def reportes_inicio(request):
             if registrador
             else (p.preventista.get_full_name() or p.preventista.username)
         )
-        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
-        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
-        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-"
+        p.fecha_pedido_display = _formatear_fecha_hora_local(p.fecha) if p.fecha else "-"
+        p.fecha_vendido_display = _formatear_fecha_hora_local(p.fecha_vendido) if p.fecha_vendido else "-"
+        p.fecha_entrega_display = _formatear_fecha_local(p.fecha_entrega_estimada) if getattr(p, 'fecha_entrega_estimada', None) else "-"
 
         devol = devolucion_reciente_por_pedido.get(p.id)
         p.repartidor_nombre = _pedido_repartidor_nombre(p, devol)
@@ -566,9 +601,9 @@ def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidor
     for p in pedidos_page:
         p.cliente_corto = _cliente_corto(p.cliente)
         p.preventista_nombre = p.preventista.get_full_name() or p.preventista.username
-        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if p.fecha_entrega_estimada else "-"
-        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
-        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-"
+        p.fecha_entrega_display = _formatear_fecha_local(p.fecha_entrega_estimada) if p.fecha_entrega_estimada else "-"
+        p.fecha_pedido_display = _formatear_fecha_hora_local(p.fecha) if p.fecha else "-"
+        p.fecha_vendido_display = _formatear_fecha_hora_local(p.fecha_vendido) if p.fecha_vendido else "-"
 
         devol = devolucion_reciente_por_pedido.get(p.id)
         p.repartidor_nombre = _pedido_repartidor_nombre(p, devol)
@@ -1078,9 +1113,9 @@ def pedidos_pdf(request):
                     _short(cliente_reg_por, 11),
                     _short(pedido_reg_por, 11),
                     _short(repartidor, 10),
-                    p.fecha.strftime("%d/%m/%Y %H:%M"),
-                    p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-",
-                    p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if p.fecha_vendido else "-",
+                    _formatear_fecha_hora_local(p.fecha),
+                    _formatear_fecha_local(p.fecha_entrega_estimada) if getattr(p, 'fecha_entrega_estimada', None) else "-",
+                    _formatear_fecha_hora_local(p.fecha_vendido) if p.fecha_vendido else "-",
                     _short(estado_entrega, 14),
                     str(devueltos_por_pedido.get(p.id, 0)),
                     _fmt_money(p.total),
@@ -1571,13 +1606,13 @@ def pedido_pdf(request, id: int):
         Paragraph("Pedidos y preventa", small_style),
     ]
 
-    fecha_venta = pedido.fecha_vendido.strftime("%d/%m/%Y %H:%M") if pedido.fecha_vendido else "--"
+    fecha_venta = _formatear_fecha_hora_local(pedido.fecha_vendido) if pedido.fecha_vendido else "--"
     right_header = [
         Paragraph("PEDIDO", title_style),
         Spacer(1, 2),
         Paragraph(f"<b>Número:</b> {pedido.id}", value_style),
-        Paragraph(f"<b>Fecha pedido:</b> {pedido.fecha.strftime('%d/%m/%Y %H:%M')}", value_style),
-        Paragraph(f"<b>Entrega estimada:</b> {pedido.fecha_entrega_estimada.strftime('%d/%m/%Y')}", value_style) if pedido.fecha_entrega_estimada else Spacer(1, 1),
+        Paragraph(f"<b>Fecha pedido:</b> {_formatear_fecha_hora_local(pedido.fecha)}", value_style),
+        Paragraph(f"<b>Entrega estimada:</b> {_formatear_fecha_local(pedido.fecha_entrega_estimada)}", value_style) if pedido.fecha_entrega_estimada else Spacer(1, 1),
         Paragraph(f"<b>Fecha venta:</b> {fecha_venta}", value_style),
         Paragraph(f"<b>Estado:</b> {pedido.get_estado_display()}", value_style),
     ]

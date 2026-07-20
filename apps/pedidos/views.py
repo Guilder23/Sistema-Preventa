@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from collections import defaultdict
 
@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from zoneinfo import ZoneInfo
 
 from apps.clientes.models import Cliente
 from apps.productos.models import Producto
@@ -23,6 +24,48 @@ from apps.usuarios.decorators import role_required
 from apps.usuarios.models import PerfilUsuario
 
 from .models import DevolucionItem, DevolucionPedido, DetallePedido, Pedido
+
+
+def _ahora_bolivia():
+    return timezone.now().astimezone(ZoneInfo("America/La_Paz"))
+
+
+def _formatear_hora_local_pedido(dt, fallback="-"):
+    if not dt:
+        return fallback
+
+    timezone_bolivia = ZoneInfo("America/La_Paz")
+    if isinstance(dt, datetime):
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone_bolivia)
+        try:
+            return dt.astimezone(timezone_bolivia).strftime("%d/%m/%Y %H:%M")
+        except Exception:
+            return dt.strftime("%d/%m/%Y %H:%M")
+
+    if isinstance(dt, date):
+        return dt.strftime("%d/%m/%Y")
+
+    return fallback
+
+
+def _formatear_fecha_local_pedido(dt, fallback="-"):
+    if not dt:
+        return fallback
+
+    if isinstance(dt, datetime):
+        timezone_bolivia = ZoneInfo("America/La_Paz")
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone_bolivia)
+        try:
+            return dt.astimezone(timezone_bolivia).strftime("%d/%m/%Y")
+        except Exception:
+            return dt.strftime("%d/%m/%Y")
+
+    if isinstance(dt, date):
+        return dt.strftime("%d/%m/%Y")
+
+    return fallback
 
 
 def _descontar_stock_por_detalles(detalles):
@@ -296,9 +339,9 @@ def listar_pedidos(request):
         p.total_devuelto_monto = monto_devuelto
         p.total_neto = (p.total or Decimal("0.00")) - monto_devuelto
         # Fechas formateadas para la vista
-        p.fecha_pedido_display = p.fecha.strftime("%d/%m/%Y %H:%M") if p.fecha else "-"
-        p.fecha_entrega_display = p.fecha_entrega_estimada.strftime("%d/%m/%Y") if getattr(p, 'fecha_entrega_estimada', None) else "-"
-        p.fecha_vendido_display = p.fecha_vendido.strftime("%d/%m/%Y %H:%M") if getattr(p, 'fecha_vendido', None) else "-"
+        p.fecha_pedido_display = _formatear_hora_local_pedido(p.fecha) if p.fecha else "-"
+        p.fecha_entrega_display = _formatear_fecha_local_pedido(p.fecha_entrega_estimada) if getattr(p, 'fecha_entrega_estimada', None) else "-"
+        p.fecha_vendido_display = _formatear_hora_local_pedido(p.fecha_vendido) if getattr(p, 'fecha_vendido', None) else "-"
 
     perfil = getattr(request.user, "perfil", None)
     preventistas_asignados = []
@@ -454,6 +497,8 @@ def crear_pedido(request):
             observacion=observacion or None,
             fecha_entrega_estimada=fecha_entrega_estimada,
         )
+        pedido.fecha = _ahora_bolivia()
+        pedido.save(update_fields=["fecha"])
 
         total = Decimal("0.00")
         detalles_creados = []
@@ -526,7 +571,7 @@ def obtener_pedido(request, id: int):
             "id": pedido.id,
             "cliente": f"{pedido.cliente.nombres} {pedido.cliente.apellidos or ''}".strip(),
             "preventista": pedido.preventista.get_full_name() or pedido.preventista.username,
-            "fecha": pedido.fecha.strftime("%d/%m/%Y %H:%M"),
+            "fecha": _formatear_hora_local_pedido(pedido.fecha),
             "fecha_entrega_estimada": pedido.fecha_entrega_estimada.isoformat() if pedido.fecha_entrega_estimada else "",
             "fecha_vendido": pedido.fecha_vendido.isoformat() if getattr(pedido, 'fecha_vendido', None) else "",
             "estado": pedido.estado,
@@ -729,8 +774,8 @@ def pedidos_mapa_puntos(request):
                 "cliente_id": c.id,
                 "foto_url": c.foto_tienda.url if getattr(c, "foto_tienda", None) else "",
                 "descripcion": getattr(c, "descripcion", "") or "",
-                "fecha": p.fecha.strftime("%d/%m/%Y %H:%M"),
-                "fecha_entrega": p.fecha_entrega_estimada.strftime("%d/%m/%Y") if p.fecha_entrega_estimada else "-",
+                "fecha": _formatear_hora_local_pedido(p.fecha),
+                "fecha_entrega": _formatear_fecha_local_pedido(p.fecha_entrega_estimada) if p.fecha_entrega_estimada else "-",
                 "fecha_iso": p.fecha_entrega_estimada.isoformat() if p.fecha_entrega_estimada else "",
                 "total": str(p.total),
                 "estado_str": p.get_estado_display(),
@@ -791,7 +836,7 @@ def marcar_vendido(request, id: int):
             pedido.stock_descontado = True
 
         pedido.estado = Pedido.ESTADO_VENDIDO
-        pedido.fecha_vendido = timezone.now()
+        pedido.fecha_vendido = _ahora_bolivia()
         pedido.save(update_fields=["estado", "fecha_vendido", "stock_descontado"])
     messages.success(request, "Pedido marcado como vendido")
     return redirect("listar_pedidos")
@@ -920,7 +965,7 @@ def registrar_entrega(request, id: int):
             pedido.stock_descontado = True
 
         pedido.estado = Pedido.ESTADO_VENDIDO
-        pedido.fecha_vendido = timezone.now()
+        pedido.fecha_vendido = _ahora_bolivia()
         pedido.save(update_fields=["estado", "fecha_vendido", "stock_descontado"])
 
         if devolucion is not None:
@@ -1046,7 +1091,7 @@ def obtener_devolucion(request, id: int):
                 "cantidad_devuelta": it.cantidad_devuelta,
                 "motivo": it.motivo or "",
                 "repuesto": it.repuesto,
-                "fecha_reposicion": it.fecha_reposicion.strftime("%d/%m/%Y %H:%M") if it.fecha_reposicion else "",
+                "fecha_reposicion": _formatear_hora_local_pedido(it.fecha_reposicion) if it.fecha_reposicion else "",
                 "repuesto_por": (
                     (it.repuesto_por.get_full_name() or it.repuesto_por.username)
                     if it.repuesto_por
@@ -1064,7 +1109,7 @@ def obtener_devolucion(request, id: int):
             "tipo": devolucion.get_tipo_display(),
             "motivo_general": devolucion.motivo_general or "",
             "estado_reposicion": devolucion.get_estado_reposicion_display(),
-            "fecha": devolucion.fecha_creacion.strftime("%d/%m/%Y %H:%M"),
+            "fecha": _formatear_hora_local_pedido(devolucion.fecha_creacion),
             "items": items,
             "is_admin": bool(request.user.is_superuser or (getattr(request.user, "perfil", None) and request.user.perfil.rol == "administrador")),
         }

@@ -147,6 +147,8 @@ def dashboard(request):
         .order_by("-fecha")[:10]
     )
 
+    ahora_bolivia = timezone.localtime(timezone.now())
+
     for p in pedidos_recientes:
         p.total_real = (p.total or Decimal("0.00")) - monto_devuelto_por_pedido.get(p.id, Decimal("0.00"))
         p.devueltos_unidades = und_devueltas_por_pedido.get(p.id, 0)
@@ -215,6 +217,7 @@ def dashboard(request):
             "entregas_parciales_total": entregas_parciales_total,
             "entregas_parciales_hoy": entregas_parciales_hoy,
             "pedidos_recientes": pedidos_recientes,
+            "ahora_bolivia": ahora_bolivia,
         },
     )
 
