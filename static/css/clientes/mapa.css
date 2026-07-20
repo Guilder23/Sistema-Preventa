@@ -110,6 +110,25 @@
     flex-wrap: wrap;
     gap: 10px;
 }
+.bottom-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #2563eb;
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+.bottom-action:hover {
+    color: #fff;
+    text-decoration: none;
+    filter: brightness(1.05);
+}
 .bottom-close {
     position: absolute;
     right: 10px;
