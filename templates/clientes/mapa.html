@@ -35,6 +35,9 @@
                     <button type="button" class="topbar-btn" id="btnClientesFiltro" aria-label="Filtros">
                         <i class="fas fa-filter"></i>
                     </button>
+                    <button type="button" class="topbar-btn" id="btnMiUbicacion" aria-label="Mostrar mi ubicación" title="Mostrar mi ubicación">
+                        <i class="fas fa-location-crosshairs"></i>
+                    </button>
                 </div>
                 <div class="topbar-filters" id="clientesFiltros" hidden>
                     <select id="estadoClienteMapa" class="topbar-select" aria-label="Filtrar por estado">
@@ -52,7 +55,32 @@
             </div>
             <div class="mapa-clientes-shell" aria-label="Mapa de clientes">
                 <div id="mapaClientes" class="mapa-clientes" data-url="{% url 'clientes_mapa_puntos' %}"></div>
+                <div class="mapa-repartidor-bottom" id="clientesBottom" hidden>
+                    <div class="bottom-card">
+                        <div class="bottom-media" id="clientesFotoWrap">
+                            <img id="clientesFoto" alt="Foto de la tienda" loading="lazy" />
+                            <div class="bottom-media-empty" id="clientesFotoEmpty">Sin foto</div>
+                        </div>
+                        <div class="bottom-body">
+                            <div class="bottom-title" id="clientesTitulo"></div>
+                            <div class="bottom-sub" id="clientesDireccion"></div>
+                            <div class="bottom-meta" id="clientesMeta"></div>
+                            <a href="#" class="bottom-action" id="btnAbrirGoogleMaps" target="_blank" rel="noopener" title="Abrir ubicación del cliente en Google Maps">
+                                <i class="fas fa-location-dot"></i> Google Maps
+                            </a>
+                        </div>
+                        <button type="button" class="bottom-close" id="clientesCerrar" aria-label="Cerrar">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
                 <small class="text-muted d-block mt-2" id="mapaClientesInfo"></small>
+            </div>
+            <div class="img-viewer" id="imgViewer" hidden>
+                <button type="button" class="img-viewer-close" id="imgViewerClose" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+                <img class="img-viewer-img" id="imgViewerImg" alt="Imagen ampliada" />
             </div>
         </div>
     </div>

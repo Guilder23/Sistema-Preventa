@@ -159,7 +159,7 @@
 .ticket-item-total {
     min-width: 78px;
     text-align: right;
-    font-weight: 800;
+    font-weight: 600;
     white-space: nowrap;
 }
 
@@ -178,13 +178,18 @@
 }
 
 .ticket-row--total span,
-.ticket-row--total strong {
+.ticket-row--total .ticket-item-total {
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 600;
+    color: #d7262b;
 }
 
-.ticket-row--total strong {
-    color: #d7262b;
+.ticket-row--total-text {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #111827;
+    font-weight: 600;
+    text-transform: capitalize;
 }
 
 .ticket-note {

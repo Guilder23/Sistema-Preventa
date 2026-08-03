@@ -119,8 +119,11 @@
             <section class="ticket-block ticket-total-box">
                 <div class="ticket-row ticket-row--total">
                     <span>Total</span>
-                    <strong>Bs {{ t.total_real|floatformat:2 }}</strong>
+                    <div class="ticket-item-total">Bs {{ t.total_real|floatformat:2 }}</div>
                 </div>
+                {% if t.total_real_text %}
+                <div class="ticket-row ticket-row--total-text">{{ t.total_real_text }}</div>
+                {% endif %}
                 {% if t.pedido.observacion %}
                 <div class="ticket-note">
                     <span>Observación:</span>
