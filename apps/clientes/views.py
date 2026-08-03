@@ -210,6 +210,7 @@ def clientes_mapa_puntos(request):
                 "direccion": c.direccion or "",
                 "telefono": c.telefono or "",
                 "ci_nit": c.ci_nit or "",
+                "foto_url": c.foto_tienda.url if c.foto_tienda else "",
             }
         )
 

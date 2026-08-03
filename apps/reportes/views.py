@@ -74,6 +74,104 @@ def _pedido_repartidor_nombre(pedido, devolucion=None):
     return _display_user_name(repartidor_asignado)
 
 
+def _numero_entero_a_texto_es(entero: int) -> str:
+    unidades = [
+        "cero",
+        "uno",
+        "dos",
+        "tres",
+        "cuatro",
+        "cinco",
+        "seis",
+        "siete",
+        "ocho",
+        "nueve",
+        "diez",
+        "once",
+        "doce",
+        "trece",
+        "catorce",
+        "quince",
+        "dieciséis",
+        "diecisiete",
+        "dieciocho",
+        "diecinueve",
+    ]
+    decenas = {
+        20: "veinte",
+        30: "treinta",
+        40: "cuarenta",
+        50: "cincuenta",
+        60: "sesenta",
+        70: "setenta",
+        80: "ochenta",
+        90: "noventa",
+    }
+    centenas = {
+        100: "cien",
+        200: "doscientos",
+        300: "trescientos",
+        400: "cuatrocientos",
+        500: "quinientos",
+        600: "seiscientos",
+        700: "setecientos",
+        800: "ochocientos",
+        900: "novecientos",
+    }
+
+    if entero < 0:
+        return "menos " + _numero_entero_a_texto_es(-entero)
+    if entero < 20:
+        return unidades[entero]
+    if entero < 100:
+        if entero in decenas:
+            return decenas[entero]
+        diez = entero // 10 * 10
+        unidad = entero % 10
+        if diez == 20:
+            return "veinti" + unidades[unidad]
+        return decenas[diez] + " y " + unidades[unidad]
+    if entero < 1000:
+        if entero in centenas:
+            return centenas[entero]
+        if entero < 200:
+            return "ciento " + _numero_entero_a_texto_es(entero - 100)
+        centena = entero // 100 * 100
+        resto = entero % 100
+        return centenas[centena] + (" " + _numero_entero_a_texto_es(resto) if resto else "")
+    if entero < 1000000:
+        miles = entero // 1000
+        resto = entero % 1000
+        prefix = "mil" if miles == 1 else _numero_entero_a_texto_es(miles) + " mil"
+        return prefix + (" " + _numero_entero_a_texto_es(resto) if resto else "")
+    if entero < 1000000000:
+        millones = entero // 1000000
+        resto = entero % 1000000
+        prefix = "un millón" if millones == 1 else _numero_entero_a_texto_es(millones) + " millones"
+        return prefix + (" " + _numero_entero_a_texto_es(resto) if resto else "")
+    return str(entero)
+
+
+def _numero_a_texto_es(valor) -> str:
+    try:
+        valor_dec = Decimal(valor)
+    except Exception:
+        return ""
+
+    entero = int(valor_dec.quantize(Decimal("0.01")))
+    partes = str(valor_dec.quantize(Decimal("0.01"))).split(".")
+    entero_parte = int(partes[0])
+    texto_entero = _numero_entero_a_texto_es(abs(entero_parte))
+    if entero_parte < 0:
+        texto_entero = "menos " + texto_entero
+
+    if len(partes) == 2 and partes[1] != "00":
+        decenas = int(partes[1])
+        texto_decenas = _numero_entero_a_texto_es(decenas)
+        return f"{texto_entero} con {texto_decenas}"
+    return texto_entero
+
+
 def _ticket_data_for_pedido(pedido, *, repartidor_nombre: str | None = None):
     """Construye los datos del ticket térmico para un pedido.
 
@@ -119,6 +217,7 @@ def _ticket_data_for_pedido(pedido, *, repartidor_nombre: str | None = None):
                 "precio_unitario": precio_unitario,
                 "cantidad_devuelta": cant_devuelta,
                 "subtotal_bruto": subtotal_bruto,
+                "subtotal_bruto_text": _numero_a_texto_es(subtotal_bruto),
                 "subtotal_neto": subtotal_neto,
             }
         )
@@ -137,9 +236,11 @@ def _ticket_data_for_pedido(pedido, *, repartidor_nombre: str | None = None):
         "repartidor_nombre": repartidor_nombre or "-",
         "estado_display": pedido.get_estado_display(),
         "total_bruto": total_bruto,
+        "total_bruto_text": _numero_a_texto_es(total_bruto),
         "total_devuelto_unidades": total_devuelto_unidades,
         "total_devuelto_monto": total_devuelto_monto,
         "total_real": total_real,
+        "total_real_text": _numero_a_texto_es(total_real),
     }
 
 
