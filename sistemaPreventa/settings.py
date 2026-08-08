@@ -1,6 +1,7 @@
 """Configuración principal de Django para Sistema Preventa."""
 
 import os
+import logging
 from pathlib import Path
 
 from decouple import Csv, config
@@ -25,6 +26,27 @@ ALLOWED_HOSTS = config(
 
 if "187.127.45.61" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("187.127.45.61")
+
+DEFAULT_CSRF_TRUSTED_ORIGINS = []
+for host in ALLOWED_HOSTS:
+    if not host:
+        continue
+    DEFAULT_CSRF_TRUSTED_ORIGINS.append(f"http://{host}")
+    if host not in {"localhost", "127.0.0.1"}:
+        DEFAULT_CSRF_TRUSTED_ORIGINS.append(f"https://{host}")
+
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default=",".join(DEFAULT_CSRF_TRUSTED_ORIGINS),
+    cast=Csv(),
+)
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
 
 
 INSTALLED_APPS = [

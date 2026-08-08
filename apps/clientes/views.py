@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -238,18 +240,31 @@ def crear_cliente(request):
     from django.utils import timezone as dj_timezone
     from zoneinfo import ZoneInfo
 
-    cliente = Cliente.objects.create(
-        nombres=nombres,
-        apellidos=apellidos or None,
-        ci_nit=ci_nit or None,
-        telefono=telefono or None,
-        direccion=direccion or None,
-        descripcion=descripcion or None,
-        latitud=latitud or None,
-        longitud=longitud or None,
-        foto_tienda=foto_tienda,
-        creado_por=request.user,
-    )
+    cliente_data = {
+        "nombres": nombres,
+        "apellidos": apellidos or None,
+        "ci_nit": ci_nit or None,
+        "telefono": telefono or None,
+        "direccion": direccion or None,
+        "descripcion": descripcion or None,
+        "latitud": latitud or None,
+        "longitud": longitud or None,
+        "creado_por": request.user,
+    }
+    if foto_tienda:
+        cliente_data["foto_tienda"] = foto_tienda
+
+    try:
+        cliente = Cliente.objects.create(**cliente_data)
+    except Exception as exc:
+        if foto_tienda:
+            logging.getLogger(__name__).exception("Error al crear cliente con imagen de la tienda")
+            messages.error(
+                request,
+                "No se pudo guardar la imagen de la tienda. Verifica que el archivo sea una imagen válida e inténtalo nuevamente.",
+            )
+            return redirect("listar_clientes")
+        raise
     try:
         # Asegurar que la fecha_creacion (DateTimeField auto_now_add) tenga tzinfo correcto
         tz = ZoneInfo("America/La_Paz")
