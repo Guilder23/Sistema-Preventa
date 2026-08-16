@@ -175,13 +175,18 @@
 
 .ticket-row--total {
     margin-bottom: 8px;
+    align-items: center;
 }
 
 .ticket-row--total span,
 .ticket-row--total .ticket-item-total {
-    font-size: 13px;
-    font-weight: 600;
-    color: #d7262b;
+    font-size: 14px;
+    font-weight: 700;
+    color: #000000;
+}
+
+.ticket-row--total .ticket-item-total {
+    font-size: 14px;
 }
 
 .ticket-row--total-text {
