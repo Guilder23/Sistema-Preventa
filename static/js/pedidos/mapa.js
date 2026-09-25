@@ -41,10 +41,9 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
 
     var map = L.map('mapaPedidos', { zoomControl: true });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      attribution: 'Tiles © Esri',
     }).addTo(map);
 
     map.setView([-17.7833, -63.1821], 12);

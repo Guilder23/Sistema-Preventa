@@ -204,7 +204,7 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
           markers.push(marker);
           bounds.push([p.lat, p.lng]);
         });
-        if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
+        if (bounds.length) map.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
         setInfo('Mostrando ' + allPuntos.length + ' cliente(s) en el mapa.');
       })
       .catch(function () { setInfo('No se pudo cargar el mapa de clientes.'); });
@@ -214,8 +214,8 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
     var mapEl = el('mapaClientes'); if (!mapEl) return;
     CLIENTES_MAPA_PUNTOS_URL = mapEl.getAttribute('data-url');
     map = L.map('mapaClientes', { zoomControl: true });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
-    map.setView([-17.7833, -63.1821], 12);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' }).addTo(map);
+    map.setView([-17.7833, -63.1821], 11);
 
     userLocationLayer = L.layerGroup().addTo(map);
 
