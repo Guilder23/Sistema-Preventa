@@ -72,6 +72,7 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function (data) {
+                    $('#entregaPedidoLabel').text(`${data.cliente || 'cliente'} · Pedido ${label || '#' + data.id}`);
                     renderDetalles(data.detalles || []);
                     // rellenar fechas
                     $('#entregaPedidoFecha').text(data.fecha || '—');

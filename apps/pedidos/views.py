@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.db.models import F
 from django.db.models.functions import Greatest
 from django.http import JsonResponse
@@ -252,6 +252,19 @@ def listar_pedidos(request):
         fecha_hasta_raw = ""
 
     pedidos = _pedidos_qs_para_usuario(request.user)
+    pedidos_hoy = pedidos.filter(fecha__date=timezone.localdate())
+    total_pedidos_hoy = pedidos_hoy.count()
+    total_bruto_hoy = pedidos_hoy.aggregate(total=Sum("total"))["total"] or Decimal("0.00")
+    total_devuelto_hoy = Decimal("0.00")
+    pedidos_hoy_ids = pedidos_hoy.values_list("id", flat=True)
+    devoluciones_hoy = DevolucionItem.objects.filter(
+        devolucion__pedido_id__in=pedidos_hoy_ids,
+        detalle_pedido__isnull=False,
+    ).select_related("detalle_pedido")
+    for item in devoluciones_hoy:
+        precio = item.detalle_pedido.precio_unitario or Decimal("0.00")
+        total_devuelto_hoy += precio * Decimal(int(item.cantidad_devuelta or 0))
+    total_real_hoy = total_bruto_hoy - total_devuelto_hoy
 
     if estado not in {
         Pedido.ESTADO_PENDIENTE,
@@ -392,6 +405,9 @@ def listar_pedidos(request):
             "fecha_desde": fecha_desde_raw,
             "fecha_hasta": fecha_hasta_raw,
             "vista_pedidos": vista_pedidos,
+            "total_pedidos_hoy": total_pedidos_hoy,
+            "total_bruto_hoy": total_bruto_hoy,
+            "total_real_hoy": total_real_hoy,
             "clientes": clientes,
             "productos": productos,
             "clientes_data": clientes_data,

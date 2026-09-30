@@ -74,6 +74,7 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
     var bottomFotoEmpty = el('repartidorFotoEmpty');
     var btnCerrar = el('repartidorCerrar');
     var btnMapsCliente = el('btnAbrirGoogleMaps');
+    var btnRegistrarEntrega = el('btnRegistrarEntregaMapa');
 
     var imgViewer = el('imgViewer');
     var imgViewerImg = el('imgViewerImg');
@@ -181,6 +182,16 @@ var PEDIDOS_MAPA_PUNTOS_URL = null;
         } else {
           btnMapsCliente.removeAttribute('href');
           btnMapsCliente.style.display = 'none';
+        }
+      }
+
+      if (btnRegistrarEntrega) {
+        if (normText(p.estado) === 'pendiente' && p.pedido_id) {
+          btnRegistrarEntrega.dataset.pedidoId = p.pedido_id;
+          btnRegistrarEntrega.dataset.pedidoLabel = '#' + p.pedido_id;
+          setHidden(btnRegistrarEntrega, false);
+        } else {
+          setHidden(btnRegistrarEntrega, true);
         }
       }
 

@@ -64,6 +64,11 @@
                             <a href="#" class="bottom-action" id="btnAbrirGoogleMaps" target="_blank" rel="noopener" title="Abrir ubicación del cliente en Google Maps">
                                 <i class="fas fa-location-dot"></i> Google Maps
                             </a>
+                            {% if not user.is_superuser and user.perfil.rol == 'repartidor' %}
+                                <button type="button" class="bottom-action bottom-action-entrega btn-registrar-entrega" id="btnRegistrarEntregaMapa" data-pedido-id="" data-pedido-label="" title="Registrar entrega/devolución" hidden>
+                                    <i class="fas fa-truck"></i> Registrar entrega/devolución
+                                </button>
+                            {% endif %}
                         </div>
                         <button type="button" class="bottom-close" id="repartidorCerrar" aria-label="Cerrar">
                             <i class="fas fa-times"></i>
@@ -81,10 +86,12 @@
         </button>
         <img class="img-viewer-img" id="imgViewerImg" alt="Imagen ampliada" />
     </div>
+    {% include 'pedidos/modals/entrega.html' %}
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{% static 'js/pedidos/modals/entrega.js' %}"></script>
 <script src="{% static 'js/pedidos/mapa.js' %}"></script>
 {% endblock %}

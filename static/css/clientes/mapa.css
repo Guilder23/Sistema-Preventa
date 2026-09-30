@@ -42,6 +42,12 @@
     bottom: 12px;
     z-index: 1200;
 }
+#modalRegistrarEntrega {
+    z-index: 2050;
+}
+.modal-backdrop {
+    z-index: 2040;
+}
 .bottom-card {
     position: relative;
     display: grid;
@@ -128,6 +134,15 @@
     color: #fff;
     text-decoration: none;
     filter: brightness(1.05);
+}
+.bottom-action-entrega {
+    border: 0;
+    background: #198754;
+    cursor: pointer;
+    font-family: inherit;
+}
+.bottom-action-entrega:hover {
+    color: #fff;
 }
 .bottom-close {
     position: absolute;
