@@ -8,35 +8,179 @@ from django.contrib.auth.models import User
 from decimal import Decimal
 from collections import defaultdict
 
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
+from django.core.paginator import Paginator
 
 from apps.usuarios.decorators import role_required
-from apps.usuarios.models import PerfilUsuario
 
-from .models import Cliente
+from .access import clientes_visibles_para_usuario
+from .models import Cliente, TransferenciaCliente
 from apps.pedidos.views import _formatear_hora_local_pedido
 
 
 def _clientes_qs_para_usuario(user):
-    perfil = getattr(user, "perfil", None)
-    qs = Cliente.objects.all()
-    if user.is_superuser:
-        return qs
-    if perfil and perfil.rol == "administrador":
-        return qs
-    if perfil and perfil.rol == "supervisor":
-        preventistas_ids = PerfilUsuario.objects.filter(
-            rol="preventista",
-            supervisor=user,
-            activo=True,
-            usuario__is_active=True,
-        ).values_list("usuario_id", flat=True)
-        return qs.filter(Q(creado_por=user) | Q(creado_por_id__in=preventistas_ids))
-    # preventista: solo los creados por él
-    return qs.filter(creado_por=user)
+    return clientes_visibles_para_usuario(user)
+
+
+def _vendedor_ids(clientes_base):
+    asignados = set(
+        clientes_base.exclude(preventista_asignado__isnull=True)
+        .values_list("preventista_asignado_id", flat=True)
+    )
+    anteriores = set(
+        clientes_base.filter(preventista_asignado__isnull=True)
+        .exclude(creado_por__isnull=True)
+        .values_list("creado_por_id", flat=True)
+    )
+    return asignados | anteriores
+
+
+def _nombre_usuario(usuario):
+    if not usuario:
+        return "Sin asignar"
+    return (usuario.get_full_name() or usuario.username)[:150]
+
+
+@role_required("administrador")
+@require_http_methods(["GET", "POST"])
+def transferir_clientes(request):
+    preventistas = User.objects.filter(
+        is_active=True,
+        perfil__rol="preventista",
+        perfil__activo=True,
+    ).order_by("first_name", "last_name", "username")
+
+    if request.method == "POST":
+        ids_raw = request.POST.getlist("cliente_ids")
+        try:
+            cliente_ids = list(dict.fromkeys(int(value) for value in ids_raw))
+            origen_id = int(request.POST.get("preventista_origen", ""))
+            destino_id = int(request.POST.get("preventista_destino", ""))
+        except (TypeError, ValueError):
+            messages.error(request, "Selecciona un preventista de origen y otro de destino válidos.")
+            return redirect("transferir_clientes")
+
+        if not cliente_ids:
+            messages.error(request, "Selecciona al menos un cliente para transferir.")
+            return redirect(f"{reverse('transferir_clientes')}?origen={origen_id}")
+
+        origen = get_object_or_404(preventistas, pk=origen_id)
+        destino = get_object_or_404(preventistas, pk=destino_id)
+        if origen.pk == destino.pk:
+            messages.error(request, "El preventista de origen y destino deben ser diferentes.")
+            return redirect(f"{reverse('transferir_clientes')}?origen={origen.pk}")
+
+        with transaction.atomic():
+            clientes_seleccionados = list(
+                Cliente.objects.select_for_update()
+                .filter(pk__in=cliente_ids)
+                .order_by("pk")
+            )
+            if len(clientes_seleccionados) != len(cliente_ids):
+                messages.error(request, "Uno o más clientes ya no existen. No se realizó ningún cambio.")
+                return redirect(f"{reverse('transferir_clientes')}?origen={origen.pk}")
+
+            pertenecen_al_origen = all(
+                cliente.preventista_asignado_id == origen.pk
+                or (
+                    cliente.preventista_asignado_id is None
+                    and cliente.creado_por_id == origen.pk
+                )
+                for cliente in clientes_seleccionados
+            )
+            if not pertenecen_al_origen:
+                messages.error(
+                    request,
+                    "La cartera cambió mientras preparabas el traspaso. No se realizó ningún cambio; revisa de nuevo los clientes del origen.",
+                )
+                return redirect(f"{reverse('transferir_clientes')}?origen={origen.pk}")
+
+            transferidos = 0
+            for cliente in clientes_seleccionados:
+                anterior = cliente.preventista_asignado or cliente.creado_por
+                if anterior and anterior.pk == destino.pk:
+                    continue
+
+                TransferenciaCliente.objects.create(
+                    cliente=cliente,
+                    cliente_nombre=str(cliente)[:320],
+                    responsable_anterior=anterior,
+                    responsable_anterior_nombre=_nombre_usuario(anterior),
+                    responsable_nuevo=destino,
+                    responsable_nuevo_nombre=_nombre_usuario(destino),
+                    realizado_por=request.user,
+                    realizado_por_nombre=_nombre_usuario(request.user),
+                )
+                cliente.preventista_asignado = destino
+                cliente.save(update_fields=["preventista_asignado", "fecha_actualizacion"])
+                transferidos += 1
+
+        if transferidos:
+            messages.success(
+                request,
+                f"Se transfirieron {transferidos} cliente(s) a {_nombre_usuario(destino)}.",
+            )
+        else:
+            messages.info(request, "Los clientes seleccionados ya pertenecían a ese preventista.")
+        return redirect(f"{reverse('transferir_clientes')}?origen={origen.pk}")
+
+    q = (request.GET.get("q") or "").strip()
+    origen_raw = (request.GET.get("origen") or "").strip()
+    origen = None
+    if origen_raw:
+        try:
+            origen_id = int(origen_raw)
+        except ValueError:
+            origen_id = None
+        if origen_id is not None:
+            origen = preventistas.filter(pk=origen_id).first()
+
+    clientes_qs = Cliente.objects.select_related("creado_por", "preventista_asignado").all()
+    if origen:
+        clientes_qs = clientes_qs.filter(
+            Q(preventista_asignado_id=origen.pk)
+            | Q(preventista_asignado__isnull=True, creado_por_id=origen.pk)
+        )
+    else:
+        clientes_qs = clientes_qs.none()
+
+    if q:
+        clientes_qs = clientes_qs.filter(
+            Q(nombres__icontains=q)
+            | Q(apellidos__icontains=q)
+            | Q(ci_nit__icontains=q)
+            | Q(telefono__icontains=q)
+        )
+
+    paginator = Paginator(clientes_qs.order_by("nombres", "apellidos", "pk"), 100)
+    page_obj = paginator.get_page(request.GET.get("page", 1))
+    for cliente in page_obj.object_list:
+        cliente.responsable_actual = cliente.preventista_asignado or cliente.creado_por
+
+    return render(
+        request,
+        "transferencias/transferir.html",
+        {
+            "page_obj": page_obj,
+            "clientes": page_obj.object_list,
+            "paginator": paginator,
+            "q": q,
+            "origen_id": origen.pk if origen else "",
+            "origen": origen,
+            "preventistas_origen": preventistas,
+            "preventistas_destino": (
+                preventistas.exclude(pk=origen.pk) if origen else preventistas
+            ),
+            "transferencias": TransferenciaCliente.objects.select_related(
+                "responsable_anterior", "responsable_nuevo", "realizado_por"
+            )[:50],
+        },
+    )
 
 
 @role_required("administrador", "supervisor", "preventista")
@@ -48,11 +192,7 @@ def listar_clientes(request):
     clientes_base = _clientes_qs_para_usuario(request.user)
 
     # Vendedores disponibles dentro del alcance del usuario
-    vendedor_ids = (
-        clientes_base.exclude(creado_por__isnull=True)
-        .values_list("creado_por_id", flat=True)
-        .distinct()
-    )
+    vendedor_ids = _vendedor_ids(clientes_base)
     vendedores = User.objects.filter(id__in=vendedor_ids).order_by("username")
 
     # Normalizar estado
@@ -70,7 +210,7 @@ def listar_clientes(request):
             if vendedor_id not in set(vendedor_ids):
                 vendedor_id = None
 
-    clientes = clientes_base.annotate(
+    clientes = clientes_base.select_related("creado_por", "preventista_asignado").annotate(
         tiene_pedidos=Count("pedidos")
     ).order_by("-fecha_creacion")
     if q:
@@ -87,7 +227,10 @@ def listar_clientes(request):
         clientes = clientes.filter(activo=False)
 
     if vendedor_id is not None:
-        clientes = clientes.filter(creado_por_id=vendedor_id)
+        clientes = clientes.filter(
+            Q(preventista_asignado_id=vendedor_id)
+            | Q(preventista_asignado__isnull=True, creado_por_id=vendedor_id)
+        )
 
     # PAGINACIÓN
     from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -123,11 +266,7 @@ def clientes_mapa(request):
     vendedor_raw = (request.GET.get("vendedor") or "").strip()
 
     clientes_base = _clientes_qs_para_usuario(request.user)
-    vendedor_ids = (
-        clientes_base.exclude(creado_por__isnull=True)
-        .values_list("creado_por_id", flat=True)
-        .distinct()
-    )
+    vendedor_ids = _vendedor_ids(clientes_base)
     vendedores = User.objects.filter(id__in=vendedor_ids).order_by("username")
 
     # Normalizar estado
@@ -164,11 +303,7 @@ def clientes_mapa_puntos(request):
     vendedor_raw = (request.GET.get("vendedor") or "").strip()
 
     clientes_base = _clientes_qs_para_usuario(request.user)
-    vendedor_ids = (
-        clientes_base.exclude(creado_por__isnull=True)
-        .values_list("creado_por_id", flat=True)
-        .distinct()
-    )
+    vendedor_ids = _vendedor_ids(clientes_base)
 
     # Normalizar estado
     if estado not in {"activo", "inactivo"}:
@@ -198,7 +333,10 @@ def clientes_mapa_puntos(request):
     elif estado == "inactivo":
         qs = qs.filter(activo=False)
     if vendedor_id is not None:
-        qs = qs.filter(creado_por_id=vendedor_id)
+        qs = qs.filter(
+            Q(preventista_asignado_id=vendedor_id)
+            | Q(preventista_asignado__isnull=True, creado_por_id=vendedor_id)
+        )
     qs = qs.order_by("nombres", "apellidos")
 
     puntos = []
@@ -250,6 +388,11 @@ def crear_cliente(request):
         "latitud": latitud or None,
         "longitud": longitud or None,
         "creado_por": request.user,
+        "preventista_asignado": (
+            request.user
+            if getattr(getattr(request.user, "perfil", None), "rol", None) == "preventista"
+            else None
+        ),
     }
     if foto_tienda:
         cliente_data["foto_tienda"] = foto_tienda
@@ -308,6 +451,11 @@ def obtener_cliente(request, id: int):
             "foto_url": cliente.foto_tienda.url if cliente.foto_tienda else "",
             "activo": cliente.activo,
             "creado_por": cliente.creado_por.get_full_name() or cliente.creado_por.username if cliente.creado_por else "Sistema",
+            "preventista_asignado": (
+                _nombre_usuario(cliente.preventista_asignado)
+                if cliente.preventista_asignado
+                else "Sin asignar"
+            ),
             "rol_creador": rol_creador,
             "fecha_creacion": _formatear_hora_local_pedido(cliente.fecha_creacion),
         }

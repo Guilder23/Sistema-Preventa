@@ -28,9 +28,16 @@
                 </li>
 
                 <li class="sidebar-item">
-                    <a href="{% url 'listar_clientes' %}" class="sidebar-link {% if 'cliente' in request.resolver_match.url_name %}active{% endif %}" title="Clientes">
+                    <a href="{% url 'listar_clientes' %}" class="sidebar-link {% if request.resolver_match.url_name == 'listar_clientes' or request.resolver_match.url_name == 'clientes_mapa' %}active{% endif %}" title="Clientes">
                         <i class="fas fa-users"></i>
                         <span>Clientes</span>
+                    </a>
+                </li>
+
+                <li class="sidebar-item">
+                    <a href="{% url 'transferir_clientes' %}" class="sidebar-link {% if request.resolver_match.url_name == 'transferir_clientes' %}active{% endif %}" title="Transferir clientes">
+                        <i class="fas fa-people-arrows-left-right"></i>
+                        <span>Transferir clientes</span>
                     </a>
                 </li>
 

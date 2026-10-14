@@ -30,6 +30,7 @@
                     $('#verClienteEstado').text(estadoLabel(!!data.activo));
                     
                     // Datos del registrador
+                    $('#verClienteResponsable').text(data.preventista_asignado || 'Sin asignar');
                     $('#verClienteRegistrador').text(data.creado_por || 'Sistema');
                     $('#verClienteRolRegistrador').text(data.rol_creador || 'Asignado');
                     $('#verClienteFechaRegistro').text(data.fecha_creacion || '—');

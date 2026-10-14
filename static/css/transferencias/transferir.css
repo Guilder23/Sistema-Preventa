@@ -1,0 +1,295 @@
+.transfer-page {
+    --transfer-ink: #172b3a;
+    --transfer-muted: #647681;
+    --transfer-line: #d7e0e5;
+    --transfer-accent: #087e78;
+    padding: 1.5rem;
+    color: var(--transfer-ink);
+}
+
+.transfer-header {
+    margin-bottom: 1.25rem;
+    padding: 1.4rem 1.6rem;
+    border-left: 5px solid var(--transfer-accent);
+    background: linear-gradient(105deg, #e7f3f1 0%, #f5f8f7 52%, #f4f1e9 100%);
+}
+
+.transfer-eyebrow {
+    margin: 0 0 .35rem;
+    color: var(--transfer-accent);
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.transfer-header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.transfer-header > div > p:last-child {
+    max-width: 720px;
+    margin: .45rem 0 0;
+    color: var(--transfer-muted);
+}
+
+.transfer-steps {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: .75rem;
+    margin-bottom: 1rem;
+    padding: .75rem;
+    border: 1px solid #dbe7ef;
+    border-radius: 8px;
+    background: linear-gradient(120deg, #f7fbff, #fff 55%, #f4faf7);
+    box-shadow: 0 3px 12px rgb(28 70 98 / 7%);
+}
+
+.transfer-step {
+    display: grid;
+    gap: .45rem;
+    min-width: 0;
+    margin: 0;
+    padding: .65rem .75rem;
+    border: 1px solid #e1eaf0;
+    border-radius: 6px;
+    background: rgb(255 255 255 / 88%);
+    color: var(--transfer-ink);
+}
+
+.transfer-step-label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    color: #486174;
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.transfer-step-icon {
+    display: inline-grid;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    background: #2874c8;
+    font-size: .7rem;
+}
+
+.transfer-destination-field .transfer-step-icon {
+    background: #168653;
+}
+
+.transfer-step select,
+.transfer-search-control input {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: .45rem .65rem;
+    border: 1px solid var(--transfer-line);
+    border-radius: 5px;
+    color: var(--transfer-ink);
+    background: #fff;
+}
+
+.transfer-step select:disabled {
+    color: #73818a;
+    background: #edf1f2;
+}
+
+.transfer-search-control {
+    display: flex;
+    min-width: 0;
+}
+
+.transfer-search-control input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.transfer-search-control button {
+    flex: 0 0 40px;
+    border: 1px solid var(--transfer-line);
+    border-left: 0;
+    border-radius: 0 5px 5px 0;
+    color: #2874c8;
+    background: #fff;
+}
+
+.transfer-form,
+.transfer-history {
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--transfer-line);
+    background: #fff;
+}
+
+.transfer-context {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: .8rem 1rem;
+    border-bottom: 1px solid var(--transfer-line);
+    background: #f6f9f8;
+}
+
+.transfer-context > div,
+.transfer-selection-summary {
+    display: grid;
+    gap: .2rem;
+}
+
+.transfer-context-label {
+    color: var(--transfer-muted);
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.transfer-context small,
+.transfer-selection-summary small {
+    color: var(--transfer-muted);
+}
+
+.transfer-clear {
+    color: var(--transfer-accent);
+    font-weight: 600;
+}
+
+.transfer-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--transfer-line);
+}
+
+.transfer-validation {
+    color: #a33b32;
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+.transfer-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.transfer-table {
+    min-width: 760px;
+    margin: 0;
+}
+
+.transfer-table thead th {
+    border-top: 0;
+    border-bottom: 1px solid var(--transfer-line);
+    color: var(--transfer-muted);
+    font-size: .75rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.transfer-table td {
+    vertical-align: middle;
+}
+
+.transfer-table td small {
+    display: block;
+    color: var(--transfer-muted);
+}
+
+.transfer-check {
+    width: 44px;
+    text-align: center;
+}
+
+.transfer-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--transfer-accent);
+}
+
+.transfer-status {
+    display: inline-block;
+    padding: .25rem .45rem;
+    border-radius: 3px;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+.transfer-status.is-active {
+    color: #166534;
+    background: #e6f4e9;
+}
+
+.transfer-status.is-inactive {
+    color: #8a3b32;
+    background: #f7e9e7;
+}
+
+.transfer-empty {
+    padding: 2rem !important;
+    color: var(--transfer-muted);
+    text-align: center;
+}
+
+.transfer-pagination,
+.transfer-section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: .85rem 1rem;
+    color: var(--transfer-muted);
+}
+
+.transfer-pagination a {
+    margin-left: .8rem;
+    color: var(--transfer-accent);
+    font-weight: 600;
+}
+
+.transfer-section-heading {
+    border-bottom: 1px solid var(--transfer-line);
+}
+
+.transfer-section-heading h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.transfer-section-heading span {
+    font-size: .8rem;
+}
+
+@media (max-width: 760px) {
+    .transfer-page {
+        padding: .75rem;
+    }
+
+    .transfer-header {
+        padding: 1rem;
+    }
+
+    .transfer-header h1 {
+        font-size: 1.3rem;
+    }
+
+    .transfer-steps {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .transfer-toolbar,
+    .transfer-context {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+}

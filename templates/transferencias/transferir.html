@@ -1,0 +1,155 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Transferir clientes{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/transferencias/transferir.css' %}">
+<link rel="stylesheet" href="{% static 'css/transferencias/modals/confirmar.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<main class="container-fluid transfer-page">
+    <header class="transfer-header">
+        <div>
+            <p class="transfer-eyebrow">Administración de cartera</p>
+            <h1><i class="fas fa-people-arrows-left-right"></i> Transferir clientes</h1>
+            <p>Elige quién entrega la cartera, selecciona los clientes y define quién los recibe. Los pedidos anteriores y el registro original no se modifican.</p>
+        </div>
+    </header>
+
+    <form id="transferFilters" method="get"></form>
+    <section class="transfer-steps" aria-label="Pasos de la transferencia">
+        <label class="transfer-step transfer-origin-field">
+            <span class="transfer-step-label"><b class="transfer-step-icon"><i class="fas fa-user"></i></b> 1. Preventista origen</span>
+            <select name="origen" form="transferFilters" required>
+                <option value="">Primero elige quién entrega</option>
+                {% for preventista in preventistas_origen %}
+                <option value="{{ preventista.id }}" {% if origen_id == preventista.id %}selected{% endif %}>
+                    {{ preventista.get_full_name|default:preventista.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="transfer-step transfer-search-field">
+            <span class="transfer-step-label"><b class="transfer-step-icon"><i class="fas fa-magnifying-glass"></i></b> 2. Buscar cliente</span>
+            <span class="transfer-search-control">
+                <input type="search" name="q" form="transferFilters" value="{{ q }}" placeholder="Nombre, CI/NIT o teléfono">
+                <button type="submit" form="transferFilters" aria-label="Buscar clientes" title="Buscar clientes"><i class="fas fa-magnifying-glass"></i></button>
+            </span>
+        </label>
+        <label class="transfer-step transfer-destination-field">
+            <span class="transfer-step-label"><b class="transfer-step-icon"><i class="fas fa-user-check"></i></b> 3. Preventista destino</span>
+            <select id="preventistaDestino" name="preventista_destino" form="transferForm" required {% if not origen %}disabled{% endif %}>
+                <option value="">Elige quién recibe</option>
+                {% for preventista in preventistas_destino %}
+                <option value="{{ preventista.id }}">{{ preventista.get_full_name|default:preventista.username }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </section>
+
+    <form method="post" class="transfer-form" id="transferForm">
+        {% csrf_token %}
+        <input type="hidden" name="preventista_origen" value="{{ origen_id }}">
+        <div class="transfer-context">
+            <div>
+                <span class="transfer-context-label">Cartera de origen</span>
+                <strong id="transferOriginName">{% if origen %}{{ origen.get_full_name|default:origen.username }}{% else %}Elige un origen arriba{% endif %}</strong>
+                <small>{% if origen %}{{ paginator.count }} cliente(s) en esta cartera{% else %}Selecciona el origen para cargar su cartera{% endif %}</small>
+            </div>
+            {% if q or origen_id %}<a class="transfer-clear" href="{% url 'transferir_clientes' %}">Limpiar búsqueda</a>{% endif %}
+        </div>
+
+        <div class="transfer-toolbar">
+            <div class="transfer-selection-summary">
+                <strong><span id="selectedCount">0</span> clientes seleccionados</strong>
+                <small>Marca únicamente los clientes que deseas mover.</small>
+                <span id="transferValidation" class="transfer-validation" role="alert" hidden>Selecciona al menos un cliente para continuar.</span>
+            </div>
+            <button type="submit" class="btn btn-primary" {% if not clientes or not preventistas_destino or not origen %}disabled{% endif %}>
+                <i class="fas fa-people-arrows-left-right"></i> Confirmar transferencia
+            </button>
+        </div>
+
+        <div class="transfer-table-wrap">
+            <table class="table transfer-table">
+                <thead>
+                    <tr>
+                        <th class="transfer-check"><input type="checkbox" id="selectPage" aria-label="Seleccionar clientes de esta página" {% if not origen %}disabled{% endif %}></th>
+                        <th>Cliente</th>
+                        <th>CI/NIT</th>
+                        <th>Origen actual</th>
+                        <th>Registrado por</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td class="transfer-check"><input type="checkbox" name="cliente_ids" value="{{ cliente.id }}" class="cliente-check" aria-label="Seleccionar {{ cliente }}"></td>
+                        <td>
+                            <strong class="transfer-client-name">{{ cliente }}</strong>
+                            {% if cliente.telefono %}<small>{{ cliente.telefono }}</small>{% endif %}
+                        </td>
+                        <td>{{ cliente.ci_nit|default:'—' }}</td>
+                        <td>{% if cliente.responsable_actual %}{{ cliente.responsable_actual.get_full_name|default:cliente.responsable_actual.username }}{% else %}Sin asignar{% endif %}</td>
+                        <td>{% if cliente.creado_por %}{{ cliente.creado_por.get_full_name|default:cliente.creado_por.username }}{% else %}Sistema{% endif %}</td>
+                        <td>
+                            {% if cliente.activo %}<span class="transfer-status is-active">Activo</span>
+                            {% else %}<span class="transfer-status is-inactive">Inactivo</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="transfer-empty">
+                        {% if origen %}No hay clientes de este preventista que coincidan con la búsqueda.{% else %}Selecciona un preventista origen para ver y elegir su cartera.{% endif %}
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    {% if origen and paginator.num_pages > 1 %}
+    <nav class="transfer-pagination" aria-label="Paginación de clientes">
+        <span>Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} clientes</span>
+        <div>
+            {% if page_obj.has_previous %}<a href="?origen={{ origen_id }}&q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+            {% if page_obj.has_next %}<a href="?origen={{ origen_id }}&q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+        </div>
+    </nav>
+    {% endif %}
+
+    <section class="transfer-history">
+        <div class="transfer-section-heading">
+            <h2>Movimientos recientes</h2>
+            <span>Últimos 50 traspasos</span>
+        </div>
+        <div class="transfer-table-wrap">
+            <table class="table transfer-table">
+                <thead><tr><th>Fecha</th><th>Cliente</th><th>Responsable anterior</th><th>Responsable nuevo</th><th>Realizado por</th></tr></thead>
+                <tbody>
+                    {% for movimiento in transferencias %}
+                    <tr>
+                        <td>{{ movimiento.fecha|date:'d/m/Y H:i' }}</td>
+                        <td>{{ movimiento.cliente_nombre }}</td>
+                        <td>{{ movimiento.responsable_anterior_nombre|default:'Sin asignar' }}</td>
+                        <td>{{ movimiento.responsable_nuevo_nombre }}</td>
+                        <td>{{ movimiento.realizado_por_nombre|default:'Sistema' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="transfer-empty">Todavía no hay traspasos registrados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+{% include 'transferencias/modals/confirmar.html' %}
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/transferencias/transferir.js' %}"></script>
+<script src="{% static 'js/transferencias/modals/confirmar.js' %}"></script>
+{% endblock %}

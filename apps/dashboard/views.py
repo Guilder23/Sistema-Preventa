@@ -41,7 +41,11 @@ def dashboard(request):
     # Clientes: admin ve todos; preventista solo los suyos
     clientes_qs = Cliente.objects.filter(activo=True)
     if not user.is_superuser and perfil and perfil.rol == "preventista":
-        clientes_qs = clientes_qs.filter(creado_por=user)
+        from django.db.models import Q
+        clientes_qs = clientes_qs.filter(
+            Q(preventista_asignado=user)
+            | Q(preventista_asignado__isnull=True, creado_por=user)
+        )
     total_clientes = clientes_qs.count()
 
     # Pedidos: admin ve todos; preventista solo los suyos; repartidor solo los de sus preventistas

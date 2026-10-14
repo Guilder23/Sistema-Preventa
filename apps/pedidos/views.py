@@ -19,6 +19,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from zoneinfo import ZoneInfo
 
 from apps.clientes.models import Cliente
+from apps.clientes.access import clientes_visibles_para_usuario
 from apps.productos.models import Producto
 from apps.usuarios.decorators import role_required
 from apps.usuarios.models import PerfilUsuario
@@ -143,21 +144,7 @@ def _resumen_reposicion_desde_items(items_qs):
 
 
 def _clientes_para_usuario(user):
-    perfil = getattr(user, "perfil", None)
-    qs = Cliente.objects.filter(activo=True)
-    if user.is_superuser:
-        return qs
-    if perfil and perfil.rol == "administrador":
-        return qs
-    if perfil and perfil.rol == "supervisor":
-        preventistas_ids = PerfilUsuario.objects.filter(
-            rol="preventista",
-            supervisor=user,
-            activo=True,
-            usuario__is_active=True,
-        ).values_list("usuario_id", flat=True)
-        return qs.filter(Q(creado_por=user) | Q(creado_por_id__in=preventistas_ids))
-    return qs.filter(creado_por=user)
+    return clientes_visibles_para_usuario(user, activos=True)
 
 
 def _construir_datos_pedidos_form(user):
@@ -505,7 +492,7 @@ def crear_pedido(request):
                 messages.error(request, f'No puedes vender "{producto.nombre}" porque su precio es 0')
                 return redirect("crear_pedido")
 
-        preventista_asignado = cliente.creado_por or request.user
+        preventista_asignado = cliente.preventista_asignado or request.user
         pedido = Pedido.objects.create(
             cliente=cliente,
             preventista=preventista_asignado,

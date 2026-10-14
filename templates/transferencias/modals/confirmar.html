@@ -1,0 +1,28 @@
+<div class="modal fade" id="modalConfirmarTransferencia" tabindex="-1" role="dialog" aria-labelledby="modalConfirmarTransferenciaTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content transfer-confirm-modal">
+            <div class="modal-header">
+                <div>
+                    <p class="transfer-modal-eyebrow">Revisión final</p>
+                    <h2 class="modal-title" id="modalConfirmarTransferenciaTitulo">Confirmar transferencia</h2>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p class="transfer-modal-intro">Verifica el resumen antes de cambiar la cartera asignada.</p>
+                <dl class="transfer-modal-summary">
+                    <div><dt>Preventista origen</dt><dd id="confirmTransferOrigin">—</dd></div>
+                    <div><dt>Preventista destino</dt><dd id="confirmTransferDestination">—</dd></div>
+                    <div><dt>Clientes a transferir</dt><dd id="confirmTransferCount">0</dd></div>
+                </dl>
+                <div class="transfer-modal-clients-heading">Clientes seleccionados</div>
+                <ul id="confirmTransferClients" class="transfer-modal-clients"></ul>
+                <p class="transfer-modal-note"><i class="fas fa-circle-info"></i> El creador del cliente y sus pedidos anteriores no cambiarán.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-dismiss="modal">Volver a revisar</button>
+                <button type="button" class="btn btn-primary" id="confirmTransferButton"><i class="fas fa-check"></i> Confirmar y transferir</button>
+            </div>
+        </div>
+    </div>
+</div>
