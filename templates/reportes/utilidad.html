@@ -1,0 +1,166 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block titulo %}Utilidad de pedidos{% endblock %}
+
+{% block estilos_extra %}
+<link rel="stylesheet" href="{% static 'css/reportes/reportes.css' %}">
+<link rel="stylesheet" href="{% static 'css/reportes/utilidad.css' %}">
+{% endblock %}
+
+{% block contenido %}
+<main class="container-fluid utilidad-page">
+    <header class="utilidad-header">
+        <div>
+            <p class="utilidad-eyebrow">Análisis de ventas</p>
+            <h1><i class="fas fa-chart-line"></i> Utilidad de pedidos</h1>
+            <p>Ventas netas, costo histórico y utilidad bruta de pedidos entregados.</p>
+        </div>
+    </header>
+
+    <nav class="reportes-tabs utilidad-tabs mb-3" aria-label="Pestañas de reportes">
+        <a class="reportes-tab-btn" href="{% url 'reportes_inicio' %}?tipo=general"><i class="fas fa-chart-bar"></i> General</a>
+        <a class="reportes-tab-btn" href="{% url 'reportes_inicio' %}?tipo=despacho"><i class="fas fa-truck"></i> Despacho</a>
+        <a class="reportes-tab-btn" href="{% url 'reportes_inicio' %}?tipo=devoluciones"><i class="fas fa-undo"></i> Devoluciones</a>
+        <a class="reportes-tab-btn active" href="{% url 'reporte_utilidad' %}" aria-current="page"><i class="fas fa-chart-line"></i> Utilidad</a>
+    </nav>
+
+    <form method="get" class="utilidad-filters" id="utilidadFilters">
+        <label>
+            <span>Período</span>
+            <select name="periodo" id="utilidadPeriodo" class="form-control">
+                <option value="dia" {% if periodo == 'dia' %}selected{% endif %}>Día de hoy</option>
+                <option value="semana" {% if periodo == 'semana' %}selected{% endif %}>Esta semana</option>
+                <option value="mes" {% if periodo == 'mes' %}selected{% endif %}>Este mes</option>
+                <option value="personalizado" {% if periodo == 'personalizado' %}selected{% endif %}>Rango personalizado</option>
+            </select>
+        </label>
+        <label>
+            <span>Preventista</span>
+            <select name="preventista" class="form-control">
+                <option value="">Todos</option>
+                {% for usuario in preventistas %}
+                <option value="{{ usuario.id }}" {% if preventista == usuario.id|stringformat:'s' %}selected{% endif %}>
+                    {{ usuario.get_full_name|default:usuario.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Desde</span>
+            <input type="date" name="desde" id="utilidadDesde" class="form-control" value="{{ desde }}" {% if periodo != 'personalizado' %}disabled{% else %}required{% endif %}>
+        </label>
+        <label>
+            <span>Hasta</span>
+            <input type="date" name="hasta" id="utilidadHasta" class="form-control" value="{{ hasta }}" {% if periodo != 'personalizado' %}disabled{% else %}required{% endif %}>
+        </label>
+        <a class="btn btn-danger btn-icon-only utilidad-pdf-action" href="{{ pdf_url }}" title="Descargar reporte PDF" aria-label="Descargar reporte PDF">
+            <i class="fas fa-file-pdf" aria-hidden="true"></i>
+        </a>
+    </form>
+
+    {% if error_fechas %}
+    <div class="alert alert-danger" role="alert">{{ error_fechas }}</div>
+    {% endif %}
+
+    <p class="utilidad-period-label">
+        Período de ventas: {{ fecha_inicio_aplicada|date:'d/m/Y' }} al {{ fecha_fin_aplicada|date:'d/m/Y' }}
+    </p>
+
+    <section class="utilidad-summary" aria-label="Resumen de utilidad">
+        <article class="utilidad-metric metric-sales">
+            <span>Venta neta</span>
+            <strong>Bs {{ venta_neta_total|floatformat:2 }}</strong>
+            <small>{{ total_pedidos }} pedido(s) vendido(s), devoluciones descontadas</small>
+        </article>
+        <article class="utilidad-metric metric-cost">
+            <span>Costo histórico</span>
+            <strong>Bs {{ costo_total|floatformat:2 }}</strong>
+            <small>Venta de pedidos con costo: Bs {{ venta_con_costo|floatformat:2 }}</small>
+        </article>
+        <article class="utilidad-metric metric-profit">
+            <span>Utilidad bruta calculable</span>
+            <strong>Bs {{ utilidad_total|floatformat:2 }}</strong>
+            <small>Calculada sobre {{ pedidos_con_costo }} pedido(s) con costo completo</small>
+        </article>
+        <article class="utilidad-metric metric-missing">
+            <span>Sin costo histórico</span>
+            <strong>{{ pedidos_sin_costo }}</strong>
+            <small>No se incluyen en el total de utilidad</small>
+        </article>
+    </section>
+
+    {% if pedidos_sin_costo %}
+    <div class="alert alert-warning utilidad-warning" role="status">
+        Hay pedidos antiguos sin costo unitario guardado. Su venta neta se muestra, pero no se estima su utilidad con el precio de compra actual para evitar alterar el historial.
+    </div>
+    {% endif %}
+
+    <section class="utilidad-table-section">
+        <div class="utilidad-table-heading">
+            <h2>Detalle de pedidos vendidos</h2>
+            <span>{{ total_pedidos }} resultado(s)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover utilidad-table">
+                <thead>
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Fecha de venta</th>
+                        <th>Preventista</th>
+                        <th>Cliente</th>
+                        <th class="text-right">Venta neta</th>
+                        <th class="text-right">Costo</th>
+                        <th class="text-right">Utilidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in page_obj %}
+                    <tr>
+                        <td>#{{ fila.pedido.id }}</td>
+                        <td>{{ fila.pedido.fecha_vendido|date:'d/m/Y H:i' }}</td>
+                        <td>{{ fila.pedido.preventista.get_full_name|default:fila.pedido.preventista.username }}</td>
+                        <td>{{ fila.pedido.cliente }}</td>
+                        <td class="text-right">Bs {{ fila.venta_neta|floatformat:2 }}</td>
+                        {% if fila.costo_completo %}
+                        <td class="text-right">Bs {{ fila.costo|floatformat:2 }}</td>
+                        <td class="text-right font-weight-bold {% if fila.utilidad < 0 %}text-danger{% else %}text-success{% endif %}">Bs {{ fila.utilidad|floatformat:2 }}</td>
+                        {% else %}
+                        <td class="text-right text-muted">No disponible</td>
+                        <td class="text-right text-muted">No calculable</td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">No hay pedidos vendidos en este período.</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="utilidad-totals">
+                        <th colspan="4">Totales (costo y utilidad calculables sobre pedidos con costo completo)</th>
+                        <th class="text-right">Bs {{ venta_neta_total|floatformat:2 }}</th>
+                        <th class="text-right">Bs {{ costo_total|floatformat:2 }}</th>
+                        <th class="text-right">Bs {{ utilidad_total|floatformat:2 }}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% if page_obj.has_other_pages %}
+        <nav class="utilidad-pagination" aria-label="Paginación de utilidad">
+            {% if page_obj.has_previous %}
+            <a href="?periodo={{ periodo }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+            {% else %}<span class="disabled">Anterior</span>{% endif %}
+            <span>Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?periodo={{ periodo }}&preventista={{ preventista }}&desde={{ desde }}&hasta={{ hasta }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+            {% else %}<span class="disabled">Siguiente</span>{% endif %}
+        </nav>
+        {% endif %}
+    </section>
+
+    <p class="utilidad-footnote">El costo se toma del precio de compra por unidad del catálogo al registrar el pedido y queda guardado en su detalle. La utilidad es bruta, no descuenta gastos operativos; las devoluciones sin reposición conservan su costo como pérdida de producto.</p>
+</main>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{% static 'js/reportes/utilidad.js' %}"></script>
+{% endblock %}

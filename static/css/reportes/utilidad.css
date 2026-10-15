@@ -1,0 +1,239 @@
+.utilidad-page {
+    --utilidad-ink: #20323e;
+    --utilidad-muted: #687b86;
+    --utilidad-line: #dce5e8;
+    --utilidad-teal: #087e78;
+    padding: 1.5rem;
+    color: var(--utilidad-ink);
+}
+
+.utilidad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1.2rem 1.4rem;
+    border-left: 4px solid var(--utilidad-teal);
+    background: var(--color-secundario, #111111);
+    color: #fff;
+}
+
+.utilidad-header h1 {
+    margin: 0;
+    font-size: 1.55rem;
+    font-weight: 700;
+}
+
+.utilidad-header h1 i {
+    margin-right: .35rem;
+    color: var(--utilidad-teal);
+}
+
+.utilidad-header h1 {
+    color: #fff;
+}
+
+.utilidad-header p:last-child {
+    margin: .35rem 0 0;
+    color: rgb(255 255 255 / 82%);
+}
+
+.utilidad-eyebrow {
+    margin: 0 0 .25rem;
+    color: #48c5bb;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.utilidad-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(140px, 1fr)) auto;
+    align-items: end;
+    gap: .75rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--utilidad-line);
+    background: #fff;
+}
+
+.utilidad-filters label {
+    display: grid;
+    gap: .35rem;
+    margin: 0;
+    color: var(--utilidad-muted);
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.utilidad-period-label {
+    margin: .3rem 0 .8rem;
+    color: var(--utilidad-muted);
+    font-size: .85rem;
+}
+
+.utilidad-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.utilidad-metric {
+    display: grid;
+    align-content: start;
+    gap: .4rem;
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--utilidad-line);
+    border-top: 3px solid #2874c8;
+    background: #fff;
+}
+
+.utilidad-metric span {
+    color: var(--utilidad-muted);
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.utilidad-metric strong {
+    overflow-wrap: anywhere;
+    font-size: 1.35rem;
+    line-height: 1.2;
+}
+
+.utilidad-metric small {
+    color: var(--utilidad-muted);
+    line-height: 1.4;
+}
+
+.metric-cost {
+    border-top-color: #d38b18;
+}
+
+.metric-profit {
+    border-top-color: #168653;
+}
+
+.metric-missing {
+    border-top-color: #a44a3f;
+}
+
+.utilidad-warning {
+    margin-bottom: 1rem;
+}
+
+.utilidad-table-section {
+    border: 1px solid var(--utilidad-line);
+    background: #fff;
+}
+
+.utilidad-table-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: .9rem 1rem;
+    border-bottom: 1px solid var(--utilidad-line);
+}
+
+.utilidad-table-heading h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.utilidad-table-heading span {
+    color: var(--utilidad-muted);
+    font-size: .82rem;
+}
+
+.utilidad-table {
+    min-width: 760px;
+    margin: 0;
+}
+
+.utilidad-table thead th {
+    border-top: 0;
+    color: var(--utilidad-muted);
+    font-size: .74rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.utilidad-table td {
+    vertical-align: middle;
+}
+
+.utilidad-table tfoot {
+    border-top: 2px solid var(--utilidad-line);
+    background: #eef3f4;
+}
+
+.utilidad-table tfoot th {
+    padding: .75rem .5rem;
+    color: var(--utilidad-ink);
+    font-size: .82rem;
+    vertical-align: middle;
+}
+
+.utilidad-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: .85rem;
+    border-top: 1px solid var(--utilidad-line);
+}
+
+.utilidad-pagination a {
+    color: var(--utilidad-teal);
+    font-weight: 600;
+}
+
+.utilidad-pagination .disabled {
+    color: #9aa7ad;
+}
+
+.utilidad-footnote {
+    margin: .75rem 0 0;
+    color: var(--utilidad-muted);
+    font-size: .8rem;
+}
+
+@media (max-width: 900px) {
+    .utilidad-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .utilidad-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .utilidad-page {
+        padding: .75rem;
+    }
+
+    .utilidad-header {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .utilidad-header h1 {
+        font-size: 1.3rem;
+    }
+
+    .utilidad-filters,
+    .utilidad-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+.utilidad-pdf-action {
+    align-self: end;
+}

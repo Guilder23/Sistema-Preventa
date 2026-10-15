@@ -72,6 +72,9 @@
                 <button type="button" class="reportes-tab-btn {% if tipo == 'devoluciones' %}active{% endif %}" data-tab="devoluciones">
                     <i class="fas fa-undo"></i> Devoluciones
                 </button>
+                <a class="reportes-tab-btn" href="{% url 'reporte_utilidad' %}">
+                    <i class="fas fa-chart-line"></i> Utilidad
+                </a>
             </div>
 
             {# Filtros #}

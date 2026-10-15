@@ -12,6 +12,7 @@
 }
 
 .reportes-tab-btn {
+    flex: 0 0 auto;
     border: 0;
     border-radius: 999px;
     padding: 0.35rem 0.9rem;
@@ -24,6 +25,7 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    text-decoration: none;
 }
 
 .reportes-tab-btn:hover {
@@ -147,6 +149,31 @@
 }
 
 @media (max-width: 768px) {
+    .reportes-tabs {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+        scrollbar-width: thin;
+    }
+
+    .reportes-tabs::-webkit-scrollbar {
+        height: 5px;
+    }
+
+    .reportes-tabs::-webkit-scrollbar-thumb {
+        border-radius: 5px;
+        background: var(--color-borde);
+    }
+
+    .reportes-tab-btn {
+        white-space: nowrap;
+    }
+
     .report-card {
         padding: 0.9rem 0.9rem;
     }

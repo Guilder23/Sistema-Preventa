@@ -70,6 +70,7 @@ class DetallePedido(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
+    costo_unitario = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     precio_ajustado = models.BooleanField(default=False)
 

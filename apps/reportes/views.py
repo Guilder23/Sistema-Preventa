@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime
-from decimal import Decimal
+from datetime import date, datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO
 from urllib.parse import quote
 
@@ -574,6 +574,372 @@ def reportes_inicio(request):
             "subtotal_anulados": subtotal_anulados,
         },
     )
+
+
+@login_required
+def reporte_utilidad(request):
+    from django.contrib.auth.models import User
+    from django.core.paginator import Paginator
+    from apps.pedidos.models import DevolucionItem, Pedido
+
+    hoy = timezone.localdate()
+    periodo = (request.GET.get("periodo") or "mes").strip().lower()
+    if periodo not in {"dia", "semana", "mes", "personalizado"}:
+        periodo = "mes"
+
+    fecha_desde_raw = (request.GET.get("desde") or "").strip()
+    fecha_hasta_raw = (request.GET.get("hasta") or "").strip()
+    fecha_desde = None
+    fecha_hasta = None
+    error_fechas = ""
+
+    if periodo == "dia":
+        fecha_desde = fecha_hasta = hoy
+    elif periodo == "semana":
+        fecha_desde = hoy - timedelta(days=hoy.weekday())
+        fecha_hasta = fecha_desde + timedelta(days=6)
+    elif periodo == "mes":
+        fecha_desde = hoy.replace(day=1)
+        if fecha_desde.month == 12:
+            primer_dia_siguiente = fecha_desde.replace(year=fecha_desde.year + 1, month=1)
+        else:
+            primer_dia_siguiente = fecha_desde.replace(month=fecha_desde.month + 1)
+        fecha_hasta = primer_dia_siguiente - timedelta(days=1)
+    else:
+        try:
+            fecha_desde = parse_date(fecha_desde_raw) if fecha_desde_raw else None
+        except (TypeError, ValueError):
+            fecha_desde = None
+        try:
+            fecha_hasta = parse_date(fecha_hasta_raw) if fecha_hasta_raw else None
+        except (TypeError, ValueError):
+            fecha_hasta = None
+        if not fecha_desde or not fecha_hasta:
+            error_fechas = "Para el rango personalizado, indica una fecha de inicio y una fecha de fin válidas."
+        elif fecha_desde > fecha_hasta:
+            error_fechas = "La fecha de inicio no puede ser posterior a la fecha de fin."
+
+    pedidos_base = _pedido_qs_para_usuario(request.user).filter(
+        estado=Pedido.ESTADO_VENDIDO,
+        fecha_vendido__isnull=False,
+    )
+    preventista_ids = pedidos_base.order_by().values_list("preventista_id", flat=True).distinct()
+    preventistas = User.objects.filter(id__in=preventista_ids).order_by("first_name", "last_name", "username")
+
+    preventista_raw = (request.GET.get("preventista") or "").strip()
+    preventista_id = ""
+    if preventista_raw:
+        try:
+            candidate_id = int(preventista_raw)
+        except ValueError:
+            candidate_id = None
+        if candidate_id is not None and preventistas.filter(pk=candidate_id).exists():
+            preventista_id = str(candidate_id)
+            pedidos_base = pedidos_base.filter(preventista_id=candidate_id)
+
+    if error_fechas:
+        pedidos_base = pedidos_base.none()
+    else:
+        pedidos_base = pedidos_base.filter(
+            fecha_vendido__date__gte=fecha_desde,
+            fecha_vendido__date__lte=fecha_hasta,
+        )
+
+    pedidos = list(
+        pedidos_base.select_related("cliente", "preventista")
+        .prefetch_related("detalles")
+        .order_by("-fecha_vendido", "-id")
+    )
+    pedido_ids = [pedido.pk for pedido in pedidos]
+    cantidades_devuelta = defaultdict(int)
+    if pedido_ids:
+        devoluciones = DevolucionItem.objects.filter(
+            detalle_pedido__pedido_id__in=pedido_ids,
+            detalle_pedido__isnull=False,
+        ).values_list("detalle_pedido_id", "cantidad_devuelta")
+        for detalle_id, cantidad in devoluciones:
+            cantidad = int(cantidad or 0)
+            cantidades_devuelta[detalle_id] += cantidad
+
+    centavo = Decimal("0.01")
+    filas = []
+    venta_neta_total = Decimal("0.00")
+    venta_con_costo = Decimal("0.00")
+    costo_total = Decimal("0.00")
+    utilidad_total = Decimal("0.00")
+    pedidos_con_costo = 0
+    pedidos_sin_costo = 0
+
+    for pedido in pedidos:
+        venta_pedido = Decimal("0.00")
+        costo_pedido = Decimal("0.00")
+        costo_completo = bool(pedido.detalles.all())
+
+        for detalle in pedido.detalles.all():
+            cantidad_pedida = int(detalle.cantidad or 0)
+            devuelta = min(cantidad_pedida, cantidades_devuelta[detalle.pk])
+            cantidad_vendida = cantidad_pedida - devuelta
+            precio = detalle.precio_unitario or Decimal("0.00")
+            venta_pedido += precio * Decimal(cantidad_vendida)
+
+            if detalle.costo_unitario is None:
+                costo_completo = False
+            else:
+                cantidad_con_costo = cantidad_pedida - devuelta
+                costo_pedido += detalle.costo_unitario * Decimal(cantidad_con_costo)
+
+        venta_pedido = venta_pedido.quantize(centavo, rounding=ROUND_HALF_UP)
+        costo_pedido = costo_pedido.quantize(centavo, rounding=ROUND_HALF_UP)
+        venta_neta_total += venta_pedido
+
+        if costo_completo:
+            utilidad_pedido = (venta_pedido - costo_pedido).quantize(centavo, rounding=ROUND_HALF_UP)
+            pedidos_con_costo += 1
+            venta_con_costo += venta_pedido
+            costo_total += costo_pedido
+            utilidad_total += utilidad_pedido
+        else:
+            utilidad_pedido = None
+            pedidos_sin_costo += 1
+
+        filas.append(
+            {
+                "pedido": pedido,
+                "venta_neta": venta_pedido,
+                "costo": costo_pedido if costo_completo else None,
+                "utilidad": utilidad_pedido,
+                "costo_completo": costo_completo,
+            }
+        )
+
+    pdf_query = request.GET.copy()
+    pdf_query.pop("page", None)
+    pdf_query["formato"] = "pdf"
+    contexto = {
+            "filas": filas,
+            "periodo": periodo,
+            "desde": fecha_desde_raw if periodo == "personalizado" else fecha_desde.isoformat(),
+            "hasta": fecha_hasta_raw if periodo == "personalizado" else fecha_hasta.isoformat(),
+            "fecha_inicio_aplicada": fecha_desde,
+            "fecha_fin_aplicada": fecha_hasta,
+            "error_fechas": error_fechas,
+            "preventistas": preventistas,
+            "preventista": preventista_id,
+            "total_pedidos": len(pedidos),
+            "venta_neta_total": venta_neta_total.quantize(centavo, rounding=ROUND_HALF_UP),
+            "venta_con_costo": venta_con_costo.quantize(centavo, rounding=ROUND_HALF_UP),
+            "costo_total": costo_total.quantize(centavo, rounding=ROUND_HALF_UP),
+            "utilidad_total": utilidad_total.quantize(centavo, rounding=ROUND_HALF_UP),
+            "pedidos_con_costo": pedidos_con_costo,
+            "pedidos_sin_costo": pedidos_sin_costo,
+            "pdf_url": f"{reverse('reporte_utilidad')}?{pdf_query.urlencode()}",
+    }
+    if request.GET.get("formato") == "pdf" and not error_fechas:
+        return _reporte_utilidad_pdf(request, contexto)
+
+    paginator = Paginator(filas, 20)
+    contexto["page_obj"] = paginator.get_page(request.GET.get("page", 1))
+    contexto["paginator"] = paginator
+    return render(request, "reportes/utilidad.html", contexto)
+
+
+def _reporte_utilidad_pdf(request, contexto):
+    from xml.sax.saxutils import escape
+
+    def formato_dinero(valor):
+        return f"Bs {valor:.2f}"
+
+    def dibujar_encabezado_pie(canvas, documento):
+        canvas.saveState()
+        ancho, alto = A4
+        rojo = colors.HexColor("#d7262b")
+        oscuro = colors.HexColor("#332a2a")
+        alto_pie = 14 * mm
+        canvas.setFillColor(rojo)
+        canvas.rect(0, 0, ancho, alto_pie, stroke=0, fill=1)
+        canvas.setFillColor(colors.white)
+        canvas.setFont("Helvetica", 9)
+        canvas.drawString(16 * mm, 5 * mm, "Sistema Preventa")
+        canvas.drawRightString(ancho - 16 * mm, 5 * mm, "Reporte de utilidad")
+        canvas.setFillColor(rojo)
+        canvas.rect(0, alto - 22 * mm, ancho, 22 * mm, stroke=0, fill=1)
+        canvas.setFillColor(oscuro)
+        path = canvas.beginPath()
+        y = alto - 24 * mm
+        path.moveTo(78 * mm, y)
+        path.lineTo(120 * mm, y)
+        path.lineTo(132 * mm, y + 8 * mm)
+        path.lineTo(90 * mm, y + 8 * mm)
+        path.close()
+        canvas.drawPath(path, stroke=0, fill=1)
+        canvas.restoreState()
+
+    buffer = BytesIO()
+    documento = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        title="Reporte de utilidad de pedidos",
+        leftMargin=16 * mm,
+        rightMargin=16 * mm,
+        topMargin=28 * mm,
+        bottomMargin=18 * mm,
+    )
+    estilos = getSampleStyleSheet()
+    rojo = colors.HexColor("#d7262b")
+    gris = colors.HexColor("#333333")
+    gris_muted = colors.HexColor("#6c757d")
+    gris_cabecera = colors.HexColor("#e9ecef")
+    zebra = colors.HexColor("#f8f9fa")
+    estilo_titulo = ParagraphStyle(
+        "utilidad_title",
+        parent=estilos["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        textColor=rojo,
+        spaceAfter=2,
+    )
+    estilo_normal = ParagraphStyle(
+        "utilidad_normal",
+        parent=estilos["Normal"],
+        fontName="Helvetica",
+        fontSize=9,
+        textColor=gris,
+        leading=12,
+    )
+    estilo_muted = ParagraphStyle(
+        "utilidad_muted",
+        parent=estilos["Normal"],
+        fontName="Helvetica",
+        fontSize=8,
+        textColor=gris_muted,
+        leading=11,
+    )
+    estilo_celda = ParagraphStyle(
+        "utilidad_cell",
+        parent=estilo_normal,
+        fontSize=7,
+        leading=9,
+    )
+
+    historia = []
+    ruta_logo = settings.BASE_DIR / "static" / "img" / "logoAlmacen.png"
+    logo = Image(str(ruta_logo), width=22 * mm, height=22 * mm) if ruta_logo.exists() else Spacer(1, 1)
+    encabezado = Table(
+        [[
+            [logo, Paragraph("<b>Distribuidora JEREMY</b>", estilo_normal), Paragraph("Reporte de utilidad", estilo_muted)],
+            [Paragraph("REPORTE DE UTILIDAD", estilo_titulo), Paragraph(f"Generado: {escape(request.user.get_username())}", estilo_normal)],
+        ]],
+        colWidths=[95 * mm, 83 * mm],
+        style=TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ]),
+    )
+    historia.extend([encabezado, Spacer(1, 10)])
+
+    preventista_nombre = "Todos"
+    if contexto["preventista"]:
+        usuario = contexto["preventistas"].filter(pk=contexto["preventista"]).first()
+        if usuario:
+            preventista_nombre = usuario.get_full_name() or usuario.username
+    rango = (
+        f"{contexto['fecha_inicio_aplicada'].strftime('%d/%m/%Y')} - "
+        f"{contexto['fecha_fin_aplicada'].strftime('%d/%m/%Y')}"
+    )
+    filtros_y_totales = Table(
+        [
+            [Paragraph("FILTROS APLICADOS", estilo_muted), Paragraph("RESUMEN", estilo_muted)],
+            [
+                Paragraph(f"Período de venta: {rango}<br/>Preventista: {escape(preventista_nombre)}", estilo_normal),
+                Paragraph(
+                    f"Pedidos vendidos: {contexto['total_pedidos']}<br/>"
+                    f"Pedidos con costo: {contexto['pedidos_con_costo']}<br/>"
+                    f"Pedidos sin costo: {contexto['pedidos_sin_costo']}<br/>"
+                    f"Venta neta total: {formato_dinero(contexto['venta_neta_total'])}<br/>"
+                    f"Venta con costo: {formato_dinero(contexto['venta_con_costo'])}<br/>"
+                    f"Costo histórico: {formato_dinero(contexto['costo_total'])}<br/>"
+                    f"Utilidad bruta: {formato_dinero(contexto['utilidad_total'])}",
+                    estilo_normal,
+                ),
+            ],
+        ],
+        colWidths=[78 * mm, 100 * mm],
+        style=TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("BACKGROUND", (0, 0), (-1, 0), gris_cabecera),
+            ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#dee2e6")),
+            ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#dee2e6")),
+            ("LEFTPADDING", (0, 0), (-1, -1), 7),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]),
+    )
+    historia.extend([filtros_y_totales, Spacer(1, 12)])
+
+    tabla = [["Pedido", "F. venta", "Preventista", "Cliente", "Venta neta", "Costo", "Utilidad"]]
+    for fila in contexto["filas"]:
+        pedido = fila["pedido"]
+        preventista = pedido.preventista.get_full_name() or pedido.preventista.username
+        cliente = str(pedido.cliente)
+        tabla.append([
+            f"#{pedido.pk}",
+            _formatear_fecha_hora_local(pedido.fecha_vendido),
+            Paragraph(escape(preventista), estilo_celda),
+            Paragraph(escape(cliente), estilo_celda),
+            formato_dinero(fila["venta_neta"]),
+            formato_dinero(fila["costo"]) if fila["costo_completo"] else "No disponible",
+            formato_dinero(fila["utilidad"]) if fila["costo_completo"] else "No calculable",
+        ])
+
+    if not contexto["filas"]:
+        tabla.append([Paragraph("No hay pedidos vendidos en este período.", estilo_muted), "", "", "", "", "", ""])
+    tabla.append([
+        "Totales: venta neta completa; costo/utilidad con costo histórico",
+        "",
+        "",
+        "",
+        formato_dinero(contexto["venta_neta_total"]),
+        formato_dinero(contexto["costo_total"]),
+        formato_dinero(contexto["utilidad_total"]),
+    ])
+    fila_totales = len(tabla) - 1
+    tabla_pdf = Table(
+        tabla,
+        colWidths=[13 * mm, 23 * mm, 30 * mm, 36 * mm, 26 * mm, 24 * mm, 26 * mm],
+        repeatRows=1,
+    )
+    tabla_pdf.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), gris_cabecera),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 7),
+        ("FONTSIZE", (0, 1), (-1, -1), 7),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd4da")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, zebra]),
+        ("ALIGN", (4, 1), (-1, -1), "RIGHT"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("SPAN", (0, fila_totales), (3, fila_totales)),
+        ("BACKGROUND", (0, fila_totales), (-1, fila_totales), gris_cabecera),
+        ("FONTNAME", (0, fila_totales), (-1, fila_totales), "Helvetica-Bold"),
+        ("ALIGN", (4, fila_totales), (-1, fila_totales), "RIGHT"),
+    ]))
+    historia.append(tabla_pdf)
+    historia.append(Spacer(1, 8))
+    historia.append(Paragraph(
+        "El costo se toma del precio de compra unitario guardado en el detalle. "
+        "La utilidad es bruta y no descuenta gastos operativos.",
+        estilo_muted,
+    ))
+
+    documento.build(historia, onFirstPage= dibujar_encabezado_pie, onLaterPages=dibujar_encabezado_pie)
+    pdf = buffer.getvalue()
+    buffer.close()
+    respuesta = HttpResponse(pdf, content_type="application/pdf")
+    respuesta["Content-Disposition"] = 'attachment; filename="reporte_utilidad.pdf"'
+    return respuesta
 
 
 def _reporte_despacho_inicio(request, pedidos, filtros, preventistas, repartidores, registradores):

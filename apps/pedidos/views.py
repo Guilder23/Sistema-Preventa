@@ -514,6 +514,11 @@ def crear_pedido(request):
                 producto=producto,
                 cantidad=cantidad_int,
                 precio_unitario=precio,
+                costo_unitario=(
+                    producto.precio_compra_unidad
+                    if producto.precio_compra_unidad and producto.precio_compra_unidad > 0
+                    else None
+                ),
                 subtotal=subtotal,
             )
             detalles_creados.append(det)
@@ -709,6 +714,11 @@ def editar_pedido(request, id: int):
                 producto=producto,
                 cantidad=cantidad_int,
                 precio_unitario=precio,
+                costo_unitario=(
+                    producto.precio_compra_unidad
+                    if producto.precio_compra_unidad and producto.precio_compra_unidad > 0
+                    else None
+                ),
                 subtotal=subtotal,
                 precio_ajustado=aplicar,
             )
@@ -928,6 +938,10 @@ def registrar_entrega(request, id: int):
 
     if errores:
         messages.error(request, " | ".join(errores))
+        return redirect("listar_pedidos")
+
+    if resultado == "entregado_parcial" and not any(cantidades_entregadas.values()):
+        messages.error(request, "No se entregó ninguna unidad. Registra el pedido como no entregado.")
         return redirect("listar_pedidos")
 
     with transaction.atomic():
