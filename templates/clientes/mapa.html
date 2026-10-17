@@ -68,6 +68,30 @@
                             <a href="#" class="bottom-action" id="btnAbrirGoogleMaps" target="_blank" rel="noopener" title="Abrir ubicación del cliente en Google Maps">
                                 <i class="fas fa-location-dot"></i> Google Maps
                             </a>
+                            {% if puede_cambiar_responsable %}
+                                <div class="mapa-responsable-actual">
+                                    <strong>Responsable actual:</strong>
+                                    <span id="responsableActualMapa">Sin asignar</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btnAbrirCambioResponsable">
+                                    Cambiar responsable
+                                </button>
+                                <form id="formCambiarResponsable" class="mt-2" data-url-template="{% url 'cambiar_responsable_cliente' 0 %}" hidden>
+                                    {% csrf_token %}
+                                    <label for="responsableClienteMapa" class="form-label mb-1">Nuevo responsable</label>
+                                    <div class="mapa-responsable-acciones">
+                                        <select id="responsableClienteMapa" name="responsable_id" class="form-select form-select-sm" required disabled>
+                                            <option value="">Seleccionar preventista</option>
+                                            {% for preventista in preventistas_disponibles %}
+                                                <option value="{{ preventista.id }}">{{ preventista.get_full_name|default:preventista.username }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-primary">Revisar cambio</button>
+                                        <button type="button" class="btn btn-sm btn-light" id="btnCancelarCambioResponsable">Cancelar</button>
+                                    </div>
+                                </form>
+                                <small id="cambiarResponsableEstado" class="text-muted" aria-live="polite"></small>
+                            {% endif %}
                         </div>
                         <button type="button" class="bottom-close" id="clientesCerrar" aria-label="Cerrar">
                             <i class="fas fa-times"></i>
@@ -87,6 +111,30 @@
                     </button>
                 </div>
             </div>
+            {% if puede_cambiar_responsable %}
+                <div class="modal fade" id="modalConfirmarResponsableMapa" tabindex="-1" role="dialog" aria-labelledby="modalConfirmarResponsableMapaTitulo" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+                        <div class="modal-content mapa-asignacion-modal">
+                            <div class="modal-header">
+                                <h2 class="modal-title h5" id="modalConfirmarResponsableMapaTitulo">Confirmar asignación</h2>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>¿Confirmas el cambio de responsable para este cliente?</p>
+                                <dl class="mapa-asignacion-resumen">
+                                    <div><dt>Cliente</dt><dd id="confirmarClienteResponsable">-</dd></div>
+                                    <div><dt>Responsable actual</dt><dd id="confirmarResponsableActual">-</dd></div>
+                                    <div><dt>Nuevo responsable</dt><dd id="confirmarResponsableNuevo">-</dd></div>
+                                </dl>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-primary" id="btnConfirmarCambioResponsable">Sí, asignar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
             <div class="img-viewer" id="imgViewer" hidden>
                 <button type="button" class="img-viewer-close" id="imgViewerClose" aria-label="Cerrar">
                     <i class="fas fa-times"></i>

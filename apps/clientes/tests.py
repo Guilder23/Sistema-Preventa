@@ -68,6 +68,24 @@ class MapaClientesTests(TestCase):
         self.assertEqual(data["total"], 1)
         self.assertEqual(data["puntos"][0]["nombre"], "Cliente lejano")
 
+    def test_puntos_incluyen_nombre_y_id_del_responsable_actual(self):
+        preventista = User.objects.create_user("responsable_mapa", password="test-password")
+        preventista.perfil.rol = "preventista"
+        preventista.perfil.activo = True
+        preventista.perfil.save(update_fields=["rol", "activo"])
+        cliente = Cliente.objects.create(
+            nombres="Cliente con responsable",
+            latitud=Decimal("-17.78"),
+            longitud=Decimal("-63.18"),
+            preventista_asignado=preventista,
+        )
+
+        response = self.client.get(reverse("clientes_mapa_puntos"), {"todos": "1"})
+        punto = next(punto for punto in response.json()["puntos"] if punto["id"] == cliente.pk)
+
+        self.assertEqual(punto["responsable_id"], preventista.pk)
+        self.assertEqual(punto["responsable_nombre"], "responsable_mapa")
+
 
 class TransferenciaClientesTests(TestCase):
     def setUp(self):
@@ -120,6 +138,53 @@ class TransferenciaClientesTests(TestCase):
         self.assertEqual(movimiento.responsable_anterior, self.preventista_original)
         self.assertEqual(movimiento.responsable_nuevo, self.preventista_destino)
         self.assertEqual(movimiento.realizado_por, self.admin)
+
+    def test_admin_cambia_responsable_individual_desde_el_mapa_y_registra_historial(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse("cambiar_responsable_cliente", args=[self.cliente.pk]),
+            {"responsable_id": self.preventista_destino.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["cambiado"])
+        self.assertEqual(response.json()["responsable_id"], self.preventista_destino.pk)
+        self.assertEqual(
+            response.json()["responsable_nombre"],
+            self.preventista_destino.get_full_name() or self.preventista_destino.username,
+        )
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.preventista_asignado, self.preventista_destino)
+        movimiento = TransferenciaCliente.objects.get()
+        self.assertEqual(movimiento.cliente, self.cliente)
+        self.assertEqual(movimiento.responsable_anterior, self.preventista_original)
+        self.assertEqual(movimiento.responsable_nuevo, self.preventista_destino)
+        self.assertEqual(movimiento.realizado_por, self.admin)
+
+    def test_preventista_no_puede_cambiar_responsable_desde_el_mapa(self):
+        self.client.force_login(self.preventista_original)
+
+        response = self.client.post(
+            reverse("cambiar_responsable_cliente", args=[self.cliente.pk]),
+            {"responsable_id": self.preventista_destino.pk},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.preventista_asignado, self.preventista_original)
+        self.assertFalse(TransferenciaCliente.objects.exists())
+
+    def test_formulario_de_cambio_de_responsable_solo_aparece_para_administrador(self):
+        self.client.force_login(self.admin)
+        respuesta_admin = self.client.get(reverse("clientes_mapa"))
+        self.assertContains(respuesta_admin, "formCambiarResponsable")
+        self.assertContains(respuesta_admin, "modalConfirmarResponsableMapa")
+        self.assertContains(respuesta_admin, "Responsable actual:")
+
+        self.client.force_login(self.preventista_original)
+        respuesta_preventista = self.client.get(reverse("clientes_mapa"))
+        self.assertNotContains(respuesta_preventista, "formCambiarResponsable")
 
     def test_cliente_transferido_sale_del_alcance_del_anterior_y_entra_al_nuevo(self):
         self.cliente.preventista_asignado = self.preventista_destino

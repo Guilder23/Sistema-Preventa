@@ -116,6 +116,56 @@
     flex-wrap: wrap;
     gap: 10px;
 }
+.mapa-responsable-actual {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+    color: #495057;
+    font-size: 13px;
+}
+#formCambiarResponsable select {
+    min-width: 190px;
+    max-width: 100%;
+}
+.mapa-responsable-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+#cambiarResponsableEstado {
+    display: block;
+    margin-top: 4px;
+}
+#modalConfirmarResponsableMapa {
+    z-index: 2050;
+}
+.mapa-asignacion-modal {
+    border-radius: 8px;
+}
+.mapa-asignacion-modal .modal-body > p {
+    margin-bottom: 12px;
+}
+.mapa-asignacion-resumen {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: #f5f6f7;
+}
+.mapa-asignacion-resumen div + div {
+    margin-top: 8px;
+}
+.mapa-asignacion-resumen dt {
+    color: #6c757d;
+    font-size: 12px;
+    font-weight: 600;
+}
+.mapa-asignacion-resumen dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-weight: 600;
+}
 .bottom-action {
     display: inline-flex;
     align-items: center;

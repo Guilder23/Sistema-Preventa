@@ -69,6 +69,9 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
     var foto = el('clientesFoto');
     var fotoEmpty = el('clientesFotoEmpty');
     var btnMaps = el('btnAbrirGoogleMaps');
+    var formResponsable = el('formCambiarResponsable');
+    var responsableActual = el('responsableActualMapa');
+    var btnAbrirCambio = el('btnAbrirCambioResponsable');
     if (!bottom || !titulo || !direccion || !meta) return;
 
     titulo.textContent = safeText(p.nombre || 'Cliente');
@@ -100,6 +103,20 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
         foto.style.display = 'none';
         fotoEmpty.style.display = 'flex';
       }
+    }
+
+    if (formResponsable) {
+      formResponsable.setAttribute('data-cliente-id', p.id);
+      var selectorResponsable = el('responsableClienteMapa');
+      if (responsableActual) responsableActual.textContent = p.responsable_nombre || 'Sin asignar';
+      if (selectorResponsable) {
+        selectorResponsable.value = '';
+        selectorResponsable.disabled = true;
+      }
+      setHidden(formResponsable, true);
+      setHidden(btnAbrirCambio, false);
+      var estadoResponsable = el('cambiarResponsableEstado');
+      if (estadoResponsable) estadoResponsable.textContent = '';
     }
 
     setHidden(bottom, false);
@@ -340,6 +357,95 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
     var imgViewer = el('imgViewer'); if (imgViewer) imgViewer.addEventListener('click', function (e) { if (e.target === imgViewer) closeImageViewer(); });
 
     var btnCerrar = el('clientesCerrar'); if (btnCerrar) btnCerrar.addEventListener('click', function () { hideBottom(); });
+
+    var formResponsable = el('formCambiarResponsable');
+    var selectorResponsable = el('responsableClienteMapa');
+    var botonAbrirCambio = el('btnAbrirCambioResponsable');
+    var botonCancelarCambio = el('btnCancelarCambioResponsable');
+    var modalConfirmacion = $('#modalConfirmarResponsableMapa');
+    var botonConfirmarCambio = el('btnConfirmarCambioResponsable');
+
+    if (botonAbrirCambio) botonAbrirCambio.addEventListener('click', function () {
+      setHidden(formResponsable, false);
+      if (selectorResponsable) {
+        selectorResponsable.disabled = false;
+        selectorResponsable.focus();
+      }
+      setHidden(botonAbrirCambio, true);
+    });
+
+    if (botonCancelarCambio) botonCancelarCambio.addEventListener('click', function () {
+      setHidden(formResponsable, true);
+      if (selectorResponsable) {
+        selectorResponsable.disabled = true;
+        selectorResponsable.value = '';
+      }
+      var estado = el('cambiarResponsableEstado');
+      if (estado) estado.textContent = '';
+      setHidden(botonAbrirCambio, false);
+    });
+
+    if (formResponsable) formResponsable.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var clienteId = formResponsable.getAttribute('data-cliente-id');
+      if (!clienteId || !selectorResponsable || !selectorResponsable.value) return;
+
+      var opcionNueva = selectorResponsable.options[selectorResponsable.selectedIndex];
+      el('confirmarClienteResponsable').textContent = el('clientesTitulo').textContent;
+      el('confirmarResponsableActual').textContent = el('responsableActualMapa').textContent;
+      el('confirmarResponsableNuevo').textContent = opcionNueva ? opcionNueva.textContent.trim() : '';
+      modalConfirmacion.modal('show');
+    });
+
+    if (botonConfirmarCambio) botonConfirmarCambio.addEventListener('click', function () {
+      var clienteId = formResponsable && formResponsable.getAttribute('data-cliente-id');
+      var estado = el('cambiarResponsableEstado');
+      var botonEnviar = formResponsable && formResponsable.querySelector('button[type="submit"]');
+      if (!clienteId || !selectorResponsable || !selectorResponsable.value) return;
+
+      var url = formResponsable.getAttribute('data-url-template').replace('/0/', '/' + clienteId + '/');
+      var csrf = formResponsable.querySelector('[name="csrfmiddlewaretoken"]');
+      var cuerpo = new URLSearchParams(new FormData(formResponsable));
+      botonConfirmarCambio.disabled = true;
+      if (botonEnviar) botonEnviar.disabled = true;
+      if (estado) estado.textContent = 'Guardando responsable...';
+
+      fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json', 'X-CSRFToken': csrf ? csrf.value : '' },
+        body: cuerpo
+      }).then(function (respuesta) {
+        return respuesta.json().then(function (data) {
+          if (!respuesta.ok) throw new Error(data.error || 'No se pudo cambiar el responsable.');
+          return data;
+        });
+      }).then(function (data) {
+        var responsableActual = el('responsableActualMapa');
+        if (responsableActual) responsableActual.textContent = data.responsable_nombre;
+        for (var indice = 0; indice < allPuntos.length; indice++) {
+          if (String(allPuntos[indice].id) === String(clienteId)) {
+            allPuntos[indice].responsable_id = data.responsable_id;
+            allPuntos[indice].responsable_nombre = data.responsable_nombre;
+            break;
+          }
+        }
+        modalConfirmacion.modal('hide');
+        setHidden(formResponsable, true);
+        if (selectorResponsable) selectorResponsable.disabled = true;
+        setHidden(botonAbrirCambio, false);
+        if (estado) estado.textContent = data.cambiado
+          ? 'Responsable asignado a ' + data.responsable_nombre + '.'
+          : 'El cliente ya estaba asignado a ' + data.responsable_nombre + '.';
+        cargarPuntos();
+      }).catch(function (error) {
+        modalConfirmacion.modal('hide');
+        if (estado) estado.textContent = error.message || 'No se pudo cambiar el responsable.';
+      }).finally(function () {
+        botonConfirmarCambio.disabled = false;
+        if (botonEnviar) botonEnviar.disabled = false;
+      });
+    });
 
     // Delegación: clic en label del tooltip para mostrar tarjeta
     document.addEventListener('click', function (e) {

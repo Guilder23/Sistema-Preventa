@@ -77,6 +77,26 @@ def _nombre_usuario(usuario):
     return (usuario.get_full_name() or usuario.username)[:150]
 
 
+def _registrar_transferencia_cliente(cliente, destino, realizado_por):
+    anterior = cliente.preventista_asignado or cliente.creado_por
+    if anterior and anterior.pk == destino.pk:
+        return False
+
+    TransferenciaCliente.objects.create(
+        cliente=cliente,
+        cliente_nombre=str(cliente)[:320],
+        responsable_anterior=anterior,
+        responsable_anterior_nombre=_nombre_usuario(anterior),
+        responsable_nuevo=destino,
+        responsable_nuevo_nombre=_nombre_usuario(destino),
+        realizado_por=realizado_por,
+        realizado_por_nombre=_nombre_usuario(realizado_por),
+    )
+    cliente.preventista_asignado = destino
+    cliente.save(update_fields=["preventista_asignado", "fecha_actualizacion"])
+    return True
+
+
 @role_required("administrador")
 @require_http_methods(["GET", "POST"])
 def transferir_clientes(request):
@@ -133,23 +153,9 @@ def transferir_clientes(request):
 
             transferidos = 0
             for cliente in clientes_seleccionados:
-                anterior = cliente.preventista_asignado or cliente.creado_por
-                if anterior and anterior.pk == destino.pk:
-                    continue
-
-                TransferenciaCliente.objects.create(
-                    cliente=cliente,
-                    cliente_nombre=str(cliente)[:320],
-                    responsable_anterior=anterior,
-                    responsable_anterior_nombre=_nombre_usuario(anterior),
-                    responsable_nuevo=destino,
-                    responsable_nuevo_nombre=_nombre_usuario(destino),
-                    realizado_por=request.user,
-                    realizado_por_nombre=_nombre_usuario(request.user),
+                transferidos += _registrar_transferencia_cliente(
+                    cliente, destino, request.user
                 )
-                cliente.preventista_asignado = destino
-                cliente.save(update_fields=["preventista_asignado", "fecha_actualizacion"])
-                transferidos += 1
 
         if transferidos:
             messages.success(
@@ -212,6 +218,38 @@ def transferir_clientes(request):
             )[:50],
         },
     )
+
+
+@role_required("administrador")
+@require_http_methods(["POST"])
+def cambiar_responsable_cliente(request, id):
+    try:
+        destino_id = int(request.POST.get("responsable_id", ""))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Selecciona un responsable válido."}, status=400)
+
+    preventistas = User.objects.filter(
+        is_active=True,
+        perfil__rol="preventista",
+        perfil__activo=True,
+    )
+    destino = get_object_or_404(preventistas, pk=destino_id)
+
+    with transaction.atomic():
+        cliente = get_object_or_404(
+            Cliente.objects.select_for_update(),
+            pk=id,
+        )
+        cambiado = _registrar_transferencia_cliente(cliente, destino, request.user)
+
+    return JsonResponse({
+        "ok": True,
+        "cambiado": cambiado,
+        "responsable_id": cliente.preventista_asignado_id or cliente.creado_por_id,
+        "responsable_nombre": _nombre_usuario(
+            cliente.preventista_asignado or cliente.creado_por
+        ),
+    })
 
 
 @role_required("administrador", "supervisor", "preventista")
@@ -299,6 +337,19 @@ def clientes_mapa(request):
     clientes_base = _clientes_qs_para_usuario(request.user)
     vendedor_ids = _vendedor_ids(clientes_base)
     vendedores = User.objects.filter(id__in=vendedor_ids).order_by("username")
+    perfil = getattr(request.user, "perfil", None)
+    puede_cambiar_responsable = request.user.is_superuser or (
+        perfil and perfil.rol == "administrador"
+    )
+    preventistas_disponibles = (
+        User.objects.filter(
+            is_active=True,
+            perfil__rol="preventista",
+            perfil__activo=True,
+        ).order_by("first_name", "last_name", "username")
+        if puede_cambiar_responsable
+        else User.objects.none()
+    )
 
     # Normalizar estado
     if estado not in {"activo", "inactivo"}:
@@ -323,6 +374,8 @@ def clientes_mapa(request):
             "estado": estado,
             "vendedor": str(vendedor_id) if vendedor_id is not None else "",
             "vendedores": vendedores,
+            "puede_cambiar_responsable": puede_cambiar_responsable,
+            "preventistas_disponibles": preventistas_disponibles,
         },
     )
 
@@ -368,9 +421,15 @@ def clientes_mapa_puntos(request):
             Q(preventista_asignado_id=vendedor_id)
             | Q(preventista_asignado__isnull=True, creado_por_id=vendedor_id)
         )
-    qs = qs.order_by("nombres", "apellidos").only(
+    qs = qs.select_related("preventista_asignado", "creado_por").order_by(
+        "nombres", "apellidos"
+    ).only(
         "id", "nombres", "apellidos", "latitud", "longitud",
         "direccion", "telefono", "ci_nit", "foto_tienda",
+        "preventista_asignado_id", "creado_por_id",
+        "preventista_asignado__first_name", "preventista_asignado__last_name",
+        "preventista_asignado__username", "creado_por__first_name",
+        "creado_por__last_name", "creado_por__username",
     )
 
     todos = request.GET.get("todos") == "1"
@@ -477,6 +536,10 @@ def clientes_mapa_puntos(request):
                 "telefono": c.telefono or "",
                 "ci_nit": c.ci_nit or "",
                 "foto_url": c.foto_tienda.url if c.foto_tienda else "",
+                "responsable_id": c.preventista_asignado_id or c.creado_por_id,
+                "responsable_nombre": _nombre_usuario(
+                    c.preventista_asignado or c.creado_por
+                ),
             }
         )
 

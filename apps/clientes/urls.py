@@ -8,6 +8,7 @@ urlpatterns = [
     path("clientes/transferir/", views.transferir_clientes, name="transferir_clientes"),
     path("clientes/mapa/", views.clientes_mapa, name="clientes_mapa"),
     path("clientes/api/puntos/", views.clientes_mapa_puntos, name="clientes_mapa_puntos"),
+    path("clientes/<int:id>/asignar-responsable/", views.cambiar_responsable_cliente, name="cambiar_responsable_cliente"),
     path("clientes/crear/", views.crear_cliente, name="crear_cliente"),
     path("clientes/<int:id>/obtener/", views.obtener_cliente, name="obtener_cliente"),
     path("clientes/<int:id>/historial/", views.historial_pedidos_cliente, name="historial_pedidos_cliente"),
