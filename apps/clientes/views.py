@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from math import asin, cos, radians, sin, sqrt
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -38,6 +39,36 @@ def _vendedor_ids(clientes_base):
         .values_list("creado_por_id", flat=True)
     )
     return asignados | anteriores
+
+
+def _distancia_km(latitud_a, longitud_a, latitud_b, longitud_b):
+    latitud_a, longitud_a, latitud_b, longitud_b = map(
+        radians, (latitud_a, longitud_a, latitud_b, longitud_b)
+    )
+    delta_latitud = latitud_b - latitud_a
+    delta_longitud = longitud_b - longitud_a
+    a = (
+        sin(delta_latitud / 2) ** 2
+        + cos(latitud_a) * cos(latitud_b) * sin(delta_longitud / 2) ** 2
+    )
+    return 6371 * 2 * asin(min(1, sqrt(a)))
+
+
+def _clientes_mas_cercanos(qs, latitud, longitud, limite, radio_km=None):
+    candidatos = []
+    for cliente_id, cliente_latitud, cliente_longitud in qs.values_list(
+        "id", "latitud", "longitud"
+    ):
+        distancia = _distancia_km(
+            latitud, longitud, float(cliente_latitud), float(cliente_longitud)
+        )
+        if radio_km is None or distancia <= radio_km:
+            candidatos.append((distancia, cliente_id))
+    candidatos.sort()
+    total = len(candidatos)
+    ids_cercanos = [cliente_id for _, cliente_id in candidatos[:limite]]
+    clientes_por_id = {cliente.pk: cliente for cliente in qs.filter(pk__in=ids_cercanos)}
+    return [clientes_por_id[cliente_id] for cliente_id in ids_cercanos], total
 
 
 def _nombre_usuario(usuario):
@@ -337,10 +368,105 @@ def clientes_mapa_puntos(request):
             Q(preventista_asignado_id=vendedor_id)
             | Q(preventista_asignado__isnull=True, creado_por_id=vendedor_id)
         )
-    qs = qs.order_by("nombres", "apellidos")
+    qs = qs.order_by("nombres", "apellidos").only(
+        "id", "nombres", "apellidos", "latitud", "longitud",
+        "direccion", "telefono", "ci_nit", "foto_tienda",
+    )
+
+    todos = request.GET.get("todos") == "1"
+    viewport = False
+    limites_vista = None
+    if not todos and request.GET.get("viewport") == "1":
+        try:
+            sur = float(request.GET.get("sur"))
+            oeste = float(request.GET.get("oeste"))
+            norte = float(request.GET.get("norte"))
+            este = float(request.GET.get("este"))
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Límites del mapa inválidos."}, status=400)
+        if not (-90 <= sur <= norte <= 90):
+            return JsonResponse({"error": "Límites del mapa inválidos."}, status=400)
+        if not all(-100000 <= valor <= 100000 for valor in (oeste, este)):
+            return JsonResponse({"error": "Límites del mapa inválidos."}, status=400)
+        limites_vista = (sur, oeste, norte, este)
+        viewport = True
+
+    latitud_raw = request.GET.get("lat")
+    longitud_raw = request.GET.get("lng")
+    ubicacion = None
+    if not todos and latitud_raw is not None and longitud_raw is not None:
+        try:
+            latitud = float(latitud_raw)
+            longitud = float(longitud_raw)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Ubicación inválida."}, status=400)
+        if not (-90 <= latitud <= 90 and -180 <= longitud <= 180):
+            return JsonResponse({"error": "Ubicación inválida."}, status=400)
+        ubicacion = (latitud, longitud)
+
+    puntos_cercanos = ubicacion is not None and not viewport
+    radio_km = 20
+    limite = 50
+    if puntos_cercanos or viewport:
+        try:
+            limite = max(1, min(int(request.GET.get("limite", 50)), 200))
+        except (TypeError, ValueError):
+            limite = 50
+
+    if viewport:
+        sur, oeste, norte, este = limites_vista
+        qs = qs.filter(latitud__gte=sur, latitud__lte=norte)
+        ancho_longitud = este - oeste
+        if ancho_longitud < 0:
+            ancho_longitud %= 360
+        if ancho_longitud < 360:
+            oeste_normalizado = ((oeste + 180) % 360) - 180
+            este_normalizado = oeste_normalizado + ancho_longitud
+            if este_normalizado > 180:
+                qs = qs.filter(
+                    Q(longitud__gte=oeste_normalizado)
+                    | Q(longitud__lte=este_normalizado - 360)
+                )
+            else:
+                qs = qs.filter(
+                    longitud__gte=oeste_normalizado,
+                    longitud__lte=este_normalizado,
+                )
+        centro_latitud = (sur + norte) / 2
+        centro_longitud = ((oeste + este) / 2 + 180) % 360 - 180
+        clientes, total = _clientes_mas_cercanos(
+            qs, centro_latitud, centro_longitud, limite
+        )
+    elif puntos_cercanos:
+        latitud, longitud = ubicacion
+        margen_latitud = radio_km / 111.32
+        margen_longitud = min(
+            180,
+            radio_km / (111.32 * max(abs(cos(radians(latitud))), 0.000001)),
+        )
+        qs = qs.filter(
+            latitud__gte=max(-90, latitud - margen_latitud),
+            latitud__lte=min(90, latitud + margen_latitud),
+        )
+        if margen_longitud < 180:
+            longitud_min = longitud - margen_longitud
+            longitud_max = longitud + margen_longitud
+            if longitud_min < -180:
+                qs = qs.filter(Q(longitud__gte=longitud_min + 360) | Q(longitud__lte=longitud_max))
+            elif longitud_max > 180:
+                qs = qs.filter(Q(longitud__gte=longitud_min) | Q(longitud__lte=longitud_max - 360))
+            else:
+                qs = qs.filter(longitud__gte=longitud_min, longitud__lte=longitud_max)
+
+        clientes, total = _clientes_mas_cercanos(
+            qs, latitud, longitud, limite, radio_km
+        )
+    else:
+        clientes = list(qs)
+        total = len(clientes)
 
     puntos = []
-    for c in qs:
+    for c in clientes:
         puntos.append(
             {
                 "id": c.id,
@@ -354,7 +480,14 @@ def clientes_mapa_puntos(request):
             }
         )
 
-    return JsonResponse({"puntos": puntos})
+    return JsonResponse({
+        "puntos": puntos,
+        "total": total,
+        "hay_mas": (puntos_cercanos or viewport) and total > limite,
+        "cercanos": puntos_cercanos,
+        "viewport": viewport,
+        "radio_km": radio_km if puntos_cercanos else None,
+    })
 
 
 @role_required("administrador", "supervisor", "preventista")

@@ -42,7 +42,7 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
   function buildUrlWithParams(baseUrl, params) {
     var url = new URL(baseUrl, window.location.origin);
     Object.keys(params).forEach(function (k) {
-      if (params[k]) url.searchParams.set(k, params[k]);
+      if (params[k] !== '' && params[k] !== null && params[k] !== undefined) url.searchParams.set(k, params[k]);
     });
     return url.toString();
   }
@@ -50,6 +50,12 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
   var allPuntos = [];
   var markers = [];
   var map, userMarker = null, userAccuracyCircle = null, userLocationLayer = null, userLocationWatchId = null, userLocationCentered = false;
+  var ubicacionMapa = null;
+  var modoTodos = false;
+  var limitePuntos = 50;
+  var solicitudPuntos = null;
+  var temporizadorBusqueda = null;
+  var temporizadorMapa = null;
 
   function buildGoogleMapsUrl(lat, lng) {
     return 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
@@ -112,7 +118,7 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
 
   function closeImageViewer() { var imgViewer = el('imgViewer'); var img = el('imgViewerImg'); if (!imgViewer||!img) return; setHidden(imgViewer, true); img.removeAttribute('src'); }
 
-  function updateUserLocationMarker(lat, lng, accuracy) {
+  function updateUserLocationMarker(lat, lng, accuracy, zoomInicial) {
     var latLng = [lat, lng];
     var radius = Math.max(Math.min((accuracy || 20), 25), 8);
 
@@ -161,7 +167,7 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
     }
 
     if (!userLocationCentered) {
-      map.setView(latLng, 15);
+      map.setView(latLng, zoomInicial || 15);
       userLocationCentered = true;
     }
   }
@@ -173,10 +179,35 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
     }
     if (userLocationWatchId !== null) return;
     userLocationWatchId = navigator.geolocation.watchPosition(function (pos) {
+      var primeraUbicacion = !ubicacionMapa;
+      ubicacionMapa = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       updateUserLocationMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+      if (primeraUbicacion) {
+        modoTodos = false;
+        limitePuntos = 50;
+        cargarPuntos();
+      }
     }, function () {
       setInfo('No se pudo obtener tu ubicación. Permite el acceso a la ubicación del navegador.');
+      setHidden(el('btnMostrarTodosClientes'), false);
     }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+  }
+
+  function cargarUbicacionInicial() {
+    if (!navigator.geolocation) {
+      setInfo('Este navegador no permite obtener tu ubicación. Puedes mostrar todos los clientes.');
+      cargarPuntos();
+      return;
+    }
+    setInfo('Obteniendo tu ubicación para buscar clientes cercanos...');
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      ubicacionMapa = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      updateUserLocationMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, 12);
+      cargarPuntos();
+    }, function () {
+      setInfo('No se pudo obtener tu ubicación. Puedes reintentar o mostrar todos los clientes.');
+      cargarPuntos();
+    }, { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 });
   }
 
   function cargarPuntos() {
@@ -184,13 +215,32 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
     if (!url) { setInfo('No se configuró la URL de puntos.'); return; }
     setInfo('Cargando clientes...');
     var params = getFiltrosMapa();
-    fetch(buildUrlWithParams(url, params), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+    if (modoTodos) {
+      params.todos = '1';
+    } else {
+      var limites = map.getBounds();
+      params.viewport = '1';
+      params.sur = limites.getSouth();
+      params.oeste = limites.getWest();
+      params.norte = limites.getNorth();
+      params.este = limites.getEast();
+      params.limite = limitePuntos;
+    }
+    if (solicitudPuntos) solicitudPuntos.abort();
+    solicitudPuntos = new AbortController();
+    fetch(buildUrlWithParams(url, params), { credentials: 'same-origin', headers: { 'Accept': 'application/json' }, signal: solicitudPuntos.signal })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (data) {
         allPuntos = (data && data.puntos) ? data.puntos : [];
         markers.forEach(function (m) { try { map.removeLayer(m); } catch (e) {} });
         markers = [];
-        if (!allPuntos.length) { setInfo('No hay clientes con ubicación registrada.'); return; }
+        setHidden(el('btnMostrarMasClientes'), !(Boolean(data.hay_mas) && limitePuntos < 200));
+        setHidden(el('btnMostrarTodosClientes'), !(data.cercanos || data.viewport));
+        setHidden(el('btnMostrarCercanos'), !modoTodos);
+        if (!allPuntos.length) {
+          setInfo(modoTodos ? 'No hay clientes con ubicación registrada.' : 'No hay clientes en esta zona con esos filtros.');
+          return;
+        }
         var bounds = [];
         allPuntos.forEach(function (p) {
           if (typeof p.lat !== 'number' || typeof p.lng !== 'number') return;
@@ -204,10 +254,19 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
           markers.push(marker);
           bounds.push([p.lat, p.lng]);
         });
-        if (bounds.length) map.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
-        setInfo('Mostrando ' + allPuntos.length + ' cliente(s) en el mapa.');
+        if (modoTodos && bounds.length) map.fitBounds(bounds, { padding: [60, 60], maxZoom: 12 });
+        if (data.viewport) {
+          setInfo('Mostrando ' + allPuntos.length + ' de ' + data.total + ' cliente(s) en esta zona.');
+        } else if (data.cercanos) {
+          setInfo('Mostrando ' + allPuntos.length + ' de ' + data.total + ' cliente(s) a menos de ' + data.radio_km + ' km.');
+        } else {
+          setInfo('Mostrando ' + allPuntos.length + ' cliente(s) en el mapa.');
+        }
       })
-      .catch(function () { setInfo('No se pudo cargar el mapa de clientes.'); });
+      .catch(function (error) {
+        if (error.name === 'AbortError') return;
+        setInfo('No se pudo cargar el mapa de clientes.');
+      });
   }
 
   function init() {
@@ -219,12 +278,51 @@ var CLIENTES_MAPA_PUNTOS_URL = null;
 
     userLocationLayer = L.layerGroup().addTo(map);
 
-    cargarPuntos();
+    map.on('moveend', function () {
+      if (modoTodos) return;
+      window.clearTimeout(temporizadorMapa);
+      temporizadorMapa = window.setTimeout(function () {
+        limitePuntos = 50;
+        cargarPuntos();
+      }, 180);
+    });
+
+    cargarUbicacionInicial();
 
     var inputBuscar = el('buscarClienteMapa');
     var selectEstado = el('estadoClienteMapa');
     var selectVendedor = el('vendedorClienteMapa');
-    [inputBuscar, selectEstado, selectVendedor].forEach(function (node) { if (node) node.addEventListener('input', function () { cargarPuntos(); }); });
+    if (inputBuscar) inputBuscar.addEventListener('input', function () {
+      window.clearTimeout(temporizadorBusqueda);
+      temporizadorBusqueda = window.setTimeout(function () {
+        if (inputBuscar.value.trim()) modoTodos = true;
+        else if (ubicacionMapa) {
+          modoTodos = false;
+          limitePuntos = 50;
+          map.setView([ubicacionMapa.lat, ubicacionMapa.lng], 12);
+        }
+        cargarPuntos();
+      }, 300);
+    });
+    [selectEstado, selectVendedor].forEach(function (node) { if (node) node.addEventListener('input', function () { cargarPuntos(); }); });
+
+    var btnMostrarMas = el('btnMostrarMasClientes');
+    if (btnMostrarMas) btnMostrarMas.addEventListener('click', function () {
+      limitePuntos = Math.min(limitePuntos + 50, 200);
+      cargarPuntos();
+    });
+    var btnMostrarTodos = el('btnMostrarTodosClientes');
+    if (btnMostrarTodos) btnMostrarTodos.addEventListener('click', function () {
+      modoTodos = true;
+      cargarPuntos();
+    });
+    var btnMostrarCercanos = el('btnMostrarCercanos');
+    if (btnMostrarCercanos) btnMostrarCercanos.addEventListener('click', function () {
+      modoTodos = false;
+      limitePuntos = 50;
+      if (ubicacionMapa) map.setView([ubicacionMapa.lat, ubicacionMapa.lng], 12);
+      cargarPuntos();
+    });
 
     var btn = el('btnClientesFiltro'); var filtros = el('clientesFiltros'); if (btn && filtros) btn.addEventListener('click', function () { filtros.hidden = !filtros.hidden; });
 

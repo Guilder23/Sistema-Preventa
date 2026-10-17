@@ -1,11 +1,72 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from decimal import Decimal
 
 from apps.pedidos.models import Pedido
 from apps.usuarios.models import PerfilUsuario
 
 from .models import Cliente, TransferenciaCliente
+
+
+class MapaClientesTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user("admin_mapa", password="test-password")
+        self.admin.perfil.rol = "administrador"
+        self.admin.perfil.activo = True
+        self.admin.perfil.save(update_fields=["rol", "activo"])
+
+        for indice in range(51):
+            Cliente.objects.create(
+                nombres=f"Cercano {indice:02d}",
+                latitud=Decimal("-17.7800") + Decimal(indice) / Decimal("10000"),
+                longitud=Decimal("-63.1800"),
+            )
+        Cliente.objects.create(
+            nombres="Cliente lejano",
+            latitud=Decimal("-17.5000"),
+            longitud=Decimal("-63.1800"),
+        )
+        self.client.force_login(self.admin)
+
+    def test_mapa_devuelve_los_50_clientes_mas_cercanos_y_reporta_el_resto(self):
+        response = self.client.get(
+            reverse("clientes_mapa_puntos"),
+            {"lat": "-17.78", "lng": "-63.18"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data["puntos"]), 50)
+        self.assertEqual(data["total"], 51)
+        self.assertTrue(data["hay_mas"])
+        self.assertEqual(data["puntos"][0]["nombre"], "Cercano 00")
+        self.assertNotIn("Cliente lejano", [punto["nombre"] for punto in data["puntos"]])
+
+    def test_mapa_permite_cargar_todos_los_clientes_expresamente(self):
+        response = self.client.get(reverse("clientes_mapa_puntos"), {"todos": "1"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total"], 52)
+        self.assertFalse(response.json()["cercanos"])
+
+    def test_mapa_filtra_clientes_segun_los_limites_visibles(self):
+        response = self.client.get(
+            reverse("clientes_mapa_puntos"),
+            {
+                "viewport": "1",
+                "sur": "-17.6",
+                "oeste": "-63.3",
+                "norte": "-17.4",
+                "este": "-63.0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["viewport"])
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["puntos"][0]["nombre"], "Cliente lejano")
 
 
 class TransferenciaClientesTests(TestCase):
