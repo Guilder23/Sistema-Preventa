@@ -8,6 +8,7 @@
             </div>
             <form id="formRegistrarEntrega" method="post">
                 {% csrf_token %}
+                <input type="hidden" id="entregaDesdeMapa" name="desde_mapa" value="0">
                 <div class="modal-body">
                     <div class="alert alert-info py-2 mb-3">
                         Entregando a <strong id="entregaPedidoLabel"></strong>

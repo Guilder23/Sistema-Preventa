@@ -60,6 +60,7 @@
 
         $(document).on('click', '.btn-registrar-entrega', function (e) {
             e.preventDefault();
+            $('#entregaDesdeMapa').val(this.id === 'btnRegistrarEntregaMapa' ? '1' : '0');
             pedidoId = $(this).data('pedido-id');
             const label = $(this).data('pedido-label') || '';
             $('#entregaPedidoLabel').text(label);

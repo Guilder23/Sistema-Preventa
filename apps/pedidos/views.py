@@ -859,22 +859,23 @@ def marcar_vendido(request, id: int):
 @require_http_methods(["POST"])
 def registrar_entrega(request, id: int):
     pedido = get_object_or_404(_pedidos_qs_para_usuario(request.user), id=id)
+    destino = "pedidos_mapa" if request.POST.get("desde_mapa") == "1" else "listar_pedidos"
 
     if pedido.estado != Pedido.ESTADO_PENDIENTE:
         messages.error(request, "Solo puedes registrar entrega para pedidos pendientes")
-        return redirect("listar_pedidos")
+        return redirect(destino)
 
     resultado = (request.POST.get("resultado") or "").strip().lower()
     motivo_general = (request.POST.get("motivo_general") or "").strip()
 
     if resultado not in {"entregado_completo", "entregado_parcial", "no_entregado"}:
         messages.error(request, "Resultado de entrega inválido")
-        return redirect("listar_pedidos")
+        return redirect(destino)
 
     if resultado == "no_entregado":
         if not motivo_general:
             messages.error(request, "Debes indicar el motivo de no entrega")
-            return redirect("listar_pedidos")
+            return redirect(destino)
 
         with transaction.atomic():
             pedido = Pedido.objects.select_for_update().get(id=pedido.id)
@@ -904,7 +905,7 @@ def registrar_entrega(request, id: int):
             devolucion.actualizar_estado_reposicion(save=True)
 
         messages.success(request, "Pedido marcado como no entregado")
-        return redirect("listar_pedidos")
+        return redirect(destino)
 
     detalles = list(pedido.detalles.select_related("producto").all())
     cantidades_entregadas = {}
@@ -938,11 +939,11 @@ def registrar_entrega(request, id: int):
 
     if errores:
         messages.error(request, " | ".join(errores))
-        return redirect("listar_pedidos")
+        return redirect(destino)
 
     if resultado == "entregado_parcial" and not any(cantidades_entregadas.values()):
         messages.error(request, "No se entregó ninguna unidad. Registra el pedido como no entregado.")
-        return redirect("listar_pedidos")
+        return redirect(destino)
 
     with transaction.atomic():
         pedido = Pedido.objects.select_for_update().get(id=pedido.id)
@@ -974,7 +975,7 @@ def registrar_entrega(request, id: int):
         if resultado == "entregado_parcial" and total_devuelto <= 0:
             devolucion.delete()
             messages.error(request, "Si eliges entrega parcial, debe existir al menos una devolución")
-            return redirect("listar_pedidos")
+            return redirect(destino)
 
         # El stock se descuenta al registrar el pedido; compatibilidad para pedidos antiguos.
         if not pedido.stock_descontado:
@@ -992,7 +993,7 @@ def registrar_entrega(request, id: int):
         messages.success(request, "Entrega parcial registrada con devoluciones")
     else:
         messages.success(request, "Entrega completa registrada")
-    return redirect("listar_pedidos")
+    return redirect(destino)
 
 
 def _devoluciones_qs_para_usuario(user):
